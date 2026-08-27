@@ -21,10 +21,12 @@ const Api = (() => {
   }
 
   // ---------- 辅助：username ↔ email ----------
-  function toEmail(username) { return username.trim().toLowerCase() + '@yujiapp.local'; }
+  // 用 encodeURIComponent 支持中文用户名（email local-part 不能含非 ASCII）
+  function toEmail(username) { return encodeURIComponent(username.trim().toLowerCase()) + '@yujiapp.local'; }
   function fromEmail(email) {
     if (!email) return '';
-    return email.replace(/@yujiapp\.local$/i, '');
+    const localPart = email.replace(/@yujiapp\.local$/i, '');
+    try { return decodeURIComponent(localPart); } catch { return localPart; }
   }
 
   // ---------- 当前用户缓存 ----------
