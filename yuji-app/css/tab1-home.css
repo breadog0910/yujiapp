@@ -359,7 +359,7 @@ body.room-editing .room-edit-btn {
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v2.png?v=1');
+  background-image: url('../assets/pixel/xiaowo-celebrate-v4.png?v=1');
   background-size: 540px 100%;       /* 90×6 = 540（和喝水完全一致） */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
@@ -393,6 +393,7 @@ body.room-editing .room-edit-btn {
    所以和喝水共用同一节奏、同一帧步 -90px、同一 6 段切法。 */
 .xiaowo.is-celebrating .xiaowo-celebrate {
   animation: xc-play calc(var(--xc-frame-dur) * var(--frame-count)) var(--xc-loops);
+  animation-timing-function: step-end; /* 强制硬切，禁止帧间插值 */
 }
 
 @keyframes xc-play {

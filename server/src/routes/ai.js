@@ -5,7 +5,6 @@ const { getContext, getSelfManual } = require('../context');
 
 const router = express.Router();
 
-// 前端 agent 别名 -> ai_config.key
 const AGENT_KEYS = {
   letter: 'letter',
   self_manual: 'self_manual',
@@ -15,13 +14,6 @@ const AGENT_KEYS = {
   furniStory: 'furni_story',
 };
 
-/**
- * 调用单个 AI 智能体（OpenAI 兼容接口）
- * @param {object} cfg - ai_config 行
- * @param {Array} messages - 消息列表
- * @param {number} temperature - 温度
- * @returns {Promise<string>} 响应文本
- */
 async function callAgent(cfg, messages, temperature) {
   const sysPrompt = (cfg.system_prompt || '').trim();
   const fullMessages = [];
@@ -57,36 +49,25 @@ async function callAgent(cfg, messages, temperature) {
   }
 }
 
-/**
- * 获取并验证智能体配置
- * @param {string} key - 智能体 key
- * @returns {object} 配置行
- */
-function getAgentConfig(key) {
-  const cfg = db.prepare('SELECT * FROM ai_config WHERE key = ?').get(key);
+async function getAgentConfig(key) {
+  const cfg = await db.prepare('SELECT * FROM ai_config WHERE key = ?').get(key);
   if (!cfg) throw new Error('未找到该 AI 智能体配置');
   if (!cfg.enabled) throw new Error('该 AI 智能体未启用（请在管理后台开启）');
   if (!cfg.base_url || !cfg.api_key || !cfg.model) throw new Error('AI 配置不完整（缺少 base_url / api_key / model）');
   return cfg;
 }
 
-// ===================================================================
-// POST /api/ai/:agent
-// 单智能体调用（自动注入上下文）
-// ===================================================================
 router.post('/:agent', requireAuth, async (req, res) => {
   const key = AGENT_KEYS[req.params.agent] || req.params.agent;
   try {
-    const cfg = getAgentConfig(key);
+    const cfg = await getAgentConfig(key);
     const { messages = [] } = req.body || {};
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages 必填' });
     }
 
-    // 自动注入上下文：将用户状态嵌入到第一条 user message 之前
-    const { context, data } = getContext(req.user.id, key);
+    const { context, data } = await getContext(req.user.id, key);
     if (context) {
-      // 检查是否有系统消息已包含上下文，避免重复
       const hasContext = messages.some(m => m.role === 'user' && typeof m.content === 'string' && m.content.includes('用户当前数值'));
       if (!hasContext) {
         messages[0] = {
@@ -106,11 +87,7 @@ router.post('/:agent', requireAuth, async (req, res) => {
   }
 });
 
-// ===================================================================
-// 编排链定义
-// ===================================================================
 const CHAINS = {
-  // 洞察 → 信件：先分析情绪，再用洞察结果写信
   insight_letter: {
     name: '洞察写信',
     description: '先分析用户的情绪记录生成洞察，再用洞察结果辅助写一封温暖的信',
@@ -119,8 +96,6 @@ const CHAINS = {
       { agent: 'letter', label: '基于洞察写信', passContext: true, includePrevResult: true },
     ],
   },
-
-  // 洞察 → 自我说明书：用洞察更新说明书各章节
   insight_manual: {
     name: '洞察更新说明书',
     description: '分析用户近期记录，用洞察更新《自我说明书》各章节内容',
@@ -131,10 +106,6 @@ const CHAINS = {
   },
 };
 
-// ===================================================================
-// POST /api/ai/chain
-// 多智能体编排：按定义的链依次调用各智能体，前一步结果传入后一步
-// ===================================================================
 router.post('/chain', requireAuth, async (req, res) => {
   const { chain: chainName, messages: userMessages } = req.body || {};
 
@@ -146,7 +117,7 @@ router.post('/chain', requireAuth, async (req, res) => {
   }
 
   const chain = CHAINS[chainName];
-  const { context, data } = getContext(req.user.id, chain.steps[0].agent);
+  const { context, data } = await getContext(req.user.id, chain.steps[0].agent);
 
   let prevResult = '';
   const stepResults = [];
@@ -154,16 +125,14 @@ router.post('/chain', requireAuth, async (req, res) => {
   try {
     for (let i = 0; i < chain.steps.length; i++) {
       const step = chain.steps[i];
-      const cfg = getAgentConfig(step.agent);
+      const cfg = await getAgentConfig(step.agent);
 
-      // 构造这一步的 messages
       let stepMessages = [];
 
       if (step.passContext && context) {
         stepMessages.push({ role: 'user', content: context });
       }
 
-      // 上一步结果作为上下文传入
       if (step.includePrevResult && prevResult) {
         stepMessages.push({
           role: 'user',
@@ -171,9 +140,7 @@ router.post('/chain', requireAuth, async (req, res) => {
         });
       }
 
-      // 如果是最后一步且有用户消息，追加
       if (i === chain.steps.length - 1 && userMessages && Array.isArray(userMessages) && userMessages.length > 0) {
-        // 若已有上一步结果，则把用户消息作为补充
         if (step.includePrevResult && prevResult) {
           stepMessages.push({ role: 'user', content: '补充信息：' + userMessages[0].content });
         } else {
@@ -181,7 +148,6 @@ router.post('/chain', requireAuth, async (req, res) => {
         }
       }
 
-      // 如果没有任何消息，给一个默认 prompt
       if (stepMessages.length === 0) {
         stepMessages.push({ role: 'user', content: step.label });
       }
@@ -192,7 +158,6 @@ router.post('/chain', requireAuth, async (req, res) => {
       stepResults.push({ agent: step.agent, label: step.label, text });
       prevResult = text;
 
-      // 如果这一步需要保存到自我说明书
       if (step.saveToManual && data) {
         await saveToSelfManual(req.user.id, data, text);
       }
@@ -213,14 +178,9 @@ router.post('/chain', requireAuth, async (req, res) => {
   }
 });
 
-/**
- * 保存 AI 生成的说明书内容到用户状态
- * 解析 AI 返回的章节内容，更新 selfManual
- */
 async function saveToSelfManual(userId, data, aiText) {
   try {
-    // 调用 AI 解析说明书内容（用 gpt-4o-mini 提取结构化章节）
-    const parseCfg = db.prepare("SELECT * FROM ai_config WHERE key = 'self_manual'").get();
+    const parseCfg = await db.prepare("SELECT * FROM ai_config WHERE key = 'self_manual'").get();
     if (!parseCfg || !parseCfg.enabled) return;
 
     const parseMessages = [
@@ -259,8 +219,7 @@ async function saveToSelfManual(userId, data, aiText) {
     manual.updatedAt = now;
     data.selfManual = manual;
 
-    // 持久化
-    db.prepare('UPDATE user_state SET data = ?, updated_at = ? WHERE user_id = ?')
+    await db.prepare('UPDATE user_state SET data = ?, updated_at = ? WHERE user_id = ?')
       .run(JSON.stringify(data), now, userId);
     console.log('[chain] 自我说明书已更新');
   } catch (e) {
@@ -268,9 +227,6 @@ async function saveToSelfManual(userId, data, aiText) {
   }
 }
 
-// ===================================================================
-// GET /api/ai/chains - 获取可用编排链列表
-// ===================================================================
 router.get('/chains', requireAuth, (req, res) => {
   const list = Object.entries(CHAINS).map(([k, v]) => ({
     key: k, name: v.name, description: v.description,

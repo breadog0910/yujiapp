@@ -5,19 +5,11 @@
 (async function init() {
 
   // ============================================================
-  // 手机壳自适应屏幕：任意窗口大小都完整显示
+  // 应用容器自适应：已移除手机壳缩放，仅保留移动端检测
   // ============================================================
   function fitPhone() {
-    // 移动端直接全屏，无需缩放
-    if (window.matchMedia('(max-width: 480px)').matches) {
-      document.documentElement.style.setProperty('--frame-scale', '1');
-      return;
-    }
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    // 留 32px 边距，等比缩小到能完整放进屏幕
-    const scale = Math.min(1, (vw - 32) / 390, (vh - 32) / 844);
-    document.documentElement.style.setProperty('--frame-scale', String(scale));
+    // 旧版 --frame-scale 已不再使用；保留函数供未来扩展
+    document.documentElement.style.setProperty('--frame-scale', '1');
   }
   window.addEventListener('resize', fitPhone);
   window.addEventListener('orientationchange', () => setTimeout(fitPhone, 200));

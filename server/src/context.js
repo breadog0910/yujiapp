@@ -1,13 +1,9 @@
 /**
  * 统一上下文模块
- * - 从 user_state 解析用户数据，自动构建 AI 上下文
- * - 按智能体类型最小化发送（只发当前任务所需数据）
- * - 数据脱敏：去除用户名等 PII
  */
 
 const db = require('./db');
 
-// 各智能体所需的数据字段映射
 const AGENT_CONTEXT_KEYS = {
   letter: ['careValue', 'healthValue', 'happinessValue', 'comfortValue', 'emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots'],
   self_manual: ['emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots', 'selfManual', 'letters'],
@@ -15,18 +11,11 @@ const AGENT_CONTEXT_KEYS = {
   furni_story: ['emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots', 'careValue', 'healthValue', 'happinessValue', 'comfortValue'],
 };
 
-/**
- * 从用户状态中提取上下文字符串
- * @param {object} data - 用户状态 JSON
- * @param {string} agentKey - 智能体 key
- * @returns {string} 格式化的上下文字符串
- */
 function buildContext(data, agentKey) {
   if (!data) return '';
   const keys = AGENT_CONTEXT_KEYS[agentKey] || Object.keys(data);
   const parts = [];
 
-  // 数值
   const vals = ['careValue', 'healthValue', 'happinessValue', 'comfortValue'];
   const hasVal = vals.some(k => keys.includes(k) && data[k] != null);
   if (hasVal) {
@@ -38,7 +27,6 @@ function buildContext(data, agentKey) {
     if (v.length) parts.push('用户当前数值：' + v.join('、'));
   }
 
-  // 情绪记录
   if (keys.includes('emotionRecords') && Array.isArray(data.emotionRecords) && data.emotionRecords.length) {
     const recent = data.emotionRecords.slice(-5).map(r => {
       const tags = (r.tags || []).join('/');
@@ -47,7 +35,6 @@ function buildContext(data, agentKey) {
     if (recent) parts.push('用户最近的情绪记录（近 5 条）：\n' + recent);
   }
 
-  // 成长星点
   if (keys.includes('starPoints') && Array.isArray(data.starPoints) && data.starPoints.length) {
     const stars = data.starPoints.slice(-8).map(s => {
       const tag = s.tag || '';
@@ -56,7 +43,6 @@ function buildContext(data, agentKey) {
     if (stars) parts.push('用户的成长星点（近 8 条）：\n' + stars);
   }
 
-  // 今日自我照顾
   if ((keys.includes('careOptions') || keys.includes('customCareOptions')) && Array.isArray(data.careOptions)) {
     const done = data.careOptions.filter(c => c.done).map(c => `「${c.label}」`);
     if (Array.isArray(data.customCareOptions)) {
@@ -65,7 +51,6 @@ function buildContext(data, agentKey) {
     if (done.length) parts.push('今天已完成的自我照顾：' + done.join('；'));
   }
 
-  // 田地状态
   if (keys.includes('plots') && Array.isArray(data.plots)) {
     const garden = data.plots.map((p, i) => {
       if (!p) return null;
@@ -75,7 +60,6 @@ function buildContext(data, agentKey) {
     if (garden.length) parts.push('田地状态：' + garden.join('；'));
   }
 
-  // 家具经历（已记录的家具故事）
   if (keys.includes('letters') && Array.isArray(data.roomItems)) {
     const stories = data.roomItems.filter(r => r.story && r.story !== '').slice(-5);
     if (stories.length) {
@@ -83,7 +67,6 @@ function buildContext(data, agentKey) {
     }
   }
 
-  // 自我说明书当前内容
   if (keys.includes('selfManual') && data.selfManual) {
     const sm = data.selfManual;
     const chapters = [];
@@ -98,38 +81,19 @@ function buildContext(data, agentKey) {
   return parts.join('\n\n');
 }
 
-/**
- * 脱敏处理：去除用户名、自定义标签等可能含 PII 的字段
- * @param {object} data - 原始用户状态
- * @returns {object} 脱敏后的数据
- */
 function sanitize(data) {
   if (!data) return data;
-  const d = JSON.parse(JSON.stringify(data));
-  // 情绪记录中若有用户输入的文本可能含 PII，保留但标记
-  // 用户名等标识信息已在前端不可见，服务端不存储
-  return d;
+  return JSON.parse(JSON.stringify(data));
 }
 
-/**
- * 获取用户上下文（脱敏后）
- * @param {number} userId
- * @param {string} agentKey - 智能体 key
- * @returns {{context: string, data: object}}
- */
-function getContext(userId, agentKey) {
-  const row = db.prepare('SELECT data FROM user_state WHERE user_id = ?').get(userId);
+async function getContext(userId, agentKey) {
+  const row = await db.prepare('SELECT data FROM user_state WHERE user_id = ?').get(userId);
   if (!row) return { context: '', data: null };
   const data = sanitize(JSON.parse(row.data));
   const context = buildContext(data, agentKey);
   return { context, data };
 }
 
-/**
- * 获取说明书数据（用于更新）
- * @param {object} data - 用户状态
- * @returns {object} selfManual 对象
- */
 function getSelfManual(data) {
   return (data && data.selfManual) || {
     chapter1: '还在认识中…',

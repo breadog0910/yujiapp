@@ -1,47 +1,53 @@
-// 把现有 state.js 里写死的配置迁移进数据库，并创建种子管理员账号
 const db = require('./db');
 const { hashPassword } = require('./auth');
 const { ADMIN_DEFAULT_PW, DEFAULT_DAILY_COIN_CAP } = require('./config');
 
 const insFurniture = db.prepare(
-  `INSERT OR IGNORE INTO furniture_catalog (type,name,category,icon,w,h,is_floor,action,unlocked_by_default,price)
-   VALUES (@type,@name,@category,@icon,@w,@h,@is_floor,@action,@unlocked_by_default,@price)`
+  `INSERT INTO furniture_catalog (type,name,category,icon,w,h,is_floor,action,unlocked_by_default,price)
+   VALUES (@type,@name,@category,@icon,@w,@h,@is_floor,@action,@unlocked_by_default,@price)
+   ON CONFLICT (type) DO NOTHING`
 );
 
 const insLayout = db.prepare(
-  `INSERT OR IGNORE INTO default_room_layout (id,type,x,y,z,scale,flip,rot,tilt,action,sort_order)
-   VALUES (@id,@type,@x,@y,@z,@scale,@flip,@rot,@tilt,@action,@sort_order)`
+  `INSERT INTO default_room_layout (id,type,x,y,z,scale,flip,rot,tilt,action,sort_order)
+   VALUES (@id,@type,@x,@y,@z,@scale,@flip,@rot,@tilt,@action,@sort_order)
+   ON CONFLICT (id) DO NOTHING`
 );
 
 const insShop = db.prepare(
-  `INSERT OR IGNORE INTO shop_items (id,kind,emoji,name,price,bonus,desc,unlocked,sort_order)
-   VALUES (@id,@kind,@emoji,@name,@price,@bonus,@desc,@unlocked,@sort_order)`
+  `INSERT INTO shop_items (id,kind,emoji,name,price,bonus,desc,unlocked,sort_order)
+   VALUES (@id,@kind,@emoji,@name,@price,@bonus,@desc,@unlocked,@sort_order)
+   ON CONFLICT (id) DO NOTHING`
 );
 
 const insSeed = db.prepare(
-  `INSERT OR IGNORE INTO seed_catalog (key,emoji,name,dir,desc,feed_on,stages,yield,sort_order)
-   VALUES (@key,@emoji,@name,@dir,@desc,@feed_on,@stages,@yield,@sort_order)`
+  `INSERT INTO seed_catalog (key,emoji,name,dir,desc,feed_on,stages,yield,sort_order)
+   VALUES (@key,@emoji,@name,@dir,@desc,@feed_on,@stages,@yield,@sort_order)
+   ON CONFLICT (key) DO NOTHING`
 );
 
 const insAi = db.prepare(
-  `INSERT OR IGNORE INTO ai_config (key,name,provider,base_url,api_key,model,temperature,system_prompt,enabled,updated_at)
-   VALUES (@key,@name,@provider,@base_url,@api_key,@model,@temperature,@system_prompt,@enabled,@updated_at)`
+  `INSERT INTO ai_config (key,name,provider,base_url,api_key,model,temperature,system_prompt,enabled,updated_at)
+   VALUES (@key,@name,@provider,@base_url,@api_key,@model,@temperature,@system_prompt,@enabled,@updated_at)
+   ON CONFLICT (key) DO NOTHING`
 );
 
 const insSetting = db.prepare(
-  `INSERT OR IGNORE INTO site_settings (key,value,updated_at) VALUES (?,?,?)`
+  `INSERT INTO site_settings (key,value,updated_at) VALUES (?,?,?)
+   ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value, updated_at=EXCLUDED.updated_at`
 );
 
 const insTabBg = db.prepare(
-  `INSERT OR IGNORE INTO tab_backgrounds (tab_key,bg_path,updated_at) VALUES (?,?,?)`
+  `INSERT INTO tab_backgrounds (tab_key,bg_path,updated_at) VALUES (?,?,?)
+   ON CONFLICT (tab_key) DO UPDATE SET bg_path=EXCLUDED.bg_path, updated_at=EXCLUDED.updated_at`
 );
 
 const insDefCare = db.prepare(
-  `INSERT OR IGNORE INTO default_care_options (id,emoji,label,mode,reward,sort_order)
-   VALUES (@id,@emoji,@label,@mode,@reward,@sort_order)`
+  `INSERT INTO default_care_options (id,emoji,label,mode,reward,sort_order)
+   VALUES (@id,@emoji,@label,@mode,@reward,@sort_order)
+   ON CONFLICT (id) DO NOTHING`
 );
 
-// ---- 4 个 Tab 页面默认背景 ----
 const TAB_BG = [
   { tab_key: 'tab1', bg_path: 'assets/tab1beijing.png' },
   { tab_key: 'tab2', bg_path: 'assets/tab2-forest.png' },
@@ -49,7 +55,6 @@ const TAB_BG = [
   { tab_key: 'tab4', bg_path: 'assets/tab4-stars.png' },
 ];
 
-// ---- 新用户初始「每日自我照顾」选项 ----
 const DEF_CARE = [
   { id: 'water',     emoji: '💧', label: '喝水',     mode: 'recurring', reward: 3 },
   { id: 'breath',    emoji: '🌬️', label: '深呼吸',   mode: 'daily',     reward: 3 },
@@ -59,9 +64,6 @@ const DEF_CARE = [
   { id: 'encourage', emoji: '💪', label: '自我鼓励', mode: 'daily',     reward: 3 },
 ];
 
-// ---- 家具目录（来自 state.js ROOM_CATALOG）----
-// price：购置该家具所需的予己金币（未初始化/未拥有时收取；已拥有后复制免费）
-// unlockedByDefault：新用户初始是否解锁（未解锁的家具在家具库点击会跳转商店）
 const FURNITURE = [
   { type: 'bed',      name: '小床',   category: '家具', icon: 'assets/pixel/bed.png',      w: 64, h: 52, is_floor: 0, action: null, price: 40, unlockedByDefault: 1 },
   { type: 'bed-big',  name: '大床',   category: '家具', icon: 'assets/pixel/bed-big.png',  w: 96, h: 64, is_floor: 0, action: null, price: 75, unlockedByDefault: 1 },
@@ -87,7 +89,6 @@ const FURNITURE = [
   { type: 'piggy',    name: '存钱罐', category: '功能', icon: 'assets/pixel/piggy.png',    w: 40, h: 44, is_floor: 0, action: 'shop', price: 28, unlockedByDefault: 1 },
 ];
 
-// ---- 默认房间布局（来自 state.js DEFAULT_ROOM_ITEMS，与前端 FALLBACK_DEFAULT_ROOM_ITEMS 保持一致）----
 const LAYOUT = [
   { id: 'ri-window',   type: 'window',   x: 8,  y: 34, z: 2, scale: 1,    flip: 0, rot: 0, tilt: 0, action: null },
   { id: 'ri-painting', type: 'painting', x: 30, y: 36, z: 2, scale: 0.9,  flip: 0, rot: 0, tilt: 0, action: null },
@@ -103,7 +104,6 @@ const LAYOUT = [
   { id: 'ri-letter',   type: 'letter',   x: 48, y: 44, z: 6, scale: 0.95, flip: 0, rot: 0, tilt: 0, action: 'letter' },
 ];
 
-// ---- 商店商品（来自 state.js shopItems）----
 const SHOP = [
   { id: 'teddy',  kind: 'physical', emoji: '🧸', name: '小熊玩偶', price: 15, bonus: { happiness: 2, health: 1 },  desc: '', unlocked: 1 },
   { id: 'cake',   kind: 'physical', emoji: '🎂', name: '小蛋糕',   price: 25, bonus: { happiness: 3, health: 2 },  desc: '', unlocked: 1 },
@@ -117,7 +117,6 @@ const SHOP = [
   { id: 'birth',  kind: 'spirit',   emoji: '🎉', name: '生日时刻',     price: 80, bonus: { happiness: 10 }, desc: '弹出蛋糕动画，小我暖心独白', unlocked: 1 },
 ];
 
-// ---- 花园种子目录（来自 state.js SEED_CATALOG）----
 const SEEDS = [
   { key: 'selfcare', emoji: '🌿', name: '练习好好休息', dir: '自我照顾', desc: '在「此刻」完成自我照顾，会为它输送养料', feed_on: ['selfcare','habit'], stages: ['seed-selfcare-s1','seed-selfcare-s2','seed-selfcare-s3','seed-selfcare-s4'], yield: { emoji: '🪴', name: '治愈盆栽', bonus: { happiness: 2, health: 2 } } },
   { key: 'emotion',  emoji: '🌱', name: '练习情绪觉察', dir: '情绪能力', desc: '在「遇见」记录一次情绪，会为它输送养料', feed_on: ['emotion'], stages: ['seed-emotion-s1','seed-emotion-s2','seed-emotion-s3','seed-emotion-s4'], yield: { emoji: '🌸', name: '觉察之花', bonus: { happiness: 3 } } },
@@ -127,7 +126,6 @@ const SEEDS = [
   { key: 'habit',    emoji: '🌾', name: '养成小习惯',   dir: '生活习惯', desc: '坚持一次好习惯（喝水/睡觉/散步…），会为它输送养料', feed_on: ['habit','selfcare'], stages: ['seed-habit-s1','seed-habit-s2','seed-habit-s3','seed-habit-s4'], yield: { emoji: '🌾', name: '丰收麦穗', bonus: { health: 3 } } },
 ];
 
-// ---- AI 智能体默认配置 ----
 const AI = [
   {
     key: 'letter', name: '小我信件', provider: 'openai', base_url: 'https://api.openai.com/v1',
@@ -155,56 +153,85 @@ const AI = [
   },
 ];
 
-function seed() {
-  const run = db.transaction(() => {
+async function seed() {
+  const run = db.transaction(async () => {
     for (const f of FURNITURE) {
-      insFurniture.run({
+      await insFurniture.run({
         type: f.type, name: f.name, category: f.category, icon: f.icon,
         w: f.w, h: f.h, is_floor: f.is_floor ? 1 : 0, action: f.action,
         unlocked_by_default: f.unlockedByDefault ? 1 : 0, price: f.price || 0,
       });
     }
-    // 为已存在（INSERT OR IGNORE 未覆盖）的行回填默认价格：仅当当前 price 为空/0，避免覆盖管理员已设价格
+    // 为已存在（ON CONFLICT DO NOTHING 未覆盖）的行回填默认价格
     const updFurnPrice = db.prepare('UPDATE furniture_catalog SET price = ? WHERE type = ? AND (price IS NULL OR price = 0)');
-    for (const f of FURNITURE) updFurnPrice.run(f.price || 0, f.type);
-    LAYOUT.forEach((it, i) => insLayout.run({
-      id: it.id, type: it.type, x: it.x, y: it.y, z: it.z, scale: it.scale, flip: it.flip,
-      rot: it.rot || 0, tilt: it.tilt || 0, action: it.action, sort_order: i,
-    }));
-    SHOP.forEach((it, i) => insShop.run({
-      id: it.id, kind: it.kind, emoji: it.emoji, name: it.name, price: it.price,
-      bonus: JSON.stringify(it.bonus), desc: it.desc, unlocked: it.unlocked, sort_order: i,
-    }));
-    SEEDS.forEach((it, i) => insSeed.run({
-      key: it.key, emoji: it.emoji, name: it.name, dir: it.dir, desc: it.desc,
-      feed_on: JSON.stringify(it.feed_on), stages: JSON.stringify(it.stages), yield: JSON.stringify(it.yield), sort_order: i,
-    }));
+    for (const f of FURNITURE) await updFurnPrice.run(f.price || 0, f.type);
+
+    for (let i = 0; i < LAYOUT.length; i++) {
+      const it = LAYOUT[i];
+      await insLayout.run({
+        id: it.id, type: it.type, x: it.x, y: it.y, z: it.z, scale: it.scale, flip: it.flip,
+        rot: it.rot || 0, tilt: it.tilt || 0, action: it.action, sort_order: i,
+      });
+    }
+
+    for (let i = 0; i < SHOP.length; i++) {
+      const it = SHOP[i];
+      await insShop.run({
+        id: it.id, kind: it.kind, emoji: it.emoji, name: it.name, price: it.price,
+        bonus: JSON.stringify(it.bonus), desc: it.desc, unlocked: it.unlocked, sort_order: i,
+      });
+    }
+
+    for (let i = 0; i < SEEDS.length; i++) {
+      const it = SEEDS[i];
+      await insSeed.run({
+        key: it.key, emoji: it.emoji, name: it.name, dir: it.dir, desc: it.desc,
+        feed_on: JSON.stringify(it.feed_on), stages: JSON.stringify(it.stages), yield: JSON.stringify(it.yield), sort_order: i,
+      });
+    }
+
     const now = new Date().toISOString();
     for (const a of AI) {
-      insAi.run({
+      await insAi.run({
         key: a.key, name: a.name, provider: a.provider, base_url: a.base_url, api_key: a.api_key,
         model: a.model, temperature: a.temperature, system_prompt: a.system_prompt, enabled: a.enabled, updated_at: now,
       });
     }
-    insSetting.run('dailyCoinCap', String(DEFAULT_DAILY_COIN_CAP), now);
-    insSetting.run('appName', '予己', now);
-    for (const t of TAB_BG) insTabBg.run(t.tab_key, t.bg_path, now);
-    DEF_CARE.forEach((it, i) => insDefCare.run({
-      id: it.id, emoji: it.emoji, label: it.label, mode: it.mode, reward: it.reward, sort_order: i,
-    }));
+
+    await insSetting.run('dailyCoinCap', String(DEFAULT_DAILY_COIN_CAP), now);
+    await insSetting.run('appName', '予己', now);
+
+    for (const t of TAB_BG) {
+      await insTabBg.run(t.tab_key, t.bg_path, now);
+    }
+
+    for (let i = 0; i < DEF_CARE.length; i++) {
+      const it = DEF_CARE[i];
+      await insDefCare.run({
+        id: it.id, emoji: it.emoji, label: it.label, mode: it.mode, reward: it.reward, sort_order: i,
+      });
+    }
 
     // 种子管理员
-    const exists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
+    const exists = await db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
     if (!exists) {
-      db.prepare('INSERT INTO users (username, password_hash, role, must_change_pw, created_at) VALUES (?, ?, ?, ?, ?)')
+      await db.prepare('INSERT INTO users (username, password_hash, role, must_change_pw, created_at) VALUES (?, ?, ?, ?, ?)')
         .run('admin', hashPassword(ADMIN_DEFAULT_PW), 'admin', 1, now);
       console.log(`[seed] 已创建管理员账号 admin / ${ADMIN_DEFAULT_PW}（首次登录需修改密码）`);
     }
   });
-  run();
+
+  await run();
   console.log('[seed] 配置种子写入完成。');
 }
 
-if (require.main === module) seed();
+if (require.main === module) {
+  const { initSchema } = require('./db');
+  (async () => {
+    await initSchema();
+    await seed();
+    process.exit(0);
+  })();
+}
 
 module.exports = { seed };

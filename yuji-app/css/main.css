@@ -142,6 +142,11 @@ body {
 .sb-time { letter-spacing: 0.5px; }
 .sb-icons { letter-spacing: 1px; font-size: 10px; opacity: 0.8; }
 
+/* 桌面端隐藏伪装状态栏，保持移动应用感 */
+@media (min-width: 481px) {
+  .status-bar { display: none; }
+}
+
 /* ============================================================
    主内容区
    ============================================================ */
