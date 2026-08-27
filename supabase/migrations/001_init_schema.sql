@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS user_state (
 -- -----------------------------------------------------------
 ALTER TABLE furniture_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE default_room_layout ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shop_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seed_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_config ENABLE ROW LEVEL SECURITY;
@@ -230,6 +231,10 @@ CREATE POLICY "us_owner_select" ON user_state FOR SELECT USING (user_id = auth.u
 CREATE POLICY "us_owner_insert" ON user_state FOR INSERT WITH CHECK (user_id = auth.uid());
 CREATE POLICY "us_owner_update" ON user_state FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "us_owner_delete" ON user_state FOR DELETE USING (user_id = auth.uid());
+
+-- public.users：本人可读，管理员可读写
+CREATE POLICY "u_self_select" ON public.users FOR SELECT USING (id = auth.uid());
+CREATE POLICY "u_admin_all" ON public.users FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- -----------------------------------------------------------
 -- 5. Storage 桶（公开读取，认证用户可上传）
