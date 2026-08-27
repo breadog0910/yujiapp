@@ -34,11 +34,25 @@
   }
   bootMask.remove();
 
-  // 未登录 → 显示登录/注册遮罩；成功登录后延迟刷新（等待 session 写入完毕）
+  // 未登录 → 显示登录/注册遮罩；成功登录后原地重新初始化（不刷新页面，避免 session 丢失）
   if (!State.isAuthed()) {
-    Account.showLogin(() => {
-      // 延迟 800ms 后刷新，确保 Supabase session 已写入 localStorage
-      setTimeout(() => location.reload(), 800);
+    Account.showLogin(async () => {
+      // 登录后 session 已在 Supabase 客户端内存中，无需刷新页面
+      try {
+        await State.init();
+      } catch (e) {
+        console.warn('[boot] 登录后 State.init 失败', e);
+      }
+      Account.renderChip();
+      // 刷新当前可见 Tab
+      const activeTab = document.querySelector('.tab-panel.active');
+      if (activeTab) {
+        const tabId = activeTab.id;
+        if (tabId === 'tab1') Tab1.refresh();
+        if (tabId === 'tab3') Tab3.renderPlots();
+        if (tabId === 'tab4') Tab4.refresh();
+      }
+      Utils.toast('登录成功！');
     });
     // 仍初始化 Tab（登录遮罩下不可见，但保证登录后能直接渲染）
     bootApp();
