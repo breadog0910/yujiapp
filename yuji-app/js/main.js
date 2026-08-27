@@ -21,6 +21,9 @@
   bootMask.textContent = '正在准备你的小屋…';
   document.body.appendChild(bootMask);
 
+  // 先恢复 Supabase 会话（若有）
+  try { await Api.init(); } catch (e) { /* 忽略 */ }
+
   // 多用户初始化：拉配置 + 拉账号状态（未登录则离线兜底）
   try {
     await State.init();

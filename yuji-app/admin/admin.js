@@ -7,8 +7,8 @@
    ============================================================ */
 
 // ---------- Supabase 配置 ----------
-const SUPABASE_URL = window.YUJI_SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = window.YUJI_SUPABASE_ANON_KEY || 'your-anon-key';
+const SUPABASE_URL = window.YUJI_SUPABASE_URL || 'https://你的-project-ref.supabase.co';
+const SUPABASE_ANON_KEY = window.YUJI_SUPABASE_ANON_KEY || '你的-anon-public-key-从-supabase-dashboard-复制';
 
 let supabase = null;
 function getClient() {

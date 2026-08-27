@@ -1,7 +1,7 @@
 /* ============================================================
    状态管理（多用户化：配置走后端 / 状态按账号存后端）
-   - 配置（家具库 / 种子 / 默认布局 / 解锁 / AI / 每日上限）由 init() 从 /api/config 拉取
-   - 用户状态由 init() 从 /api/state 读取（按登录账号），未登录则回退 localStorage 离线模式
+   - 配置（家具库 / 种子 / 默认布局 / 解锁 / AI / 每日上限）由 init() 通过 Api.getConfig() 拉取
+   - 用户状态由 init() 通过 Api.getState() 读取（按登录账号），未登录则回退 localStorage 离线模式
    - 所有写操作：先写本地缓存，再防抖同步到后端（仅登录态）
    - 内置 FALLBACK_* 常量：后端不可达时仍能单机运行
    ============================================================ */
@@ -134,7 +134,7 @@ const State = (() => {
       let changed = false;
       for (const k of Object.keys(tabBackgrounds)) {
         const t = cfg.tabBackgrounds[k];
-        const p = t && t.path ? t.path : tabBackgrounds[k];
+        const p = typeof t === 'string' ? t : (t && t.path ? t.path : tabBackgrounds[k]);
         if (tabBackgrounds[k] !== p) { tabBackgrounds[k] = p; changed = true; }
       }
       // tab1 走 BG_CATALOG[0].src（tab1.js renderBg 读它）
