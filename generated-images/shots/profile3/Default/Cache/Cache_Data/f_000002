@@ -1,0 +1,412 @@
+/* ============================================================
+   状态管理 (localStorage 持久化)
+   ============================================================ */
+
+const State = (() => {
+  // v5：花园重构（种子目录 SEED_CATALOG + 行动驱动生长 + 新 sprite），与旧结构不兼容
+  const STORAGE_KEY = 'yuji_state_v5';
+
+  // ============================================================
+  // 房间背景库（用户可增删改 - 默认 3 张 AI 生成）
+  // 内置主题：day / dusk / night
+  // ============================================================
+  const BG_CATALOG = [
+    { id: 'day',   name: '白昼',   src: 'assets/pixel/bg-day.png',   custom: false, time: 'morning' },
+    { id: 'dusk',  name: '黄昏',   src: 'assets/pixel/bg-dusk.png',  custom: false, time: 'evening' },
+    { id: 'night', name: '夜灯',   src: 'assets/pixel/bg-night.png', custom: false, time: 'night'   },
+  ];
+
+  // ============================================================
+  // 家具库目录（组件可选类型）
+  // icon: assets/pixel/{type}.png （AI 生成的透明背景像素 sprite）
+  // w/h: 在 56×56 框内的自然像素尺寸，用于 image-rendering: pixelated
+  // ============================================================
+  const ROOM_CATALOG = [
+    // 家具
+    { type: 'bed',      icon: 'assets/pixel/bed.png',      w: 64, h: 52, name: '小床',     category: '家具' },
+    { type: 'sofa',     icon: 'assets/pixel/sofa.png',     w: 60, h: 44, name: '沙发',     category: '家具' },
+    { type: 'chair',    icon: 'assets/pixel/chair.png',    w: 36, h: 52, name: '小椅',     category: '家具' },
+    { type: 'table',    icon: 'assets/pixel/table.png',    w: 48, h: 40, name: '小木桌',   category: '家具' },
+    { type: 'shelf',    icon: 'assets/pixel/shelf.png',    w: 56, h: 56, name: '置物架',   category: '家具', action: 'shelf' },
+    { type: 'window',   icon: 'assets/pixel/window.png',   w: 44, h: 48, name: '小窗',     category: '家具' },
+    // 灯光
+    { type: 'lamp',     icon: 'assets/pixel/lamp.png',     w: 36, h: 56, name: '台灯',     category: '灯光' },
+    { type: 'candle',   icon: 'assets/pixel/candle.png',   w: 28, h: 44, name: '烛台',     category: '灯光' },
+    // 绿植
+    { type: 'plant',    icon: 'assets/pixel/plant.png',    w: 44, h: 60, name: '盆栽',     category: '绿植' },
+    { type: 'flowers',  icon: 'assets/pixel/flowers.png',  w: 36, h: 52, name: '花束',     category: '绿植' },
+    // 装饰
+    { type: 'painting', icon: 'assets/pixel/painting.png', w: 48, h: 40, name: '画框',     category: '装饰' },
+    { type: 'clock',    icon: 'assets/pixel/clock.png',    w: 36, h: 36, name: '小钟',     category: '装饰' },
+    { type: 'basket',   icon: 'assets/pixel/basket.png',   w: 44, h: 36, name: '小篮',     category: '装饰' },
+    { type: 'rug',      icon: 'assets/pixel/rug.png',      w: 80, h: 40, name: '小地毯',   category: '装饰', isFloor: true },
+    // 陪伴
+    { type: 'teddy',    icon: 'assets/pixel/teddy.png',    w: 44, h: 48, name: '玩偶',     category: '陪伴' },
+    { type: 'cat',      icon: 'assets/pixel/cat.png',      w: 48, h: 40, name: '小猫',     category: '陪伴' },
+    { type: 'books',    icon: 'assets/pixel/books.png',    w: 44, h: 36, name: '书堆',     category: '陪伴' },
+    { type: 'radio',    icon: 'assets/pixel/radio.png',    w: 44, h: 40, name: '收音机',   category: '陪伴' },
+    { type: 'tea',      icon: 'assets/pixel/tea.png',      w: 32, h: 36, name: '茶杯',     category: '陪伴' },
+    { type: 'letter',   icon: 'assets/pixel/letter.png',   w: 40, h: 32, name: '小我的信', category: '陪伴', action: 'letter' },
+    // 功能
+    { type: 'piggy',    icon: 'assets/pixel/piggy.png',    w: 40, h: 44, name: '存钱罐',   category: '功能', action: 'shop' },
+  ];
+
+  // ============================================================
+  // 种子目录（成长方向隐喻 · PRD 5.3.2）
+  // feedOn: 哪些 App 内行动会给它输送养料
+  // stages: 生长阶段 sprite 文件名序列（最后一个是成熟态）
+  // ============================================================
+  const SEED_CATALOG = [
+    {
+      key: 'selfcare', emoji: '🌿', name: '练习好好休息', dir: '自我照顾',
+      desc: '在「此刻」完成自我照顾，会为它输送养料',
+      feedOn: ['selfcare', 'habit'],
+      stages: ['seed-selfcare-s1', 'seed-selfcare-s2', 'seed-selfcare-s3', 'seed-selfcare-s4'],
+      yield: { emoji: '🪴', name: '治愈盆栽', bonus: { happiness: 2, health: 2 } },
+    },
+    {
+      key: 'emotion', emoji: '🌱', name: '练习情绪觉察', dir: '情绪能力',
+      desc: '在「遇见」记录一次情绪，会为它输送养料',
+      feedOn: ['emotion'],
+      stages: ['seed-emotion-s1', 'seed-emotion-s2', 'seed-emotion-s3', 'seed-emotion-s4'],
+      yield: { emoji: '🌸', name: '觉察之花', bonus: { happiness: 3 } },
+    },
+    {
+      key: 'action', emoji: '🌵', name: '练习立刻行动', dir: '行动力',
+      desc: '完成一件小事并记下，会为它输送养料',
+      feedOn: ['action', 'selfcare'],
+      stages: ['seed-action-s1', 'seed-action-s2', 'seed-action-s3', 'seed-action-s4'],
+      yield: { emoji: '🌼', name: '行动小花', bonus: { happiness: 2, health: 1 } },
+    },
+    {
+      key: 'interest', emoji: '🌻', name: '探索一个爱好', dir: '兴趣探索',
+      desc: '尝试新事物、记录新发现，会为它输送养料',
+      feedOn: ['interest', 'express'],
+      stages: ['seed-interest-s1', 'seed-interest-s2', 'seed-interest-s3', 'seed-interest-s4'],
+      yield: { emoji: '🎨', name: '灵感之花', bonus: { happiness: 3 } },
+    },
+    {
+      key: 'express', emoji: '💐', name: '练习主动表达', dir: '表达能力',
+      desc: '写下自我鼓励、表达真实想法，会为它输送养料',
+      feedOn: ['express', 'emotion'],
+      stages: ['seed-express-s1', 'seed-express-s2', 'seed-express-s3', 'seed-express-s4'],
+      yield: { emoji: '💐', name: '勇气花束', bonus: { happiness: 2 } },
+    },
+    {
+      key: 'habit', emoji: '🌾', name: '养成小习惯', dir: '生活习惯',
+      desc: '坚持一次好习惯（喝水/睡觉/散步…），会为它输送养料',
+      feedOn: ['habit', 'selfcare'],
+      stages: ['seed-habit-s1', 'seed-habit-s2', 'seed-habit-s3', 'seed-habit-s4'],
+      yield: { emoji: '🌾', name: '丰收麦穗', bonus: { health: 3 } },
+    },
+  ];
+
+  // 每升一阶所需养料次数
+  const FEED_PER_STAGE = 3;
+
+  // ============================================================
+  // 默认房间布局（x: 左%  y: 离地%  z: 层次 1-6 越大越靠前）
+  // ============================================================
+  const DEFAULT_ROOM_ITEMS = [
+    { id: 'ri-window',   type: 'window',   x: 8,  y: 34, z: 2, scale: 1,    flip: 0 },
+    { id: 'ri-painting', type: 'painting', x: 30, y: 36, z: 2, scale: 0.9,  flip: 0 },
+    { id: 'ri-clock',    type: 'clock',    x: 60, y: 38, z: 2, scale: 0.85, flip: 0 },
+    { id: 'ri-lamp',     type: 'lamp',     x: 84, y: 30, z: 3, scale: 1,    flip: 0 },
+    { id: 'ri-plant',    type: 'plant',    x: 92, y: 16, z: 3, scale: 1,    flip: 0 },
+    { id: 'ri-shelf',    type: 'shelf',    x: 10, y: 18, z: 4, scale: 1,    flip: 0, action: 'shelf' },
+    { id: 'ri-books',    type: 'books',    x: 18, y: 10, z: 5, scale: 1,    flip: 0 },
+    { id: 'ri-rug',      type: 'rug',      x: 40, y: 8,  z: 4, scale: 1.4,  flip: 0 },
+    { id: 'ri-cat',      type: 'cat',      x: 56, y: 12, z: 5, scale: 1,    flip: 0 },
+    { id: 'ri-teddy',    type: 'teddy',    x: 70, y: 14, z: 5, scale: 1,    flip: 0 },
+    { id: 'ri-piggy',    type: 'piggy',    x: 88, y: 10, z: 6, scale: 1,    flip: 0, action: 'shop' },
+    { id: 'ri-letter',   type: 'letter',   x: 48, y: 44, z: 6, scale: 0.95, flip: 0, action: 'letter' },
+  ];
+
+  const defaultState = {
+    // 数值（只正向累加，不清零不扣减）
+    careValue: 0,        // 关爱值
+    healthValue: 0,      // 健康值
+    happinessValue: 0,   // 开心值
+    comfortValue: 0,     // 舒适值（合成值，由 health + happiness 换算）
+
+    // 货币
+    coin: 0,             // 予己金币（持久）
+    dailyCoin: 0,        // 今日已获取金币（受每日上限 20 控制）
+    lastCoinDate: '',    // 上次记录金币的日期，用于每日重置
+
+    // 自我照顾
+    // mode: 'daily' 每日一次（完成后当日置底） | 'recurring' 一直出现（完成后重置并沉底，如喝水）
+    // pinned: false | 'today' | 'always'
+    // skipped: 今日是否被左滑跳过
+    // reward: 完成获得金币数
+    careOptions: [
+      { id: 'water',    emoji: '💧', label: '喝水',     done: false, mode: 'recurring', pinned: false, skipped: false, reward: 3 },
+      { id: 'breath',   emoji: '🌬️', label: '深呼吸',   done: false, mode: 'daily',     pinned: false, skipped: false, reward: 3 },
+      { id: 'walk',     emoji: '🚶', label: '散步',     done: false, mode: 'daily',     pinned: false, skipped: false, reward: 3 },
+      { id: 'space',    emoji: '🫧', label: '放空',     done: false, mode: 'daily',     pinned: false, skipped: false, reward: 3 },
+      { id: 'sleep',    emoji: '🛌', label: '好好睡觉', done: false, mode: 'daily',     pinned: false, skipped: false, reward: 3 },
+      { id: 'encourage',emoji: '💪', label: '自我鼓励', done: false, mode: 'daily',     pinned: false, skipped: false, reward: 3 },
+    ],
+    customCareOptions: [], // 用户自定义的
+
+    // 房间
+    roomItems: JSON.parse(JSON.stringify(DEFAULT_ROOM_ITEMS)), // 家具组件 [{id,type,x,y,z,scale,flip,action}]
+    placements: [],      // 置物架上的摆件 [{type,id,emoji,name,bonus}]
+    selectedForPlace: [],// 待摆放的
+    roomBg: 'day',       // 当前房间背景 id
+    customBgs: [],       // 用户自加的背景 [{id,name,src,custom:true}]
+
+    // 情绪记录
+    emotionRecords: [],   // [{date, tags:[], text}]
+
+    // 花园
+    // plots[i] = null | { seedKey, stage: 0..3, feed: 0..FEED_PER_STAGE, plantedAt }
+    // stage 对应 SEED_CATALOG.stages 下标，最后一个 stage 为成熟待收获
+    plots: [             // 12 个地块
+      null,null,null,null,
+      null,null,null,null,
+      null,null,null,null
+    ],
+    gardenWarehouse: [], // 花园仓库：[{type,id,emoji,name,bonus,source}]
+
+    // 商店商品
+    shopItems: {
+      physical: [
+        { id: 'teddy',  emoji: '🧸', name: '小熊玩偶', price: 15, bonus: { happiness: 2, health: 1 }, owned: false },
+        { id: 'cake',   emoji: '🎂', name: '小蛋糕',   price: 25, bonus: { happiness: 3, health: 2 }, owned: false },
+        { id: 'lamp',   emoji: '💡', name: '小台灯',   price: 12, bonus: { happiness: 1, health: 1 }, owned: false },
+        { id: 'carpet', emoji: '🟫', name: '小地毯',   price: 20, bonus: { happiness: 2, health: 1 }, owned: false },
+        { id: 'cushion',emoji: '🛋️', name: '抱枕',     price: 18, bonus: { happiness: 2 },         owned: false },
+        { id: 'toy',    emoji: '🪀', name: '像素玩具', price: 10, bonus: { happiness: 1 },         owned: false },
+      ],
+      spirit: [
+        { id: 'movie',  emoji: '🎬', name: '看一场电影',  price: 30, bonus: { happiness: 5 }, desc: '房间灯光调暗，小我坐下观看' },
+        { id: 'feast',  emoji: '🍰', name: '享用美食大餐', price: 40, bonus: { happiness: 8 }, desc: '小我享用美食动画' },
+        { id: 'travel', emoji: '🏕️', name: '短途外出冒险', price: 50, bonus: { happiness: 6 }, desc: '短暂切换简易户外像素片段' },
+        { id: 'birth',  emoji: '🎉', name: '生日时刻',    price: 80, bonus: { happiness: 10 }, desc: '弹出蛋糕动画，小我暖心独白' },
+      ]
+    },
+
+    // 星迹
+    starPoints: [],       // [{id,date,type,title,desc,importance}]
+    letterRead: [],       // 已读信件 id
+
+    // 信件
+    letters: [],          // [{id,date,content,read}]
+
+    // 自我说明书
+    selfManual: {
+      chapter1: '还在认识中…',
+      chapter2: '还在认识中…',
+      chapter3: '还在认识中…',
+      chapter4: '还在认识中…',
+      chapter5: '还在认识中…',
+      updatedAt: '',
+    },
+
+    // 元信息
+    createdAt: new Date().toISOString(),
+    visitDates: [],       // 访问过的日期
+  };
+
+  // 加载
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return deepClone(defaultState);
+      const saved = JSON.parse(raw);
+      // 浅合并，确保新增字段有默认值
+      return deepMerge(deepClone(defaultState), saved);
+    } catch (e) {
+      console.warn('[State] load failed', e);
+      return deepClone(defaultState);
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('[State] save failed', e);
+    }
+  }
+
+  let state = load();
+
+  // 工具：深合并
+  function deepMerge(target, src) {
+    for (const k in src) {
+      if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) {
+        target[k] = deepMerge(target[k] || {}, src[k]);
+      } else {
+        target[k] = src[k];
+      }
+    }
+    return target;
+  }
+
+  function deepClone(o) {
+    return JSON.parse(JSON.stringify(o));
+  }
+
+  // 每日重置逻辑
+  function ensureDaily() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (state.lastCoinDate !== today) {
+      state.dailyCoin = 0;
+      state.lastCoinDate = today;
+      // 重置今日自我照顾状态
+      state.careOptions.forEach(o => {
+        o.done = false;
+        o.skipped = false;
+        // "今日置顶"每日清零，"一直置顶"保留
+        if (o.pinned === 'today') o.pinned = false;
+      });
+      // 记录访问
+      if (!state.visitDates.includes(today)) {
+        state.visitDates.push(today);
+      }
+      save();
+    }
+  }
+
+  // 数值变更 API
+  function addCare(n = 1) {
+    state.careValue += n;
+    save();
+  }
+
+  function addHealth(n = 1) {
+    state.healthValue += n;
+    save();
+  }
+
+  function addHappiness(n = 1) {
+    state.happinessValue += n;
+    save();
+  }
+
+  function addComfort(n = 1) {
+    state.comfortValue += n;
+    save();
+  }
+
+  // 添加金币（受每日上限 20 控制）
+  const DAILY_COIN_CAP = 20;
+  function addCoin(n) {
+    const remain = Math.max(0, DAILY_COIN_CAP - state.dailyCoin);
+    const real = Math.min(n, remain);
+    state.coin += real;
+    state.dailyCoin += real;
+    save();
+    return real; // 实际给到的金币数
+  }
+
+  // 重置
+  function reset() {
+    state = deepClone(defaultState);
+    save();
+  }
+
+  // 家具库：根据类型取目录项
+  function getCatalog(type) {
+    return ROOM_CATALOG.find(c => c.type === type) || null;
+  }
+
+  // ============================================================
+  // 花园 API（PRD 5.3：行动驱动生长，无时间枯萎）
+  // ============================================================
+
+  // 取种子目录项
+  function getSeed(key) {
+    return SEED_CATALOG.find(c => c.key === key) || null;
+  }
+
+  // 种下种子
+  function plantSeed(idx, seedKey) {
+    if (idx < 0 || idx >= state.plots.length) return false;
+    if (state.plots[idx] || !getSeed(seedKey)) return false;
+    state.plots[idx] = {
+      seedKey,
+      stage: 0,
+      feed: 0,
+      plantedAt: new Date().toISOString(),
+    };
+    save();
+    return true;
+  }
+
+  // 行动输送养料：eventKey ∈ selfcare / emotion / interest / express / habit / action
+  // 返回被喂养的地块列表 [{idx, seedKey, name, stage, matured}]
+  function feedGarden(eventKey, n = 1) {
+    const fed = [];
+    state.plots.forEach((p, idx) => {
+      if (!p) return;
+      const seed = getSeed(p.seedKey);
+      if (!seed || !seed.feedOn.includes(eventKey)) return;
+      const maxStage = seed.stages.length - 1;
+      if (p.stage >= maxStage) return; // 已成熟，不再消耗养料
+      p.feed += n;
+      while (p.feed >= FEED_PER_STAGE && p.stage < maxStage) {
+        p.feed -= FEED_PER_STAGE;
+        p.stage += 1;
+      }
+      if (p.stage >= maxStage) p.feed = 0;
+      fed.push({
+        idx,
+        seedKey: p.seedKey,
+        name: seed.name,
+        stage: p.stage,
+        maxStage,
+        matured: p.stage >= maxStage,
+      });
+    });
+    if (fed.length) save();
+    return fed;
+  }
+
+  // 收获成熟地块 → 花园仓库条目（不 push，由调用方决定去向）
+  function harvestPlot(idx) {
+    const p = state.plots[idx];
+    if (!p) return null;
+    const seed = getSeed(p.seedKey);
+    if (!seed) return null;
+    const maxStage = seed.stages.length - 1;
+    if (p.stage < maxStage) return null;
+    const item = {
+      type: 'garden',
+      id: 'gw-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
+      seedKey: seed.key,
+      name: seed.yield.name,
+      emoji: seed.yield.emoji,
+      source: '生长花园',
+      bonus: { ...seed.yield.bonus },
+    };
+    state.plots[idx] = null;
+    save();
+    return item;
+  }
+
+  return {
+    get state() { return state; },
+    save,
+    load,
+    reset,
+    ensureDaily,
+    addCare,
+    addHealth,
+    addHappiness,
+    addComfort,
+    addCoin,
+    DAILY_COIN_CAP,
+    roomCatalog: ROOM_CATALOG,
+    bgCatalog: BG_CATALOG,
+    seedCatalog: SEED_CATALOG,
+    FEED_PER_STAGE,
+    getCatalog,
+    getSeed,
+    plantSeed,
+    feedGarden,
+    harvestPlot,
+  };
+})();

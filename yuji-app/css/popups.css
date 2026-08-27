@@ -1,0 +1,685 @@
+/* ============================================================
+   弹窗通用样式
+   ============================================================ */
+
+.popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(40, 30, 20, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+  animation: backdrop-in 0.25s ease-out;
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.popup {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  max-height: 78vh;
+  background: var(--c-card-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--pixel-border-thick);
+  border-radius: var(--r-lg);
+  box-shadow: 0 12px 40px rgba(40, 30, 20, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popup-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popup-in {
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.popup-head {
+  padding: 14px 18px 10px;
+  border-bottom: 2px solid var(--c-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.popup-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--c-text);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popup-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--c-line);
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--c-text-soft);
+  font-weight: bold;
+  transition: all 0.15s ease;
+}
+
+.popup-close:active {
+  transform: scale(0.9);
+  background: var(--c-pink);
+}
+
+.popup-body {
+  padding: 16px 18px;
+  flex: 1;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--c-text);
+}
+
+.popup-foot {
+  padding: 12px 18px 16px;
+  border-top: 2px solid var(--c-line);
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.popup-btn {
+  flex: 1;
+  height: 40px;
+  border: 3px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--c-text);
+  transition: all 0.15s ease;
+  letter-spacing: 0.5px;
+}
+
+.popup-btn:active { transform: scale(0.96); }
+.popup-btn.primary {
+  background: var(--c-accent);
+  color: #fff;
+  border-color: #b08550;
+  box-shadow: 0 3px 0 #b08550;
+}
+.popup-btn.primary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #b08550;
+}
+.popup-btn.primary:disabled {
+  background: #d8c8a8;
+  color: #a89878;
+  border-color: #b8a888;
+  box-shadow: 0 3px 0 #b8a888;
+  cursor: not-allowed;
+}
+
+/* 文本输入 */
+.popup-textarea,
+.popup-input {
+  width: 100%;
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--c-text);
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s ease;
+}
+
+.popup-textarea {
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+.popup-textarea:focus,
+.popup-input:focus {
+  border-color: var(--c-accent);
+  background: #fff;
+}
+
+/* 标签选项 */
+.popup-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.popup-tag {
+  padding: 6px 12px;
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text);
+  transition: all 0.15s ease;
+}
+
+.popup-tag.selected {
+  background: var(--c-pink);
+  border-color: #d89898;
+  color: #6a3030;
+}
+
+/* 照顾任务设置弹窗 */
+.cfg-group { margin: 16px 0; }
+.cfg-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text-soft);
+  margin-bottom: 8px;
+}
+.cfg-seg {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.cfg-opt {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  padding: 10px 6px;
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.cfg-opt.selected {
+  background: var(--c-accent);
+  border-color: #b08550;
+  color: #fff;
+}
+.cfg-desc {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--c-text-soft);
+  line-height: 1.5;
+}
+.popup-btn.danger {
+  background: #f3d9d2;
+  border-color: #d49a8a;
+  color: #a8472f;
+}
+.popup-btn.danger:active { transform: scale(0.96); }
+
+/* 家具获取记录面板 */
+.furni-acq-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 247, 232, 0.6);
+  border: 1.5px solid rgba(212, 165, 116, 0.35);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.furni-acq-key {
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+  background: var(--c-accent, #d4a574);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.furni-acq-val {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text, #5a3a20);
+}
+
+/* 商店商品 */
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.shop-item {
+  position: relative;
+  background: rgba(255, 255, 255, 0.7);
+  border: 3px solid var(--c-line);
+  border-radius: var(--r-md);
+  padding: 10px 8px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.shop-item:active { transform: scale(0.96); }
+
+.shop-item.owned {
+  background: var(--c-mint);
+  border-color: #88b8a0;
+}
+
+.shop-item.owned::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: #305040;
+  font-weight: bold;
+}
+
+.shop-item-emoji {
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* 房间布置商品用像素图标 */
+.shop-item.furni .shop-item-img {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shop-item.furni .shop-item-img img {
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+/* 家具库「更多家具」按钮 */
+.more-furni-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--c-accent, #f0a868);
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+}
+.more-furni-btn:active { transform: translateY(1px); }
+
+.shop-item-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--c-text);
+}
+
+.shop-item-price {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--c-accent);
+}
+
+.shop-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.shop-tab {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text-soft);
+  transition: all 0.15s ease;
+}
+
+.shop-tab.active {
+  background: var(--c-accent-2);
+  color: #305040;
+  border-color: #88b8a0;
+}
+
+/* 种子选择 */
+.seed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seed-item {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s ease;
+}
+
+.seed-item:active { transform: scale(0.98); }
+.seed-item.selected {
+  background: var(--c-mint);
+  border-color: #88b8a0;
+}
+
+.seed-emoji {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.seed-info {
+  flex: 1;
+}
+
+.seed-name {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text);
+}
+
+.seed-desc {
+  font-size: 11px;
+  color: var(--c-text-soft);
+  margin-top: 2px;
+}
+
+/* 时间轴 */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--c-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--c-accent);
+}
+
+.timeline-content {
+  flex: 1;
+  margin-left: 12px;
+}
+
+.timeline-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-text);
+}
+
+.timeline-meta {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--c-text-soft);
+  margin-top: 4px;
+}
+
+.timeline-desc {
+  font-size: 12px;
+  color: var(--c-text-soft);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.timeline-empty {
+  text-align: center;
+  padding: 30px 20px;
+  color: var(--c-text-soft);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.timeline-empty .emoji {
+  font-size: 36px;
+  display: block;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+/* 章节列表（自我说明书）*/
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chapter {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.chapter-title {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--c-accent);
+  margin-bottom: 4px;
+}
+
+.chapter-content {
+  font-size: 12px;
+  color: var(--c-text-soft);
+  line-height: 1.6;
+}
+
+/* 提示文案 */
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--c-text-soft);
+  padding: 8px 0;
+  line-height: 1.6;
+}
+
+/* 数值条 (轻量版) */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--c-line);
+  font-size: 13px;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: var(--c-text-soft); }
+.stat-value { color: var(--c-accent); font-weight: bold; font-family: var(--font-pixel); font-size: 11px; }
+
+/* 家具库 */
+.furni-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.furni-cat-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--c-accent);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.furni-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.furni-item {
+  position: relative;
+  padding: 8px 2px 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.furni-item:active { transform: scale(0.92); }
+
+.furni-item.in-room {
+  background: var(--c-mint);
+  border-color: #88b8a0;
+}
+
+.furni-item .fi-sprite {
+  display: block;
+  height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  image-rendering: pixelated;
+}
+.furni-item .fi-sprite img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 2px rgba(60, 35, 20, 0.2));
+}
+
+.furni-item .fi-name {
+  display: block;
+  font-size: 10px;
+  color: var(--c-text-soft);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.furni-item .fi-badge {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 8px;
+  font-weight: bold;
+  color: #b08550;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--c-line);
+  border-radius: 8px;
+  padding: 0 4px;
+  line-height: 13px;
+}
+
+.furni-item.in-room .fi-badge {
+  color: #305040;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* 未解锁家具：灰显 + 锁标，点击跳商店 */
+.furni-item.locked {
+  background: rgba(232, 226, 218, 0.6);
+  border-color: #cfc4b4;
+  opacity: 0.95;
+}
+.furni-item.locked .fi-sprite img {
+  filter: grayscale(0.65) drop-shadow(0 2px 2px rgba(60, 35, 20, 0.15));
+}
+.furni-item .fi-badge.lock {
+  color: #9a8a70;
+  background: rgba(255, 255, 255, 0.85);
+}
+/* 购置价格徽标 */
+.furni-item .fi-badge.price {
+  color: #b07a2a;
+  background: rgba(255, 248, 230, 0.9);
+  border-color: #e3c98f;
+}
+/* 已拥有数量角标（不影响收费，仅提示已有几件） */
+.furni-item .fi-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 9px;
+  line-height: 1;
+  color: #5a8a72;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #bfe0cf;
+  border-radius: 7px;
+  padding: 1px 4px;
+}
+/* 未解锁家具底部提示 */
+.furni-item .fi-go {
+  display: block;
+  font-size: 9px;
+  color: #a07a3a;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+
+/* 帮助按钮 */
+.help-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--c-card-glass);
+  border: 2px solid var(--c-line);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  z-index: 50;
+}

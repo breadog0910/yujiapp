@@ -1,0 +1,592 @@
+/* ============================================================
+   Tab1 此刻·家 - 像素房间 + 可动可交互 + 背景可增删改
+   ============================================================ */
+
+const Tab1 = (() => {
+
+  let editMode = false;     // 布置模式
+  let selectedId = null;    // 当前选中的家具 id
+
+  // 像素风照顾选项图标（SVG 点阵，代替 emoji）
+  const CARE_ICONS = {
+    water: `
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="1" height="1" fill="#7ab8c8"/>
+        <rect x="2" y="1" width="2" height="1" fill="#7ab8c8"/>
+        <rect x="2" y="2" width="3" height="1" fill="#7ab8c8"/>
+        <rect x="1" y="3" width="5" height="3" fill="#7ab8c8"/>
+        <rect x="2" y="6" width="3" height="1" fill="#7ab8c8"/>
+        <rect x="2" y="4" width="1" height="1" fill="#c8e8f0"/>
+      </svg>`,
+    breath: `
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="0" width="3" height="1" fill="#9ec8dc"/>
+        <rect x="1" y="1" width="5" height="1" fill="#9ec8dc"/>
+        <rect x="0" y="2" width="7" height="2" fill="#9ec8dc"/>
+        <rect x="1" y="5" width="2" height="1" fill="#b8d8e8"/>
+        <rect x="4" y="5" width="2" height="1" fill="#b8d8e8"/>
+        <rect x="0" y="2" width="2" height="1" fill="#c8e8f0"/>
+      </svg>`,
+    walk: `
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="0" width="2" height="2" fill="#8ab070"/>
+        <rect x="1" y="2" width="5" height="1" fill="#8ab070"/>
+        <rect x="2" y="3" width="3" height="1" fill="#8ab070"/>
+        <rect x="2" y="4" width="1" height="2" fill="#8ab070"/>
+        <rect x="4" y="4" width="1" height="2" fill="#8ab070"/>
+        <rect x="1" y="6" width="1" height="1" fill="#8ab070"/>
+        <rect x="5" y="6" width="1" height="1" fill="#8ab070"/>
+      </svg>`,
+    space: `
+      <svg viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="3" y="0" width="1" height="2" fill="#c0a8d8"/>
+        <rect x="0" y="2" width="7" height="1" fill="#c0a8d8"/>
+        <rect x="1" y="3" width="5" height="1" fill="#c0a8d8"/>
+        <rect x="2" y="4" width="3" height="1" fill="#c0a8d8"/>
+        <rect x="1" y="5" width="2" height="1" fill="#c0a8d8"/>
+        <rect x="4" y="5" width="2" height="1" fill="#c0a8d8"/>
+        <rect x="1" y="6" width="1" height="1" fill="#c0a8d8"/>
+        <rect x="5" y="6" width="1" height="1" fill="#c0a8d8"/>
+      </svg>`,
+    sleep: `
+      <svg viewBox="0 0 8 7" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="2" y="0" width="3" height="1" fill="#8888c0"/>
+        <rect x="1" y="1" width="2" height="1" fill="#8888c0"/>
+        <rect x="0" y="2" width="1" height="3" fill="#8888c0"/>
+        <rect x="1" y="5" width="2" height="1" fill="#8888c0"/>
+        <rect x="2" y="6" width="3" height="1" fill="#8888c0"/>
+        <rect x="6" y="1" width="1" height="1" fill="#d8d0f0"/>
+        <rect x="5" y="2" width="3" height="1" fill="#d8d0f0"/>
+        <rect x="6" y="3" width="1" height="1" fill="#d8d0f0"/>
+      </svg>`,
+    encourage: `
+      <svg viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true">
+        <rect x="1" y="0" width="2" height="1" fill="#d4879a"/>
+        <rect x="4" y="0" width="2" height="1" fill="#d4879a"/>
+        <rect x="0" y="1" width="7" height="2" fill="#d4879a"/>
+        <rect x="1" y="3" width="5" height="1" fill="#d4879a"/>
+        <rect x="2" y="4" width="3" height="1" fill="#d4879a"/>
+        <rect x="3" y="5" width="1" height="1" fill="#d4879a"/>
+        <rect x="1" y="1" width="1" height="1" fill="#f0c0cc"/>
+      </svg>`,
+  };
+
+  function careIcon(id) {
+    return CARE_ICONS[id] || CARE_ICONS.encourage;
+  }
+
+  function init() {
+    State.ensureDaily();
+    renderCareOptions();
+    renderStats();
+    renderRoomGlow();
+    renderBg();
+    renderRoom();
+    bindEvents();
+    // 房间尘埃光点氛围
+    Utils.spawnParticles(document.getElementById('dustMotes'), {
+      count: 14,
+      color: 'rgba(255, 238, 200, 0.55)',
+      size: 4,
+      rise: 60,
+    });
+    // 支持 ?edit=1 直达布置模式
+    if (new URLSearchParams(location.search).get('edit') === '1') {
+      toggleEditMode(true);
+    }
+  }
+
+  function bindEvents() {
+    // 点击像素小我 - 唤起情绪记录
+    const xiaowo = document.getElementById('xiaowo');
+    if (xiaowo) {
+      xiaowo.addEventListener('click', () => {
+        if (!editMode) Popups.open('emotion');
+      });
+    }
+
+    // 确认按钮
+    const confirm = document.getElementById('careConfirm');
+    if (confirm) confirm.addEventListener('click', submitCare);
+
+    // 布置按钮
+    const editBtn = document.getElementById('roomEditBtn');
+    if (editBtn) editBtn.addEventListener('click', toggleEditMode);
+
+    // 编辑栏按钮
+    const addBtn = document.getElementById('roomAddBtn');
+    if (addBtn) addBtn.addEventListener('click', () => Popups.open('furniture'));
+    const doneBtn = document.getElementById('roomDoneBtn');
+    if (doneBtn) doneBtn.addEventListener('click', () => toggleEditMode(false));
+    const flipBtn = document.getElementById('roomFlipBtn');
+    if (flipBtn) flipBtn.addEventListener('click', () => flipSelected());
+    const delBtn = document.getElementById('roomDelBtn');
+    if (delBtn) delBtn.addEventListener('click', () => deleteSelected());
+
+    // 背景切换器
+    document.querySelectorAll('[data-bg-id]').forEach(el => {
+      el.addEventListener('click', () => switchBg(el.dataset.bgId));
+    });
+    // 添加自定义背景
+    const bgAddBtn = document.getElementById('bgAddBtn');
+    if (bgAddBtn) bgAddBtn.addEventListener('click', addCustomBg);
+  }
+
+  /* ============================================================
+     背景渲染 & 切换
+     ============================================================ */
+
+  function getAllBgs() {
+    return [...State.bgCatalog, ...(State.state.customBgs || [])];
+  }
+
+  function getCurrentBg() {
+    return getAllBgs().find(b => b.id === State.state.roomBg) || State.bgCatalog[0];
+  }
+
+  function renderBg() {
+    // 渲染所有背景层（堆叠，当前 active 显示）
+    const layer = document.getElementById('bgLayer');
+    if (!layer) return;
+    const all = getAllBgs();
+    layer.innerHTML = all.map(b => `
+      <img class="tab1-bg ${b.id === State.state.roomBg ? 'active' : ''}"
+           data-bg-src="${b.id}"
+           src="${b.src}"
+           alt="${b.name}"
+           draggable="false" />
+    `).join('');
+    // 渲染切换器小图
+    renderBgSwitcher();
+  }
+
+  function renderBgSwitcher() {
+    const sw = document.getElementById('bgSwitcher');
+    if (!sw) return;
+    const all = getAllBgs();
+    sw.innerHTML = all.map(b => `
+      <div class="bg-thumb ${b.id === State.state.roomBg ? 'active' : ''}"
+           data-bg-id="${b.id}" title="${b.name}">
+        <img src="${b.src}" alt="${b.name}" draggable="false" />
+        <span class="bg-thumb-name">${b.name}</span>
+        ${b.custom ? `<span class="bg-thumb-del" data-del-bg="${b.id}" title="删除">×</span>` : ''}
+      </div>
+    `).join('');
+    sw.querySelectorAll('[data-bg-id]').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.dataset.delBg) return;
+        switchBg(el.dataset.bgId);
+      });
+    });
+    sw.querySelectorAll('[data-del-bg]').forEach(el => {
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteCustomBg(el.dataset.delBg);
+      });
+    });
+  }
+
+  function switchBg(bgId) {
+    if (State.state.roomBg === bgId) return;
+    const all = getAllBgs();
+    if (!all.find(b => b.id === bgId)) return;
+    State.state.roomBg = bgId;
+    State.save();
+    // 背景淡入淡出
+    const layer = document.getElementById('bgLayer');
+    if (layer) {
+      layer.querySelectorAll('.tab1-bg').forEach(img => {
+        img.classList.toggle('active', img.dataset.bgSrc === bgId);
+      });
+    }
+    // 同步切换器激活态
+    document.querySelectorAll('[data-bg-id]').forEach(el => {
+      el.classList.toggle('active', el.dataset.bgId === bgId);
+    });
+    // 同步房间整体色温
+    const bg = all.find(b => b.id === bgId);
+    if (bg) {
+      const roomEl = document.getElementById('roomStage');
+      if (roomEl) roomEl.dataset.bgTime = bg.time || 'morning';
+    }
+    Utils.toast('切换到「' + (all.find(b => b.id === bgId)?.name || '背景') + '」');
+  }
+
+  function addCustomBg() {
+    // 通过 file input 选图 -> 转为 dataURL 存到 state.customBgs
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const dataUrl = ev.target.result;
+        const name = (file.name || '自定义').replace(/\.[^.]+$/, '').slice(0, 8);
+        const id = 'custom-' + Utils.uid();
+        const bg = { id, name, src: dataUrl, custom: true, time: 'morning' };
+        State.state.customBgs.push(bg);
+        State.save();
+        renderBg();
+        switchBg(id);
+        Utils.toast('已添加背景「' + name + '」');
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }
+
+  function deleteCustomBg(bgId) {
+    const bgs = State.state.customBgs || [];
+    const idx = bgs.findIndex(b => b.id === bgId);
+    if (idx < 0) return;
+    if (!confirm('删除这个自定义背景吗？')) return;
+    bgs.splice(idx, 1);
+    // 如果删除的是当前背景，切回默认
+    if (State.state.roomBg === bgId) State.state.roomBg = 'day';
+    State.save();
+    renderBg();
+    if (State.state.roomBg === 'day') {
+      // 重新触发一次激活态切换
+      switchBg('day');
+    }
+    Utils.toast('已删除背景');
+  }
+
+  /* ============================================================
+     家具组件
+     ============================================================ */
+
+  function depthOf(z) {
+    if (z <= 3) return 'far';
+    if (z <= 4) return 'mid';
+    return 'near';
+  }
+
+  function renderRoom() {
+    const container = document.getElementById('roomFurniture');
+    if (!container) return;
+    container.innerHTML = '';
+
+    // 按 z 排序：低的先渲染（在后面）
+    const items = [...State.state.roomItems].sort((a, b) => a.z - b.z);
+    items.forEach(it => {
+      const cat = State.getCatalog(it.type);
+      if (!cat) return;
+      const el = document.createElement('div');
+      el.className = 'room-item'
+        + (it.id === selectedId ? ' selected' : '')
+        + (cat.action ? ' has-action' : '')
+        + (cat.isFloor ? ' is-floor' : '');
+      el.dataset.id = it.id;
+      el.dataset.depth = depthOf(it.z);
+      el.dataset.type = it.type;
+      el.style.left = it.x + '%';
+      el.style.bottom = it.y + '%';
+      el.style.zIndex = 10 + it.z;
+      el.style.setProperty('--ri-scale', it.scale);
+      el.style.setProperty('--ri-flip', it.flip ? '-1' : '1');
+      el.style.setProperty('--ri-w', (cat.w || 56) + 'px');
+      el.style.setProperty('--ri-h', (cat.h || 56) + 'px');
+      el.title = cat.action ? `${cat.name}（点击打开）` : cat.name;
+      el.innerHTML = `
+        <span class="ri-sprite"><img src="${cat.icon}" alt="${cat.name}" draggable="false" /></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">${cat.name}</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      `;
+      container.appendChild(el);
+      bindItemEvents(el, it);
+    });
+  }
+
+  function bindItemEvents(el, it) {
+    // 点击：编辑模式选中 / 普通模式打开功能
+    el.addEventListener('click', e => {
+      if (e.target.dataset.badge) return; // 徽章点击单独处理
+      e.stopPropagation();
+      if (editMode) {
+        selectItem(it.id);
+      } else if (it.action) {
+        // 点击特效：物件弹一下
+        el.classList.add('clicked');
+        setTimeout(() => el.classList.remove('clicked'), 320);
+        Popups.open(it.action);
+      } else {
+        // 无 action 家具：轻反馈
+        el.classList.add('clicked');
+        setTimeout(() => el.classList.remove('clicked'), 320);
+      }
+    });
+
+    // 徽章
+    el.querySelector('.ri-badge.del').addEventListener('click', e => {
+      e.stopPropagation();
+      if (editMode) {
+        // 移除动画
+        el.classList.add('removing');
+        setTimeout(() => {
+          removeItem(it.id);
+          selectItem(null);
+        }, 220);
+      }
+    });
+    el.querySelector('.ri-badge.flip').addEventListener('click', e => {
+      e.stopPropagation();
+      if (editMode) {
+        it.flip = it.flip ? 0 : 1;
+        State.save();
+        renderRoom();
+      }
+    });
+
+    // 拖动（仅编辑模式）
+    el.addEventListener('pointerdown', e => {
+      if (!editMode) return;
+      if (e.target.dataset.badge) return;
+      e.preventDefault();
+      e.stopPropagation();
+      selectItem(it.id);
+
+      const stage = document.getElementById('roomStage');
+      const rect = stage.getBoundingClientRect();
+      // 记录抓取点与锚点的偏移
+      const anchorX = rect.left + (it.x / 100) * rect.width;
+      const anchorY = rect.bottom - (it.y / 100) * rect.height;
+      const offX = e.clientX - anchorX;
+      const offY = e.clientY - anchorY;
+
+      el.classList.add('dragging');
+
+      const move = ev => {
+        const nx = (ev.clientX - rect.left - offX) / rect.width * 100;
+        const ny = (rect.bottom - ev.clientY - offY) / rect.height * 100;
+        it.x = Math.max(2, Math.min(98, nx));
+        it.y = Math.max(2, Math.min(94, ny));
+        el.style.left = it.x + '%';
+        el.style.bottom = it.y + '%';
+      };
+      const up = () => {
+        el.classList.remove('dragging');
+        State.save();
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+  }
+
+  /* ---- 编辑模式 ---- */
+  function toggleEditMode(force) {
+    editMode = typeof force === 'boolean' ? force : !editMode;
+    document.body.classList.toggle('room-editing', editMode);
+    const bar = document.getElementById('roomEditBar');
+    if (bar) {
+      if (editMode) {
+        // 进入布置模式：编辑栏滑入
+        bar.classList.remove('closing');
+        bar.hidden = false;
+      } else {
+        // 退出布置模式：编辑栏先播放收起动画，再彻底隐藏
+        bar.classList.add('closing');
+        setTimeout(() => {
+          bar.hidden = true;
+          bar.classList.remove('closing');
+        }, 200);
+      }
+    }
+    const btn = document.getElementById('roomEditBtn');
+    if (btn) btn.textContent = editMode ? '完成' : '布置';
+    if (!editMode) selectItem(null);
+    renderRoom();
+  }
+
+  function selectItem(id) {
+    selectedId = id;
+    const flipBtn = document.getElementById('roomFlipBtn');
+    const delBtn = document.getElementById('roomDelBtn');
+    if (flipBtn) flipBtn.disabled = !id;
+    if (delBtn) delBtn.disabled = !id;
+    renderRoom();
+  }
+
+  function flipSelected() {
+    const it = State.state.roomItems.find(r => r.id === selectedId);
+    if (!it) return;
+    it.flip = it.flip ? 0 : 1;
+    State.save();
+    renderRoom();
+  }
+
+  function deleteSelected() {
+    const it = State.state.roomItems.find(r => r.id === selectedId);
+    if (!it) return;
+    removeItem(selectedId);
+    selectItem(null);
+    Utils.toast(`「${State.getCatalog(it.type)?.name || ''}」移除了`);
+  }
+
+  function removeItem(id) {
+    const idx = State.state.roomItems.findIndex(r => r.id === id);
+    if (idx >= 0) {
+      State.state.roomItems.splice(idx, 1);
+      State.save();
+      renderRoom();
+    }
+  }
+
+  // 从家具库添加
+  function addRoomItem(type) {
+    const cat = State.getCatalog(type);
+    if (!cat) return;
+    // 找一个空位
+    const x = 15 + Math.random() * 70;
+    const y = 12 + Math.random() * 35;
+    // 新添加的 z 略大于已有最大，让它出现在最前
+    const maxZ = State.state.roomItems.reduce((m, r) => Math.max(m, r.z), 0);
+    const item = {
+      id: 'ri-' + Utils.uid(),
+      type,
+      x, y,
+      z: Math.min(6, maxZ + 1),
+      scale: 1,
+      flip: 0,
+      action: cat.action || undefined,
+    };
+    State.state.roomItems.push(item);
+    State.save();
+    renderRoom();
+    selectItem(item.id);
+    // 自动进入编辑模式
+    if (!editMode) toggleEditMode(true);
+    Utils.toast(`「${cat.name}」已放进房间，拖动调整位置`);
+  }
+
+  /* ============================================================
+     自我照顾 - 行式列表
+     ============================================================ */
+
+  function renderCareOptions() {
+    const container = document.getElementById('careOptions');
+    if (!container) return;
+
+    const opts = State.state.careOptions;
+    container.innerHTML = opts.map((o, i) => `
+      <div class="care-row ${o.done ? 'submitted' : ''}" data-id="${o.id}" data-idx="${i}">
+        <span class="care-row-icon">${careIcon(o.id)}</span>
+        <span class="care-row-label">${o.label}</span>
+        <span class="care-row-check">✓</span>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.care-row').forEach(el => {
+      el.addEventListener('click', () => {
+        if (el.classList.contains('submitted')) return;
+        el.classList.toggle('selected');
+        updateConfirmBtn();
+      });
+    });
+    updateConfirmBtn();
+  }
+
+  function getSelectedCount() {
+    return document.querySelectorAll('.care-row.selected').length;
+  }
+
+  function updateConfirmBtn() {
+    const btn = document.getElementById('careConfirm');
+    if (!btn) return;
+    const sel = getSelectedCount();
+    btn.textContent = sel > 0 ? `确认照顾自己 (${sel})` : '确认照顾自己';
+    btn.disabled = sel === 0;
+  }
+
+  // 批量确认
+  function submitCare() {
+    const sel = Array.from(document.querySelectorAll('.care-row.selected'));
+    if (sel.length === 0) return;
+    let totalCare = 0;
+    sel.forEach(el => {
+      const id = el.dataset.id;
+      const opt = State.state.careOptions.find(o => o.id === id);
+      if (opt && !opt.done) {
+        opt.done = true;
+        el.classList.remove('selected');
+        el.classList.add('submitted', 'tapped');
+        setTimeout(() => el.classList.remove('tapped'), 400);
+        totalCare += 1;
+        triggerXiaowoAction(opt.id);
+      }
+    });
+    if (totalCare > 0) {
+      State.addCare(totalCare);
+      const got = State.addCoin(totalCare * 3);
+      if (got > 0) {
+        State.addHappiness(Math.floor(got / 2));
+        Utils.recalcComfort();
+      }
+      // 花园输送养料（行动驱动生长）
+      const fed = State.feedGarden('selfcare', totalCare);
+      renderStats();
+      let msg = `+${totalCare} 关爱值${got > 0 ? ` · +${got} 金币` : ''}`;
+      if (fed.length) {
+        const matured = fed.filter(f => f.matured);
+        msg += matured.length
+          ? ` · 花园收到养料，「${matured[0].name}」成熟了！`
+          : ` · 花园 ${fed.length} 株收到养料`;
+      }
+      Utils.toast(msg);
+    }
+    updateConfirmBtn();
+    State.save();
+  }
+
+  // 触发小我动作
+  function triggerXiaowoAction(careId) {
+    const xw = document.getElementById('xiaowo');
+    if (!xw) return;
+    // 触发小我开心的反应：跳一下 + 加点爱心粒子
+    xw.classList.add('mood-happy');
+    setTimeout(() => xw.classList.remove('mood-happy'), 1800);
+  }
+
+  /* ============================================================
+     数值 / 氛围
+     ============================================================ */
+
+  function renderStats() {
+    const s = State.state;
+    const careEl = document.getElementById('careValue');
+    const coinEl = document.getElementById('dailyCoin');
+    const display = document.getElementById('coinDisplay');
+    if (careEl) careEl.textContent = s.careValue;
+    if (coinEl) coinEl.textContent = s.dailyCoin;
+    if (display) display.textContent = '金币 ' + s.coin;
+  }
+
+  function renderRoomGlow() {
+    const glow = document.getElementById('roomGlow');
+    if (!glow) return;
+    const s = State.state;
+    const care = Math.min(100, s.careValue);
+    const comfort = Math.min(100, s.comfortValue);
+    const intensity = (care + comfort) / 200;
+    glow.style.opacity = 0.4 + intensity * 0.6;
+  }
+
+  // 重新进入 Tab 时刷新
+  function refresh() {
+    State.ensureDaily();
+    renderCareOptions();
+    renderStats();
+    renderRoomGlow();
+    renderBg();
+    renderRoom();
+    updateConfirmBtn();
+  }
+
+  return { init, refresh, addRoomItem };
+})();

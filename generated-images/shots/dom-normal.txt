@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN" style="--frame-scale: 0.5308056872037915;"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#f5e8d4">
+  <title>予己 · 好好爱自己</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;family=ZCOOL+KuaiLe&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/tab1-home.css">
+  <link rel="stylesheet" href="css/tab2-forest.css">
+  <link rel="stylesheet" href="css/tab3-garden.css">
+  <link rel="stylesheet" href="css/tab4-stars.css">
+  <link rel="stylesheet" href="css/popups.css">
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="app-container" id="app">
+
+      <!-- 顶部状态栏（伪） -->
+      <div class="status-bar">
+        <span class="sb-time">9:41</span>
+        <span class="sb-icons">●●● ▍</span>
+      </div>
+
+      <!-- 四个 Tab 面板 -->
+      <main class="app-main">
+
+        <!-- ============ Tab1 此刻·家 ============ -->
+        <section id="tab1" class="tab-panel active" data-tab="tab1">
+          <div class="tab1-room" id="roomStage" data-bg-time="morning">
+            <!-- 远景层：房间底图（多层背景叠加，当前激活的显示） -->
+            <div class="scene-layer layer-back">
+              <div class="tab1-bg-stack" id="bgLayer">
+      <img class="tab1-bg active" data-bg-src="day" src="assets/pixel/bg-day.png" alt="白昼" draggable="false">
+    
+      <img class="tab1-bg " data-bg-src="dusk" src="assets/pixel/bg-dusk.png" alt="黄昏" draggable="false">
+    
+      <img class="tab1-bg " data-bg-src="night" src="assets/pixel/bg-night.png" alt="夜灯" draggable="false">
+    </div>
+            </div>
+
+            <!-- 远景层：窗光 + 尘埃光点 -->
+            <div class="scene-layer layer-far">
+              <div class="window-light"></div>
+              <div class="dust-motes" id="dustMotes"><div class="env-particle mote" style="left: 40.1908%; top: 83.6627%; animation-delay: 5.55s; animation-duration: 11.9272s; --rise: -74.28193938420453px; height: 4.14368px; width: 4.14368px; background: rgba(255, 238, 200, 0.55); opacity: 0.405635;"></div><div class="env-particle mote" style="left: 34.6251%; top: 69.9682%; animation-delay: 7.24265s; animation-duration: 12.2681s; --rise: -42.85729978157848px; height: 5.53416px; width: 5.53416px; background: rgba(255, 238, 200, 0.55); opacity: 0.693313;"></div><div class="env-particle mote" style="left: 61.8377%; top: 73.6463%; animation-delay: 2.70297s; animation-duration: 7.06001s; --rise: -49.03635783301553px; height: 3.22561px; width: 3.22561px; background: rgba(255, 238, 200, 0.55); opacity: 0.346126;"></div><div class="env-particle mote" style="left: 95.0065%; top: 40.6418%; animation-delay: 0.74853s; animation-duration: 8.79567s; --rise: -72.63249096171309px; height: 5.40641px; width: 5.40641px; background: rgba(255, 238, 200, 0.55); opacity: 0.57082;"></div><div class="env-particle mote" style="left: 42.1204%; top: 44.9947%; animation-delay: 9.32633s; animation-duration: 14.2308s; --rise: -44.963877136246644px; height: 5.37312px; width: 5.37312px; background: rgba(255, 238, 200, 0.55); opacity: 0.286788;"></div><div class="env-particle mote" style="left: 30.8246%; top: 19.6679%; animation-delay: 6.90571s; animation-duration: 7.55595s; --rise: -63.73462272536213px; height: 5.24815px; width: 5.24815px; background: rgba(255, 238, 200, 0.55); opacity: 0.252233;"></div><div class="env-particle mote" style="left: 37.9879%; top: 18.3362%; animation-delay: 8.7548s; animation-duration: 12.4964s; --rise: -69.64113309403237px; height: 5.59336px; width: 5.59336px; background: rgba(255, 238, 200, 0.55); opacity: 0.296266;"></div><div class="env-particle mote" style="left: 30.2519%; top: 42.5609%; animation-delay: 5.44629s; animation-duration: 12.5161s; --rise: -47.752166274261924px; height: 3.5048px; width: 3.5048px; background: rgba(255, 238, 200, 0.55); opacity: 0.341405;"></div><div class="env-particle mote" style="left: 29.2616%; top: 33.2559%; animation-delay: 2.33145s; animation-duration: 13.833s; --rise: -64.2212996126853px; height: 5.73506px; width: 5.73506px; background: rgba(255, 238, 200, 0.55); opacity: 0.370303;"></div><div class="env-particle mote" style="left: 70.4653%; top: 94.0843%; animation-delay: 2.76424s; animation-duration: 10.5675s; --rise: -65.64135268203516px; height: 5.64501px; width: 5.64501px; background: rgba(255, 238, 200, 0.55); opacity: 0.54311;"></div><div class="env-particle mote" style="left: 95.6051%; top: 11.3173%; animation-delay: 0.789418s; animation-duration: 10.4549s; --rise: -71.00550430115948px; height: 3.69429px; width: 3.69429px; background: rgba(255, 238, 200, 0.55); opacity: 0.415452;"></div><div class="env-particle mote" style="left: 87.0228%; top: 35.9129%; animation-delay: 5.25278s; animation-duration: 14.9137s; --rise: -53.165911006328486px; height: 4.89226px; width: 4.89226px; background: rgba(255, 238, 200, 0.55); opacity: 0.248822;"></div><div class="env-particle mote" style="left: 77.3905%; top: 7.40597%; animation-delay: 2.22903s; animation-duration: 7.63738s; --rise: -48.59938388777948px; height: 5.87514px; width: 5.87514px; background: rgba(255, 238, 200, 0.55); opacity: 0.541812;"></div><div class="env-particle mote" style="left: 35.2638%; top: 67.193%; animation-delay: 3.06894s; animation-duration: 13.2183s; --rise: -48.985332552247904px; height: 3.67112px; width: 3.67112px; background: rgba(255, 238, 200, 0.55); opacity: 0.524242;"></div></div>
+            </div>
+
+            <!-- 关爱值柔光层 -->
+            <div class="room-glow" id="roomGlow" style="opacity: 0.4;"></div>
+
+            <!-- 总金币小标签 -->
+            <div class="room-coin" id="coinDisplay">金币 0</div>
+
+            <!-- 中层：家具组件（可编辑） -->
+            <div class="scene-layer layer-mid room-furniture" id="roomFurniture"><div class="room-item" data-id="ri-window" data-depth="far" data-type="window" title="小窗" style="left: 8%; bottom: 34%; z-index: 12; --ri-scale: 1; --ri-flip: 1; --ri-w: 44px; --ri-h: 48px;">
+        <span class="ri-sprite"><img src="assets/pixel/window.png" alt="小窗" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">小窗</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-painting" data-depth="far" data-type="painting" title="画框" style="left: 30%; bottom: 36%; z-index: 12; --ri-scale: 0.9; --ri-flip: 1; --ri-w: 48px; --ri-h: 40px;">
+        <span class="ri-sprite"><img src="assets/pixel/painting.png" alt="画框" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">画框</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-clock" data-depth="far" data-type="clock" title="小钟" style="left: 60%; bottom: 38%; z-index: 12; --ri-scale: 0.85; --ri-flip: 1; --ri-w: 36px; --ri-h: 36px;">
+        <span class="ri-sprite"><img src="assets/pixel/clock.png" alt="小钟" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">小钟</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-lamp" data-depth="far" data-type="lamp" title="台灯" style="left: 84%; bottom: 30%; z-index: 13; --ri-scale: 1; --ri-flip: 1; --ri-w: 36px; --ri-h: 56px;">
+        <span class="ri-sprite"><img src="assets/pixel/lamp.png" alt="台灯" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">台灯</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-plant" data-depth="far" data-type="plant" title="盆栽" style="left: 92%; bottom: 16%; z-index: 13; --ri-scale: 1; --ri-flip: 1; --ri-w: 44px; --ri-h: 60px;">
+        <span class="ri-sprite"><img src="assets/pixel/plant.png" alt="盆栽" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">盆栽</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item has-action" data-id="ri-shelf" data-depth="mid" data-type="shelf" title="置物架（点击打开）" style="left: 10%; bottom: 18%; z-index: 14; --ri-scale: 1; --ri-flip: 1; --ri-w: 56px; --ri-h: 56px;">
+        <span class="ri-sprite"><img src="assets/pixel/shelf.png" alt="置物架" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">置物架</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item is-floor" data-id="ri-rug" data-depth="mid" data-type="rug" title="小地毯" style="left: 40%; bottom: 8%; z-index: 14; --ri-scale: 1.4; --ri-flip: 1; --ri-w: 80px; --ri-h: 40px;">
+        <span class="ri-sprite"><img src="assets/pixel/rug.png" alt="小地毯" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">小地毯</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-books" data-depth="near" data-type="books" title="书堆" style="left: 18%; bottom: 10%; z-index: 15; --ri-scale: 1; --ri-flip: 1; --ri-w: 44px; --ri-h: 36px;">
+        <span class="ri-sprite"><img src="assets/pixel/books.png" alt="书堆" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">书堆</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-cat" data-depth="near" data-type="cat" title="小猫" style="left: 56%; bottom: 12%; z-index: 15; --ri-scale: 1; --ri-flip: 1; --ri-w: 48px; --ri-h: 40px;">
+        <span class="ri-sprite"><img src="assets/pixel/cat.png" alt="小猫" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">小猫</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item" data-id="ri-teddy" data-depth="near" data-type="teddy" title="玩偶" style="left: 70%; bottom: 14%; z-index: 15; --ri-scale: 1; --ri-flip: 1; --ri-w: 44px; --ri-h: 48px;">
+        <span class="ri-sprite"><img src="assets/pixel/teddy.png" alt="玩偶" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">玩偶</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item has-action" data-id="ri-piggy" data-depth="near" data-type="piggy" title="存钱罐（点击打开）" style="left: 88%; bottom: 10%; z-index: 16; --ri-scale: 1; --ri-flip: 1; --ri-w: 40px; --ri-h: 44px;">
+        <span class="ri-sprite"><img src="assets/pixel/piggy.png" alt="存钱罐" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">存钱罐</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div><div class="room-item has-action" data-id="ri-letter" data-depth="near" data-type="letter" title="小我的信（点击打开）" style="left: 48%; bottom: 44%; z-index: 16; --ri-scale: 0.95; --ri-flip: 1; --ri-w: 40px; --ri-h: 32px;">
+        <span class="ri-sprite"><img src="assets/pixel/letter.png" alt="小我的信" draggable="false"></span>
+        <span class="ri-shadow"></span>
+        <span class="ri-label">小我的信</span>
+        <span class="ri-badge del" data-badge="del" title="移除">✕</span>
+        <span class="ri-badge flip" data-badge="flip" title="翻转">⇄</span>
+      </div></div>
+
+            <!-- 前景层：像素小我（走路 cycle） -->
+            <div class="scene-layer layer-front">
+              <div class="xiaowo" id="xiaowo" title="点击记录情绪">
+                <div class="xiaowo-sprite" id="xiaowoSprite"></div>
+                <div class="xiaowo-shadow"></div>
+                <div class="xiaowo-click-hint">点我记录心情</div>
+              </div>
+            </div>
+
+            <!-- 布置工具 -->
+            <button class="room-edit-btn" id="roomEditBtn" title="布置房间">布置</button>
+            <div class="room-edit-bar" id="roomEditBar" hidden="">
+              <span class="room-edit-hint">拖动家具 · 点击选中</span>
+              <button class="room-edit-act" id="roomAddBtn">＋ 家具库</button>
+              <button class="room-edit-act" id="roomFlipBtn" disabled="">⇄ 翻转</button>
+              <button class="room-edit-act danger" id="roomDelBtn" disabled="">✕ 移除</button>
+              <button class="room-edit-act primary" id="roomDoneBtn">✓ 完成</button>
+            </div>
+
+            <!-- 背景切换器：左下角横排小图 -->
+            <div class="bg-switcher" id="bgSwitcher">
+      <div class="bg-thumb active" data-bg-id="day" title="白昼">
+        <img src="assets/pixel/bg-day.png" alt="白昼" draggable="false">
+        <span class="bg-thumb-name">白昼</span>
+        
+      </div>
+    
+      <div class="bg-thumb " data-bg-id="dusk" title="黄昏">
+        <img src="assets/pixel/bg-dusk.png" alt="黄昏" draggable="false">
+        <span class="bg-thumb-name">黄昏</span>
+        
+      </div>
+    
+      <div class="bg-thumb " data-bg-id="night" title="夜灯">
+        <img src="assets/pixel/bg-night.png" alt="夜灯" draggable="false">
+        <span class="bg-thumb-name">夜灯</span>
+        
+      </div>
+    </div>
+            <button class="bg-add-btn" id="bgAddBtn" title="添加自定义背景">＋</button>
+          </div>
+
+          <!-- 底部常驻自我照顾轻表单 -->
+          <div class="tab1-care" id="carePanel">
+            <div class="care-header">
+              <span class="care-title">今天可以怎样照顾自己一点</span>
+              <span class="care-meta">
+                <span class="care-meta-item" title="关爱值">
+                  <svg class="pix-icon pix-heart" viewBox="0 0 7 6" shape-rendering="crispEdges" aria-hidden="true">
+                    <rect x="1" y="0" width="2" height="1"></rect><rect x="4" y="0" width="2" height="1"></rect>
+                    <rect x="0" y="1" width="7" height="2"></rect>
+                    <rect x="1" y="3" width="5" height="1"></rect>
+                    <rect x="2" y="4" width="3" height="1"></rect>
+                    <rect x="3" y="5" width="1" height="1"></rect>
+                  </svg>
+                  <b id="careValue">0</b>
+                </span>
+                <span class="care-meta-item" title="今日金币获取">
+                  <svg class="pix-icon pix-coin" viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true">
+                    <rect x="2" y="0" width="3" height="1"></rect>
+                    <rect x="1" y="1" width="5" height="1"></rect>
+                    <rect x="0" y="2" width="7" height="3"></rect>
+                    <rect x="1" y="5" width="5" height="1"></rect>
+                    <rect x="2" y="6" width="3" height="1"></rect>
+                    <rect x="3" y="2" width="1" height="3" fill="#ffe9b8"></rect>
+                  </svg>
+                  <b id="dailyCoin">0</b>/<i>20</i>
+                </span>
+              </span>
+            </div>
+            <div class="care-options" id="careOptions">
+      <div class="care-card-wrap   " data-id="water" data-idx="0" style="--i:0">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="water">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">💧</span>
+          <span class="care-card-main">
+            <span class="care-card-label">喝水</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag recurring">循环</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="water" aria-label="完成">✓</button>
+        </div>
+      </div>
+    
+      <div class="care-card-wrap   " data-id="breath" data-idx="1" style="--i:1">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="breath">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">🌬️</span>
+          <span class="care-card-main">
+            <span class="care-card-label">深呼吸</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag daily">每日</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="breath" aria-label="完成">✓</button>
+        </div>
+      </div>
+    
+      <div class="care-card-wrap   " data-id="walk" data-idx="2" style="--i:2">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="walk">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">🚶</span>
+          <span class="care-card-main">
+            <span class="care-card-label">散步</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag daily">每日</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="walk" aria-label="完成">✓</button>
+        </div>
+      </div>
+    
+      <div class="care-card-wrap   " data-id="space" data-idx="3" style="--i:3">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="space">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">🫧</span>
+          <span class="care-card-main">
+            <span class="care-card-label">放空</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag daily">每日</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="space" aria-label="完成">✓</button>
+        </div>
+      </div>
+    
+      <div class="care-card-wrap   " data-id="sleep" data-idx="4" style="--i:4">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="sleep">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">🛌</span>
+          <span class="care-card-main">
+            <span class="care-card-label">好好睡觉</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag daily">每日</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="sleep" aria-label="完成">✓</button>
+        </div>
+      </div>
+    
+      <div class="care-card-wrap   " data-id="encourage" data-idx="5" style="--i:5">
+        <div class="care-card-actions">
+          <button class="cca-btn cca-skip" data-act="skip" title="跳过今天">⏭</button>
+          <button class="cca-btn cca-pin" data-act="pin" title="置顶">📍</button>
+          <button class="cca-btn cca-config" data-act="config" title="设置">⚙</button>
+        </div>
+        <div class="care-card" data-id="encourage">
+          <span class="care-card-grip">⋮⋮</span>
+          <span class="care-card-icon">💪</span>
+          <span class="care-card-main">
+            <span class="care-card-label">自我鼓励</span>
+            <span class="care-card-meta">
+              <span class="ccm-tag daily">每日</span>
+              
+              
+              <span class="ccm-reward">+3</span>
+            </span>
+          </span>
+          <button class="care-card-check" data-id="encourage" aria-label="完成">✓</button>
+        </div>
+      </div>
+    </div>
+          </div>
+        </section>
+
+        <!-- ============ Tab2 遇见·内心森林 ============ -->
+        <section id="tab2" class="tab-panel" data-tab="tab2">
+          <div class="tab2-forest">
+            <!-- 远景层：森林底图 -->
+            <div class="scene-layer layer-back">
+              <img class="tab2-bg" src="assets/tab2-forest.png" alt="像素迷雾森林">
+            </div>
+
+            <!-- 远层：光柱 + 飘雾 -->
+            <div class="scene-layer layer-far">
+              <div class="forest-beams"></div>
+              <div class="forest-fog far-fog"></div>
+            </div>
+
+            <!-- 中层：三个可交互物件组件 -->
+            <div class="scene-layer layer-mid forest-objects">
+              <button class="fobj fobj-mirror" data-popup="mirror" title="森林镜子">
+                <div class="fobj-icon">🪞</div>
+                <div class="fobj-name">镜子</div>
+              </button>
+              <button class="fobj fobj-monument" data-popup="monument" title="树洞石碑">
+                <div class="fobj-icon">🗿</div>
+                <div class="fobj-name">树洞石碑</div>
+              </button>
+              <button class="fobj fobj-book" data-popup="book" title="古老石书">
+                <div class="fobj-icon">📖</div>
+                <div class="fobj-name">石书</div>
+              </button>
+            </div>
+
+            <!-- 前景层：雾气 + 萤火 -->
+            <div class="scene-layer layer-front">
+              <div class="forest-fog near-fog"></div>
+              <div class="forest-motes" id="forestMotes"><div class="env-particle mote" style="left: 43.5249%; top: 85.7131%; animation-delay: 2.00102s; animation-duration: 9.91426s; --rise: -90.23551375291333px; height: 4.97609px; width: 4.97609px; background: rgba(200, 250, 210, 0.6); opacity: 0.497343;"></div><div class="env-particle mote" style="left: 59.8088%; top: 46.1325%; animation-delay: 9.78607s; animation-duration: 7.54668s; --rise: -88.70360755114774px; height: 5.43625px; width: 5.43625px; background: rgba(200, 250, 210, 0.6); opacity: 0.687749;"></div><div class="env-particle mote" style="left: 48.2695%; top: 75.6677%; animation-delay: 6.56787s; animation-duration: 11.7403s; --rise: -79.38542942546326px; height: 5.55763px; width: 5.55763px; background: rgba(200, 250, 210, 0.6); opacity: 0.214311;"></div><div class="env-particle mote" style="left: 91.5933%; top: 45.7297%; animation-delay: 3.06849s; animation-duration: 8.26134s; --rise: -53.471920207844626px; height: 4.46567px; width: 4.46567px; background: rgba(200, 250, 210, 0.6); opacity: 0.345027;"></div><div class="env-particle mote" style="left: 18.2184%; top: 51.5026%; animation-delay: 4.79403s; animation-duration: 10.3191s; --rise: -90.92610068775502px; height: 6.75773px; width: 6.75773px; background: rgba(200, 250, 210, 0.6); opacity: 0.534316;"></div><div class="env-particle mote" style="left: 80.4117%; top: 34.4576%; animation-delay: 5.88446s; animation-duration: 13.6448s; --rise: -83.12395651959358px; height: 4.75125px; width: 4.75125px; background: rgba(200, 250, 210, 0.6); opacity: 0.289597;"></div><div class="env-particle mote" style="left: 85.001%; top: 48.0931%; animation-delay: 6.80455s; animation-duration: 9.59165s; --rise: -66.0190482529712px; height: 5.09157px; width: 5.09157px; background: rgba(200, 250, 210, 0.6); opacity: 0.511418;"></div><div class="env-particle mote" style="left: 87.226%; top: 8.03731%; animation-delay: 6.7766s; animation-duration: 10.9229s; --rise: -90.15230447718525px; height: 5.83795px; width: 5.83795px; background: rgba(200, 250, 210, 0.6); opacity: 0.608193;"></div><div class="env-particle mote" style="left: 60.4626%; top: 49.172%; animation-delay: 0.458342s; animation-duration: 13.9586s; --rise: -70.31729588899029px; height: 7.1131px; width: 7.1131px; background: rgba(200, 250, 210, 0.6); opacity: 0.346024;"></div><div class="env-particle mote" style="left: 18.3758%; top: 30.5328%; animation-delay: 8.90853s; animation-duration: 8.76763s; --rise: -72.80224469450586px; height: 4.06876px; width: 4.06876px; background: rgba(200, 250, 210, 0.6); opacity: 0.623333;"></div><div class="env-particle mote" style="left: 75.0374%; top: 33.1012%; animation-delay: 9.53084s; animation-duration: 7.56579s; --rise: -61.507269991237024px; height: 6.20727px; width: 6.20727px; background: rgba(200, 250, 210, 0.6); opacity: 0.28899;"></div><div class="env-particle mote" style="left: 23.335%; top: 44.4675%; animation-delay: 9.20127s; animation-duration: 11.4997s; --rise: -74.38263209261552px; height: 5.46052px; width: 5.46052px; background: rgba(200, 250, 210, 0.6); opacity: 0.377255;"></div><div class="env-particle mote" style="left: 74.9026%; top: 77.3068%; animation-delay: 6.51431s; animation-duration: 7.97326s; --rise: -77.55338494295394px; height: 7.27803px; width: 7.27803px; background: rgba(200, 250, 210, 0.6); opacity: 0.447137;"></div><div class="env-particle mote" style="left: 84.3982%; top: 68.9958%; animation-delay: 9.16542s; animation-duration: 13.7617s; --rise: -79.45868749099px; height: 4.93279px; width: 4.93279px; background: rgba(200, 250, 210, 0.6); opacity: 0.6438;"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ Tab3 生长·生命花园 ============ -->
+        <section id="tab3" class="tab-panel" data-tab="tab3">
+          <div class="tab3-garden">
+            <!-- 远景层：AI 生成的阳台花园背景 -->
+            <div class="scene-layer layer-back">
+              <img class="tab3-bg" src="assets/garden/bg-garden.png" alt="生命花园">
+            </div>
+
+            <!-- 花园日志按钮（右上角，打开成长目标与仓库） -->
+            <button class="garden-journal-btn" id="gardenJournalBtn" title="花园日志 · 成长目标与仓库">
+              <span class="gj-icon">📔</span>
+              <span class="gj-label">花园日志</span>
+            </button>
+
+            <!-- 中层：阳台花盆网格（3 行 × 4 列 sprite，JS 渲染） -->
+            <div class="scene-layer layer-mid">
+              <div class="garden-plots" id="gardenPlots"><div data-idx="0" class="plot empty" title="空花盆 · 点击种下种子" style="left: 74px; top: 517px; z-index: 10;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="1" class="plot empty" title="空花盆 · 点击种下种子" style="left: 136px; top: 517px; z-index: 11;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="4" class="plot empty" title="空花盆 · 点击种下种子" style="left: 74px; top: 577px; z-index: 11;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="2" class="plot empty" title="空花盆 · 点击种下种子" style="left: 198px; top: 517px; z-index: 12;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="5" class="plot empty" title="空花盆 · 点击种下种子" style="left: 136px; top: 577px; z-index: 12;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="8" class="plot empty" title="空花盆 · 点击种下种子" style="left: 74px; top: 637px; z-index: 12;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="3" class="plot empty" title="空花盆 · 点击种下种子" style="left: 260px; top: 517px; z-index: 13;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="6" class="plot empty" title="空花盆 · 点击种下种子" style="left: 198px; top: 577px; z-index: 13;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="9" class="plot empty" title="空花盆 · 点击种下种子" style="left: 136px; top: 637px; z-index: 13;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="7" class="plot empty" title="空花盆 · 点击种下种子" style="left: 260px; top: 577px; z-index: 14;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="10" class="plot empty" title="空花盆 · 点击种下种子" style="left: 198px; top: 637px; z-index: 14;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div><div data-idx="11" class="plot empty" title="空花盆 · 点击种下种子" style="left: 260px; top: 637px; z-index: 15;"><img class="plot-img" src="assets/garden/plot-empty.png" alt="空花盆"></div></div>
+              <div class="garden-hint" id="gardenHint">点击空花盆，种下一颗想培养的种子</div>
+            </div>
+
+            <!-- 前景层：像素园丁小我 + 蝴蝶 + 花粉 -->
+            <div class="scene-layer layer-front">
+              <div class="garden-character">
+                <div class="gc-sprite"></div>
+                <div class="gc-shadow"></div>
+              </div>
+              <div class="garden-butterflies" id="gardenButterflies"><div class="env-particle butterfly" style="left: 96.5838%; top: 28.0724%; animation-delay: 9.9671s; animation-duration: 13.718s; --rise: -164.76803290837347px; height: 14.4323px; width: 14.4323px; font-size: 14.4323px; line-height: 14.4323px; background: none; opacity: 0.811691;">🐝</div><div class="env-particle butterfly" style="left: 37.5187%; top: 41.8842%; animation-delay: 2.98484s; animation-duration: 8.38382s; --rise: -127.51900157581515px; height: 22.6067px; width: 22.6067px; font-size: 22.6067px; line-height: 22.6067px; background: none; opacity: 0.546094;">🐝</div><div class="env-particle butterfly" style="left: 26.1272%; top: 79.3082%; animation-delay: 5.50578s; animation-duration: 12.2511s; --rise: -158.40013215781116px; height: 17.8966px; width: 17.8966px; font-size: 17.8966px; line-height: 17.8966px; background: none; opacity: 0.832893;">🦋</div><div class="env-particle butterfly" style="left: 73.0166%; top: 27.9677%; animation-delay: 1.89393s; animation-duration: 14.3598s; --rise: -99.97319789151409px; height: 17.8463px; width: 17.8463px; font-size: 17.8463px; line-height: 17.8463px; background: none; opacity: 0.879063;">🦋</div><div class="env-particle butterfly" style="left: 33.2134%; top: 81.2122%; animation-delay: 9.58818s; animation-duration: 8.84426s; --rise: -164.6689996368174px; height: 18.6624px; width: 18.6624px; font-size: 18.6624px; line-height: 18.6624px; background: none; opacity: 0.602193;">🐝</div></div>
+              <div class="garden-pollen" id="gardenPollen"><div class="env-particle pollen" style="left: 95.7211%; top: 6.2819%; animation-delay: 9.81722s; animation-duration: 8.84248s; --rise: -81.4446532968622px; height: 4.68182px; width: 4.68182px; background: rgba(255, 230, 160, 0.5); opacity: 0.264212;"></div><div class="env-particle pollen" style="left: 90.4582%; top: 21.7184%; animation-delay: 9.40219s; animation-duration: 9.36985s; --rise: -80.0611355121952px; height: 7.36982px; width: 7.36982px; background: rgba(255, 230, 160, 0.5); opacity: 0.601269;"></div><div class="env-particle pollen" style="left: 71.1147%; top: 53.1784%; animation-delay: 2.82027s; animation-duration: 14.5999s; --rise: -90.13359744650477px; height: 5.65827px; width: 5.65827px; background: rgba(255, 230, 160, 0.5); opacity: 0.314546;"></div><div class="env-particle pollen" style="left: 31.2363%; top: 62.553%; animation-delay: 8.94957s; animation-duration: 13.8995s; --rise: -110.92333532614661px; height: 7.45779px; width: 7.45779px; background: rgba(255, 230, 160, 0.5); opacity: 0.252592;"></div><div class="env-particle pollen" style="left: 38.2796%; top: 74.5723%; animation-delay: 2.20155s; animation-duration: 13.7494s; --rise: -85.8465869276521px; height: 3.91232px; width: 3.91232px; background: rgba(255, 230, 160, 0.5); opacity: 0.4549;"></div><div class="env-particle pollen" style="left: 46.7063%; top: 76.5874%; animation-delay: 9.97273s; animation-duration: 10.1021s; --rise: -82.757676848351px; height: 7.49848px; width: 7.49848px; background: rgba(255, 230, 160, 0.5); opacity: 0.386496;"></div><div class="env-particle pollen" style="left: 71.076%; top: 64.9947%; animation-delay: 8.03424s; animation-duration: 10.0902s; --rise: -93.12447734023196px; height: 5.83533px; width: 5.83533px; background: rgba(255, 230, 160, 0.5); opacity: 0.532648;"></div><div class="env-particle pollen" style="left: 17.1531%; top: 36.2413%; animation-delay: 7.51289s; animation-duration: 13.2458s; --rise: -116.7918914871146px; height: 6.36112px; width: 6.36112px; background: rgba(255, 230, 160, 0.5); opacity: 0.340542;"></div><div class="env-particle pollen" style="left: 52.5677%; top: 64.746%; animation-delay: 3.30978s; animation-duration: 8.28802s; --rise: -98.5623121049013px; height: 3.74433px; width: 3.74433px; background: rgba(255, 230, 160, 0.5); opacity: 0.516366;"></div><div class="env-particle pollen" style="left: 16.1661%; top: 37.9842%; animation-delay: 8.85777s; animation-duration: 7.2079s; --rise: -98.36031711639363px; height: 4.10126px; width: 4.10126px; background: rgba(255, 230, 160, 0.5); opacity: 0.475058;"></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ Tab4 星迹·个人宇宙 ============ -->
+        <section id="tab4" class="tab-panel" data-tab="tab4">
+          <div class="tab4-stars">
+            <!-- 远景层：晨昏天空底图 -->
+            <div class="scene-layer layer-back">
+              <img class="tab4-bg" src="assets/tab4-stars.png" alt="晨昏星空">
+            </div>
+
+            <!-- 中层：星点组件 + 两个入口物件 -->
+            <div class="scene-layer layer-mid">
+              <div class="stars-overlay" id="starsOverlay"></div>
+              <div class="stars-objects">
+                <button class="sobj sobj-nebula" data-popup="timeline" title="星云 · 成长时间轴">
+                  <div class="sobj-icon">🌌</div>
+                  <div class="sobj-name">星云</div>
+                </button>
+                <button class="sobj sobj-book" data-popup="archive" title="星之浮书 · 成长档案">
+                  <div class="sobj-icon">📚</div>
+                  <div class="sobj-name">星浮书</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- 前景层：云絮 + 流星 -->
+            <div class="scene-layer layer-front">
+              <div class="stars-clouds"></div>
+              <div class="shooting-star"></div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- 底部 Tab 导航 -->
+      <nav class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-target="tab1">
+          <span class="tab-ico">🏠</span>
+          <span class="tab-lbl">此刻</span>
+        </button>
+        <button class="tab-btn" data-target="tab2">
+          <span class="tab-ico">🌲</span>
+          <span class="tab-lbl">遇见</span>
+        </button>
+        <button class="tab-btn" data-target="tab3">
+          <span class="tab-ico">🌻</span>
+          <span class="tab-lbl">生长</span>
+        </button>
+        <button class="tab-btn" data-target="tab4">
+          <span class="tab-ico">🌌</span>
+          <span class="tab-lbl">星迹</span>
+        </button>
+      </nav>
+
+      <!-- 弹窗容器 -->
+      <div class="popup-root" id="popupRoot"></div>
+
+      <!-- 提示 toast -->
+      <div class="toast" id="toast">欢迎来到「予己」 · 好好爱自己，慢慢成为自己</div>
+
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/tab1.js"></script>
+  <script src="js/tab2.js"></script>
+  <script src="js/tab3.js"></script>
+  <script src="js/tab4.js"></script>
+  <script src="js/popups.js"></script>
+  <script src="js/main.js"></script>
+
+
+</body></html>

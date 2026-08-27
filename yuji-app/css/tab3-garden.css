@@ -1,0 +1,280 @@
+/* ============================================================
+   Tab3 生长·像素田地 (3x3 九宫格版)
+   参考：Stardew Valley / Harvest Moon 风格
+   布局：一张连续 2.5D 九宫格土壤田底图(field-base-9grid.png)作背景，
+         3×3 网格格子用绝对定位叠加作物 sprite(crop-*.png)
+   位置：屏幕中部（top ~52%），菱形田地居中显示
+   素材：assets/field/
+     - field-base-9grid.png   2.5D 九宫格土壤田(3×3 格子一体，带木框)
+     - crop-s1..s4.png        破土/生长/繁茂/成熟前 的作物(透明底小sprite)
+     - crop-h1.png            成熟可收获(带红果)
+     - field-character.png    像素农夫
+   ============================================================ */
+
+.tab3-garden {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #9bc26a;
+}
+
+/* ---------- 远景背景图 ---------- */
+.tab3-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+/* ---------- 田地日志按钮 ---------- */
+.garden-journal-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 40px;
+  height: 36px;
+  padding: 0 12px;
+  border: var(--pixel-border);
+  border-radius: 12px;
+  background: var(--c-card-glass);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--c-text);
+  cursor: pointer;
+  box-shadow: 0 4px 10px var(--c-shadow);
+  transition: all 0.2s ease;
+}
+.garden-journal-btn:active { transform: scale(0.9); }
+.gj-icon { font-size: 15px; line-height: 1; }
+.gj-label { letter-spacing: 0.5px; }
+
+/* ============================================================
+   田地舞台 —— 核心布局
+   - .garden-plots 是整块田地的容器
+   - field-base-9grid.png 作为背景图（一张连续 2.5D 九宫格土壤田）
+   - 9 个 .plot 用绝对定位叠加在对应格子上
+   - 位置：屏幕中部（top 52%），菱形田地居中
+   ============================================================ */
+.garden-plots {
+  position: absolute;
+  left: 50%;
+  top: 63%;                          /* ← 用户要求再往下移（原 52%） */
+  transform: translate(-50%, 0);     /* 只水平居中，top 已精确控制垂直位置 */
+  z-index: 5;
+
+  /* 九宫格底图尺寸：用户自定义图片按比例缩放为 331x290px */
+  width: 331px;
+  height: 290px;
+
+  /* 2.5D 九宫格土壤田底图（已抠白底 PNG 透明通道） */
+  background-image: url('../assets/field/field-base-9grid.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+
+  pointer-events: none;
+}
+
+/* 阴影移到外层（避免与 mix-blend-mode 冲突） */
+.garden-plots::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(40, 20, 5, 0.35);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ---------- 单块田（绝对定位叠加在大田底图上） ---------- */
+.plot {
+  position: absolute;
+  /* 每个格子的尺寸和位置由 JS 内联 style 设置 */
+  width: 62px;
+  height: 46px;
+  pointer-events: auto;
+  cursor: pointer;
+  overflow: visible;
+  image-rendering: pixelated;
+  transition: transform 0.18s ease;
+  z-index: 2;
+}
+.plot:hover {
+  transform: scale(1.08);
+  z-index: 10;
+}
+
+/* 作物 sprite：透明底小图，居中放在格子里 */
+.plot-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  object-position: center bottom;    /* 作物站在格子底部（田面上） */
+  image-rendering: pixelated;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+.plot:hover .plot-img {
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.35));
+}
+
+/* 空田垄：微弱高亮提示可点击 */
+.plot.empty .plot-img {
+  opacity: 0;
+  pointer-events: none;
+}
+.plot.empty {
+  animation: plot-breathe 2.8s ease-in-out infinite;
+}
+/* 空田 hover 时显示一个微弱的光斑 */
+.plot.empty::before {
+  content: '';
+  position: absolute;
+  inset: 15%;
+  border-radius: 4px;
+  background: rgba(255, 255, 200, 0);
+  transition: background 0.2s ease;
+  pointer-events: none;
+}
+.plot.empty:hover::before {
+  background: rgba(255, 255, 200, 0.18);
+}
+@keyframes plot-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.03); }
+}
+
+/* 成熟 ✨ 标 */
+.plot-sparkle {
+  position: absolute;
+  top: -4px;
+  right: 2px;
+  font-size: 14px;
+  line-height: 1;
+  animation: sparkle-bob 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 1px 2px rgba(60, 40, 15, 0.55));
+  pointer-events: none;
+  z-index: 3;
+}
+@keyframes sparkle-bob {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-4px) scale(1.18); }
+}
+
+/* 升级 / 新种下：弹跳 */
+.plot.pop .plot-img { animation: plot-pop 0.5s ease; }
+@keyframes plot-pop {
+  0%   { transform: scale(0.5) translateY(10px); opacity: 0; }
+  50%  { transform: scale(1.15) translateY(-6px); opacity: 1; }
+  75%  { transform: scale(0.92) translateY(2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ---------- 引导提示 ---------- */
+.garden-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  z-index: 20;
+  font-size: 11px;
+  font-weight: bold;
+  color: #5a3a1a;
+  background: rgba(255, 248, 230, 0.92);
+  border: 2px solid var(--c-line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  box-shadow: 0 4px 12px var(--c-shadow);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.garden-hint.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(10px);
+}
+
+/* ---------- 像素小农夫（站在田地右下方） ---------- */
+.garden-character {
+  position: absolute;
+  right: 10%;                         /* 田地右下方 */
+  bottom: 14%;                        /* 靠近底部 */
+  width: 56px;
+  height: 74px;
+  z-index: 25;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.gc-sprite {
+  position: absolute;
+  inset: 0;
+  background-image: url('../assets/field/field-character.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 3px 3px rgba(40, 25, 10, 0.35));
+  transition: transform 0.2s ease;
+}
+.garden-character:hover .gc-sprite { transform: scale(1.08); }
+.gc-shadow {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 6px;
+  background: radial-gradient(ellipse, rgba(40, 25, 10, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ---------- 田野氛围粒子 ---------- */
+.garden-butterflies,
+.garden-pollen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 22;
+}
+.butterfly {
+  position: absolute;
+  font-size: 14px;
+  opacity: 0.85;
+  animation: fly 9s ease-in-out infinite;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(255, 230, 150, 0.5));
+}
+@keyframes fly {
+  0%   { transform: translate(0, 0) scale(1); }
+  25%  { transform: translate(24px, -38px) scale(1.08); }
+  50%  { transform: translate(-12px, -68px) scale(0.94); }
+  75%  { transform: translate(28px, -28px) scale(1.06); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+.pollen {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-up 6s ease-in-out infinite;
+}
+@keyframes float-up {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  15%  { opacity: 0.75; }
+  85%  { opacity: 0.35; }
+  100% { transform: translateY(-90px) translateX(18px); opacity: 0; }
+}

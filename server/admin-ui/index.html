@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>予己 · 管理后台</title>
+<link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+
+<!-- 登录视图 -->
+<div id="login-view" class="login-view">
+  <div class="login-card">
+    <div class="login-logo">🏠 予己</div>
+    <div class="login-sub">治愈系自我成长 App · 管理后台</div>
+    <form id="login-form">
+      <input id="login-user" type="text" placeholder="管理员账号" autocomplete="username" />
+      <input id="login-pass" type="password" placeholder="密码" autocomplete="current-password" />
+      <button type="submit">登 录</button>
+      <div id="login-err" class="login-err"></div>
+    </form>
+  </div>
+</div>
+
+<!-- 主视图 -->
+<div id="app-view" class="app-view hidden">
+  <aside class="sidebar">
+    <div class="brand">🏠 予己后台</div>
+    <nav id="nav">
+      <button data-sec="dashboard" class="active">📊 看板</button>
+      <button data-sec="layout">🛋️ 默认房间布局</button>
+      <button data-sec="unlock">🔓 初始解锁家具</button>
+      <button data-sec="furniture">📦 家具库</button>
+      <button data-sec="shop">🛒 商店商品</button>
+      <button data-sec="seeds">🌱 花园种子</button>
+      <button data-sec="tabbg">🖼️ Tab 页面背景</button>
+      <button data-sec="defcare">🫧 每日照顾选项</button>
+      <button data-sec="ai">🤖 AI 接口</button>
+      <button data-sec="users">👥 账号管理</button>
+      <button data-sec="logs">📜 操作日志</button>
+    </nav>
+    <div class="side-foot">
+      <span id="who"></span>
+      <button id="logout-btn">退出</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <!-- 看板 -->
+    <section data-panel="dashboard" class="panel">
+      <h2>看板</h2>
+      <div id="overview" class="cards"></div>
+      <p class="hint">这是「后端骨架 + 管理后台」阶段：游戏前端暂未接入后端，但所有配置已落库，管理员可在此调整新用户初始房间、解锁家具、商店、种子与 AI 接口。后续把游戏前端状态层改为调用 <code>/api</code> 即可多用户化。</p>
+    </section>
+
+    <!-- 默认房间布局 -->
+    <section data-panel="layout" class="panel hidden">
+      <div class="panel-head">
+        <h2>默认房间布局（拖拽摆放）</h2>
+        <div class="panel-actions">
+          <button id="layout-save" class="primary">保存布局</button>
+          <button id="layout-clear">清空</button>
+        </div>
+      </div>
+      <p class="hint">从右侧家具库点击把家具放入房间，拖动已摆放的家具调整位置。选中家具后可改层级(z)、缩放、转向(3D旋转)、倾斜、翻转、删除——<b>与游戏前台完全一致</b>。保存后，<b>每个新用户</b>都将以该布局（含旋转/倾斜）作为初始房间。</p>
+      <div class="layout-wrap">
+        <div id="room-canvas" class="room-canvas">
+          <img class="room-bg" src="/assets/tab1beijing.png" alt="房间背景" draggable="false" />
+          <div id="room-furniture" class="room-furniture"></div>
+          <div class="room-bubble-bar">💧 自我照顾 · 气泡区（前台显示）</div>
+        </div>
+        <div class="palette">
+          <div class="palette-title">家具库（点击放入房间）</div>
+          <div id="palette-list" class="palette-list"></div>
+          <div id="piece-props" class="piece-props hidden">
+            <div class="pp-title">选中家具</div>
+            <label>层级 z <input id="pp-z" type="range" min="1" max="6" step="1" /><span id="pp-z-v"></span></label>
+            <label>缩放 <input id="pp-scale" type="range" min="0.5" max="4" step="0.1" /><span id="pp-scale-v"></span></label>
+            <label>转向(旋转)
+              <span class="pp-btns">
+                <button type="button" id="pp-rot-l" title="左转">⟲</button>
+                <span id="pp-rot-v"></span>
+                <button type="button" id="pp-rot-r" title="右转">⟳</button>
+              </span>
+            </label>
+            <label>倾斜
+              <span class="pp-btns">
+                <button type="button" id="pp-tilt-l" title="左倾">⟲</button>
+                <span id="pp-tilt-v"></span>
+                <button type="button" id="pp-tilt-r" title="右倾">⟳</button>
+              </span>
+            </label>
+            <label class="chk"><input id="pp-flip" type="checkbox" /> 水平翻转</label>
+            <button id="pp-del" class="danger">删除该家具</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 初始解锁家具 -->
+    <section data-panel="unlock" class="panel hidden">
+      <h2>初始解锁家具</h2>
+      <p class="hint">勾选的家具类型，新用户初始即可在「添加家具 / 商店」中使用；未勾选的则需管理员后续开放。与上方「默认房间布局」相互独立——布局决定初始摆了哪些，解锁决定用户还能再加哪些。</p>
+      <div id="unlock-grid" class="grid"></div>
+    </section>
+
+    <!-- 家具库 -->
+    <section data-panel="furniture" class="panel hidden">
+      <div class="panel-head"><h2>家具库（类型元数据）</h2><button id="furn-add" class="primary">+ 新增类型</button></div>
+      <div id="furn-table" class="table-wrap"></div>
+    </section>
+
+    <!-- 商店 -->
+    <section data-panel="shop" class="panel hidden">
+      <div class="panel-head"><h2>商店商品</h2><button id="shop-add" class="primary">+ 新增商品</button></div>
+      <div id="shop-table" class="table-wrap"></div>
+    </section>
+
+    <!-- 种子 -->
+    <section data-panel="seeds" class="panel hidden">
+      <div class="panel-head"><h2>花园种子目录</h2><button id="seed-add" class="primary">+ 新增种子</button></div>
+      <div id="seed-table" class="table-wrap"></div>
+    </section>
+
+    <!-- Tab 页面背景 -->
+    <section data-panel="tabbg" class="panel hidden">
+      <h2>Tab 页面背景</h2>
+      <p class="hint">为 4 个 Tab 页面分别上传自定义背景图。建议尺寸与默认图接近（≤8MB，png/jpg/gif/webp）；上传后游戏前端下次拉取 <code>/api/config</code> 即生效，<b>预览账号每 2.5 秒自动同步</b>。点「重置默认」可恢复出厂背景。</p>
+      <div id="tabbg-grid" class="tabbg-grid"></div>
+    </section>
+
+    <!-- 每日照顾选项 -->
+    <section data-panel="defcare" class="panel hidden">
+      <div class="panel-head">
+        <h2>每日自我照顾 · 新用户初始选项</h2>
+        <div class="panel-actions">
+          <button id="defcare-restore" class="ghost">恢复默认 6 项</button>
+          <button id="defcare-add" class="primary">+ 新增选项</button>
+          <button id="defcare-save-all" class="primary">💾 保存全部（含顺序）</button>
+        </div>
+      </div>
+      <p class="hint">这里配置的是<b>新用户注册时 tab1 默认出现的照顾气泡</b>。<code>mode</code>：<b>daily</b> = 每日只能完成一次，<b>recurring</b> = 可持续完成（如水、散步）。<code>reward</code> = 完成一次奖励的金币数。拖动左侧 ⋮⋮ 可调整顺序，保存后新用户立刻生效；预览账号会自动同步。</p>
+      <div id="defcare-list" class="defcare-list"></div>
+      <div id="defcare-empty" class="empty-tip hidden">还没有选项，请点右上角「+ 新增选项」。</div>
+    </section>
+
+    <!-- AI -->
+    <section data-panel="ai" class="panel hidden">
+      <h2>AI 智能体 / 接口配置</h2>
+      <p class="hint">配置各智能体调用的 API。支持 OpenAI 兼容接口（填 base_url / api_key / model）。<b>api_key 仅管理员可见</b>，且公开配置接口 <code>/api/config</code> 不会下发密钥。保存后游戏前端可据此调用对应智能体。</p>
+      <div id="ai-list" class="ai-list"></div>
+    </section>
+
+    <!-- 账号 -->
+    <section data-panel="users" class="panel hidden">
+      <div class="panel-head"><h2>账号管理</h2></div>
+      <form id="user-form" class="inline-form">
+        <input id="u-user" type="text" placeholder="用户名" />
+        <input id="u-pass" type="password" placeholder="密码(≥6)" />
+        <select id="u-role"><option value="user">玩家</option><option value="admin">管理员</option></select>
+        <button type="submit" class="primary">创建账号</button>
+      </form>
+      <div id="user-table" class="table-wrap"></div>
+    </section>
+
+    <!-- 日志 -->
+    <section data-panel="logs" class="panel hidden">
+      <h2>操作日志</h2>
+      <div id="log-table" class="table-wrap"></div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- ===== 新增家具（带图片上传）模态框 ===== -->
+<div id="furn-add-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>新增家具（上传图片 + 一步创建）</h3>
+      <button type="button" id="furn-add-close" class="mini" title="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <label>Type *</label>
+        <input id="fa-type" type="text" placeholder="英文唯一标识，如 desk、chair-2" />
+      </div>
+      <div class="row">
+        <label>名称 *</label>
+        <input id="fa-name" type="text" placeholder="中文展示名，如：书桌" />
+      </div>
+      <div class="row two-col">
+        <div>
+          <label>分类</label>
+          <input id="fa-category" type="text" value="家具" />
+        </div>
+        <div>
+          <label>动作</label>
+          <input id="fa-action" type="text" placeholder="可选：shelf / letter / shop…" />
+        </div>
+      </div>
+      <div class="row three-col">
+        <div>
+          <label>宽 (px)</label>
+          <input id="fa-w" type="number" min="1" value="56" />
+        </div>
+        <div>
+          <label>高 (px)</label>
+          <input id="fa-h" type="number" min="1" value="56" />
+        </div>
+        <div>
+          <label>价格 🪙</label>
+          <input id="fa-price" type="number" min="0" value="0" />
+        </div>
+      </div>
+      <div class="row two-col">
+        <label class="chk">
+          <input id="fa-floor" type="checkbox" />
+          <span>落地装饰（铺在地面，如地毯）</span>
+        </label>
+        <label class="chk">
+          <input id="fa-unlocked" type="checkbox" checked />
+          <span>新用户初始解锁</span>
+        </label>
+      </div>
+      <div class="row two-col">
+        <label class="chk">
+          <input id="fa-matting" type="checkbox" checked />
+          <span>自动抠图（rembg 抠除白底/实景背景）</span>
+        </label>
+        <label class="chk">
+          <input id="fa-alpha" type="checkbox" />
+          <span>精修边缘（Alpha Matting，慢但更干净）</span>
+        </label>
+      </div>
+      <div class="row file-row">
+        <label>家具图片 *</label>
+        <div class="file-picker">
+          <input id="fa-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+          <button type="button" id="fa-pick-btn" class="primary">选择图片…</button>
+          <span id="fa-filename" class="file-hint">未选择文件（建议 PNG，透明底，≤8MB）</span>
+        </div>
+        <div id="fa-preview" class="file-preview hidden">
+          <img id="fa-preview-img" alt="预览" />
+          <span id="fa-info"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="fa-cancel">取消</button>
+      <button type="button" id="fa-submit" class="primary">创建家具</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增商品（带图片上传）模态框 ===== -->
+<div id="shop-add-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>新增商品（上传图片 + 一步创建）</h3>
+      <button type="button" id="shop-add-close" class="mini" title="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <label>ID *</label>
+        <input id="sa-id" type="text" placeholder="英文唯一标识，如 massage-oil" />
+      </div>
+      <div class="row two-col">
+        <div>
+          <label>名称 *</label>
+          <input id="sa-name" type="text" placeholder="中文展示名，如：按摩精油" />
+        </div>
+        <div>
+          <label>类别 *</label>
+          <select id="sa-kind">
+            <option value="physical">🏠 实体物件</option>
+            <option value="spirit">✨ 精神体验</option>
+          </select>
+        </div>
+      </div>
+      <div class="row two-col">
+        <div>
+          <label>价格 🪙</label>
+          <input id="sa-price" type="number" min="0" value="0" />
+        </div>
+        <div>
+          <label>加成 (JSON)</label>
+          <input id="sa-bonus" type="text" placeholder='{"happiness":2,"health":1}' />
+        </div>
+      </div>
+      <div class="row">
+        <label>描述</label>
+        <input id="sa-desc" type="text" placeholder="商品描述文字" />
+      </div>
+      <div class="row two-col">
+        <label class="chk">
+          <input id="sa-unlocked" type="checkbox" checked />
+          <span>上架（用户可见可购买）</span>
+        </label>
+        <label class="chk">
+          <input id="sa-matting" type="checkbox" checked />
+          <span>自动抠图（rembg 抠除白底/实景背景）</span>
+        </label>
+      </div>
+      <div class="row file-row">
+        <label>商品图片 *</label>
+        <div class="file-picker">
+          <input id="sa-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+          <button type="button" id="sa-pick-btn" class="primary">选择图片…</button>
+          <span id="sa-filename" class="file-hint">未选择文件（建议 PNG，≤8MB）</span>
+        </div>
+        <div id="sa-preview" class="file-preview hidden">
+          <img id="sa-preview-img" alt="预览" />
+          <span id="sa-info"></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="sa-cancel">取消</button>
+      <button type="button" id="sa-submit" class="primary">创建商品</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隐藏的通用 file input 池：给家具库每行"上传图标"按钮复用（type 作为 data-type） -->
+<input id="furn-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+
+<!-- 隐藏的通用 file input：给商店商品每行"上传图片"按钮复用（id 作为 data-id） -->
+<input id="shop-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+
+<!-- 隐藏的通用 file input：给 4 个 Tab 背景上传复用（tabKey 作为 data-tabkey） -->
+<input id="tabbg-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+
+<script src="/admin/admin.js"></script>
+
+</body>
+</html>

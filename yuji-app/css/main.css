@@ -1,0 +1,339 @@
+/* ============================================================
+   予己 - 全局样式 / 手机壳 / 像素风基础
+   ============================================================ */
+
+:root {
+  /* 主色调：低饱和、治愈系 */
+  --c-bg: #f5e8d4;
+  --c-bg-warm: #fff3e0;
+  --c-card: #ffffff;
+  --c-card-glass: rgba(255, 252, 245, 0.82);
+  --c-text: #5a4a3a;
+  --c-text-soft: #8b7d6b;
+  --c-text-light: #b8a994;
+  --c-line: #e8dcc8;
+  --c-accent: #d4a574;       /* 暖橘棕 */
+  --c-accent-2: #a8c69f;     /* 柔绿 */
+  --c-accent-3: #b8a8d4;     /* 柔紫 */
+  --c-accent-4: #f4c5a8;     /* 蜜桃 */
+  --c-pink: #f0b8c4;
+  --c-mint: #b8d8c8;
+  --c-shadow: rgba(120, 90, 60, 0.12);
+  --c-shadow-strong: rgba(120, 90, 60, 0.22);
+
+  /* 像素描边 */
+  --pixel-border: 3px solid #c9b89a;
+  --pixel-border-thick: 4px solid #c9b89a;
+
+  /* 字体 */
+  --font-pixel: 'Press Start 2P', 'ZCOOL KuaiLe', system-ui, sans-serif;
+  --font-body: 'ZCOOL KuaiLe', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+
+  /* 圆角（小圆角，像素风） */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  /* 尺寸 */
+  --phone-w: 390px;
+  --phone-h: 844px;
+  --tabbar-h: 64px;
+  --statusbar-h: 28px;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  color: var(--c-text);
+  background: #e6d8c0;
+  background-image:
+    radial-gradient(circle at 20% 10%, #f7e9d3 0%, transparent 50%),
+    radial-gradient(circle at 80% 90%, #e2d2b8 0%, transparent 50%),
+    linear-gradient(135deg, #efe1cc 0%, #d8c8a8 100%);
+  min-height: 100vh;
+  overflow: auto; /* 兜底：极端小窗口可滚动 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 手机壳居中舞台：任何屏幕下都整体可见 */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   手机壳 (桌面预览)
+   ============================================================ */
+.phone-frame {
+  position: relative;
+  width: var(--phone-w);
+  height: var(--phone-h);
+  flex-shrink: 0;
+  margin: 16px;
+  border-radius: 44px;
+  background: #2a2218;
+  padding: 12px;
+  transform: scale(var(--frame-scale, 1));
+  transform-origin: center center;
+  box-shadow:
+    0 0 0 2px #1a1410,
+    0 30px 60px rgba(80, 50, 20, 0.4),
+    0 10px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.phone-frame::before {
+  /* 刘海 */
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 26px;
+  background: #1a1410;
+  border-radius: 0 0 18px 18px;
+  z-index: 1000;
+}
+
+.app-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 32px;
+  background: var(--c-bg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+/* 移动端：去掉手机壳 */
+@media (max-width: 480px) {
+  :root { --frame-scale: 1; }
+  html, body { overflow: auto; }
+  .phone-frame {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;
+    background: var(--c-bg);
+    box-shadow: none;
+    transform: none;
+  }
+  .phone-frame::before { display: none; }
+  .app-container { border-radius: 0; }
+}
+
+/* ============================================================
+   状态栏 (伪装 iOS)
+   ============================================================ */
+.status-bar {
+  height: var(--statusbar-h);
+  padding: 8px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--c-text);
+  position: relative;
+  z-index: 5;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.sb-time { letter-spacing: 0.5px; }
+.sb-icons { letter-spacing: 1px; font-size: 10px; opacity: 0.8; }
+
+/* ============================================================
+   主内容区
+   ============================================================ */
+.app-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   底部 Tab 栏
+   ============================================================ */
+.tab-bar {
+  height: var(--tabbar-h);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  background: var(--c-card-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 2px solid var(--c-line);
+  display: flex;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  color: var(--c-text-soft);
+  font-family: var(--font-body);
+  padding: 4px 0;
+  border-radius: var(--r-md);
+  transition: all 0.2s ease;
+}
+
+.tab-ico {
+  font-size: 22px;
+  line-height: 1;
+  filter: grayscale(40%);
+  transition: all 0.2s ease;
+}
+
+.tab-lbl {
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.tab-btn.active {
+  color: var(--c-accent);
+}
+
+.tab-btn.active .tab-ico {
+  filter: grayscale(0%);
+  transform: scale(1.15);
+}
+
+.tab-btn:active {
+  transform: scale(0.94);
+}
+
+/* ============================================================
+   Toast 提示
+   ============================================================ */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 50px;
+  transform: translateX(-50%) translateY(-20px);
+  background: rgba(60, 45, 30, 0.88);
+  color: #fff3e0;
+  padding: 10px 18px;
+  border-radius: var(--r-pill);
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  max-width: 80vw;
+  text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============================================================
+   弹窗通用（在 popups.css 中定义）
+   ============================================================ */
+.popup-root { position: absolute; inset: 0; z-index: 100; pointer-events: none; }
+.popup-root .popup-backdrop { pointer-events: auto; }
+
+/* ============================================================
+   场景分层（所有 Tab 共用）
+   每个场景 = 远景层 + 远层 + 中层 + 前景层 组件堆叠
+   ============================================================ */
+.scene-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.scene-layer.layer-back   { z-index: 0; }
+.scene-layer.layer-far    { z-index: 1; }
+.scene-layer.layer-mid    { z-index: 2; }
+.scene-layer.layer-front  { z-index: 3; }
+
+/* 场景内的可交互组件需要恢复点击 */
+.scene-layer button,
+.scene-layer .fobj,
+.scene-layer .sobj,
+.scene-layer .room-item,
+.scene-layer .plot,
+.scene-layer .xiaowo,
+.scene-layer .stars-overlay .star,
+.scene-layer .cottage {
+  pointer-events: auto;
+}
+
+/* ============================================================
+   环境粒子（光点/尘埃/萤火/蝴蝶通用）
+   ============================================================ */
+.env-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation-name: env-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes env-rise {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  15%  { opacity: 0.9; }
+  60%  { opacity: 0.6; }
+  100% { transform: translateY(var(--rise, -80px)) scale(0.6); opacity: 0; }
+}
+
+/* ============================================================
+   像素艺术图片渲染
+   ============================================================ */
+img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 滚动条隐藏 */
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
