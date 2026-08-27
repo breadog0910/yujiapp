@@ -124,8 +124,12 @@ async function api(method, path, body) {
     if (error) throw new Error(error.message === 'Invalid login credentials' ? '用户名或密码错误' : error.message);
     const authUser = data.user;
     const { data: profile } = await client.from('users').select('*').eq('id', authUser.id).single();
-    _user = mapUser(profile || { id: authUser.id, username: body.username, role: 'user' });
-    if (_user.role !== 'admin') { await client.auth.signOut(); throw new Error('该账号不是管理员'); }
+    const role = profile?.role || 'user';
+    if (role !== 'admin') {
+      await client.auth.signOut();
+      throw new Error('该账号不是管理员（当前角色: ' + role + '，请在 Supabase Table Editor → public.users 表中将 role 改为 admin）');
+    }
+    _user = mapUser(profile || { id: authUser.id, username: body.username, role: 'admin' });
     token = data.session.access_token;
     localStorage.setItem(TOKEN_KEY, token);
     return { user: _user, token };
@@ -135,9 +139,9 @@ async function api(method, path, body) {
     const { data: { user: authUser }, error } = await client.auth.getUser();
     if (error || !authUser) throw new Error('未登录');
     const { data: profile } = await client.from('users').select('*').eq('id', authUser.id).single();
-    _user = mapUser(profile || { id: authUser.id, username: '', role: 'user' });
-    if (_user.role !== 'admin') throw new Error('该账号不是管理员');
-    return { user: _user };
+    const role = profile?.role || 'user';
+    if (role !== 'admin') throw new Error('该账号不是管理员（当前角色: ' + role + '）');
+    _user = mapUser(profile || { id: authUser.id, username: '', role: 'admin' });
   }
 
   if (path === '/api/auth/change-password') {
