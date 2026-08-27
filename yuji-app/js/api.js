@@ -40,6 +40,7 @@ const Api = (() => {
       password,
     });
     if (error) throw new Error(error.message === 'Invalid login credentials' ? '用户名或密码错误' : error.message);
+    if (!data.user) throw new Error('登录失败：该账号可能未验证邮箱或已被禁用');
     await _hydrateUser(data.user);
     return { user: _user };
   }
@@ -51,6 +52,7 @@ const Api = (() => {
       options: { data: { username } },
     });
     if (error) throw new Error(error.message);
+    if (!data.user) throw new Error('注册失败：请检查 Supabase Auth 是否关闭了邮箱验证');
     await _hydrateUser(data.user);
     return { user: _user };
   }
