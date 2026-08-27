@@ -206,8 +206,9 @@ CREATE POLICY "si_admin_write" ON shop_items FOR ALL USING (public.is_admin()) W
 CREATE POLICY "sc_read_all" ON seed_catalog FOR SELECT USING (true);
 CREATE POLICY "sc_admin_write" ON seed_catalog FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
--- ai_config：前端完全禁止访问（Edge Functions 使用 service_role 绕过 RLS）
-CREATE POLICY "ai_deny_all" ON ai_config FOR ALL USING (false);
+-- ai_config：管理员可读写（admin 面板直接操作），前端仍不可访问
+CREATE POLICY "ai_admin_select" ON ai_config FOR SELECT USING (public.is_admin());
+CREATE POLICY "ai_admin_write" ON ai_config FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- site_settings：所有人可读，仅 admin 可写
 CREATE POLICY "ss_read_all" ON site_settings FOR SELECT USING (true);

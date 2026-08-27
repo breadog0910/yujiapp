@@ -437,18 +437,26 @@ const loaders = {
 function switchPanel(sec) {
   $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.sec === sec));
   $$('.panel').forEach(p => p.classList.toggle('hidden', p.dataset.panel !== sec));
-  (loaders[sec] || (() => {}))();
+  const loader = (loaders[sec] || (() => {}));
+  const result = loader();
+  if (result && typeof result.catch === 'function') {
+    result.catch(e => console.error('[admin] panel load error:', sec, e));
+  }
 }
 $$('#nav button').forEach(b => b.addEventListener('click', () => switchPanel(b.dataset.sec)));
 
 /* ===================== 看板 ===================== */
 async function loadDashboard() {
-  const c = await api('GET', '/api/admin/overview');
-  const cards = [
-    ['玩家数', c.users], ['管理员', c.admins], ['家具类型', c.furniture],
-    ['布局家具', c.layoutPieces], ['商店商品', c.shopItems], ['种子', c.seeds], ['AI 智能体', c.aiAgents],
-  ];
-  $('#overview').innerHTML = cards.map(([l, n]) => `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+  try {
+    const c = await api('GET', '/api/admin/overview');
+    const cards = [
+      ['玩家数', c.users], ['管理员', c.admins], ['家具类型', c.furniture],
+      ['布局家具', c.layoutPieces], ['商店商品', c.shopItems], ['种子', c.seeds], ['AI 智能体', c.aiAgents],
+    ];
+    $('#overview').innerHTML = cards.map(([l, n]) => `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+  } catch (e) {
+    $('#overview').innerHTML = `<p class="hint">⚠️ 看板数据加载失败（Edge Function 可能未部署）：${esc(e.message)}</p>`;
+  }
 }
 
 /* ===================== 默认房间布局 ===================== */
@@ -1154,43 +1162,51 @@ $('#user-form').addEventListener('submit', async (e) => {
   } catch (err) { toast(err.message); }
 });
 async function loadUsers() {
-  const users = await api('GET', '/api/admin/users');
-  $('#user-table').innerHTML = `<table><thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>预览</th><th>强制改密</th><th>创建时间</th><th></th></tr></thead><tbody>
-    ${users.map(u => `<tr data-id="${u.id}">
-      <td>${u.id}</td><td>${esc(u.username)}</td>
-      <td><select data-f="role"><option value="user" ${u.role === 'user' ? 'selected' : ''}>玩家</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>管理员</option></select></td>
-      <td><label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-f="preview" ${u.isPreview ? 'checked' : ''}/><span style="font-size:11px;color:${u.isPreview ? 'var(--brand2)' : 'var(--muted)'}">${u.isPreview ? '🔄 是' : '否'}</span></label></td>
-      <td>${u.must_change_pw ? '是' : '否'}</td><td>${esc((u.created_at || '').slice(0, 19))}</td>
-      <td class="row-actions"><button class="mini" data-act="role">改角色</button><button class="mini del" data-act="del">删</button></td>
-    </tr>`).join('')}
-    </tbody></table>`;
-  $$('#user-table tbody tr').forEach(tr => {
-    const id = tr.dataset.id;
-    $('[data-act=role]', tr).onclick = async () => {
-      const role = $('[data-f=role]', tr).value;
-      try { await api('PUT', '/api/admin/users/' + id + '/role', { role }); toast('角色已更新'); loadUsers(); }
-      catch (err) { toast(err.message); }
-    };
-    $('[data-act=del]', tr).onclick = async () => {
-      if (!confirm('确认删除该账号？')) return;
-      try { await api('DELETE', '/api/admin/users/' + id); toast('已删除'); loadUsers(); }
-      catch (err) { toast(err.message); }
-    };
-    $('[data-f=preview]', tr).onchange = async () => {
-      const isPreview = $('[data-f=preview]', tr).checked;
-      try { await api('PUT', '/api/admin/users/' + id + '/preview', { isPreview }); toast('预览已' + (isPreview ? '开启' : '关闭')); }
-      catch (err) { toast(err.message); $('[data-f=preview]', tr).checked = !isPreview; }
-    };
-  });
+  try {
+    const users = await api('GET', '/api/admin/users');
+    $('#user-table').innerHTML = `<table><thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>预览</th><th>强制改密</th><th>创建时间</th><th></th></tr></thead><tbody>
+      ${users.map(u => `<tr data-id="${u.id}">
+        <td>${u.id}</td><td>${esc(u.username)}</td>
+        <td><select data-f="role"><option value="user" ${u.role === 'user' ? 'selected' : ''}>玩家</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>管理员</option></select></td>
+        <td><label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-f="preview" ${u.isPreview ? 'checked' : ''}/><span style="font-size:11px;color:${u.isPreview ? 'var(--brand2)' : 'var(--muted)'}">${u.isPreview ? '🔄 是' : '否'}</span></label></td>
+        <td>${u.must_change_pw ? '是' : '否'}</td><td>${esc((u.created_at || '').slice(0, 19))}</td>
+        <td class="row-actions"><button class="mini" data-act="role">改角色</button><button class="mini del" data-act="del">删</button></td>
+      </tr>`).join('')}
+      </tbody></table>`;
+    $$('#user-table tbody tr').forEach(tr => {
+      const id = tr.dataset.id;
+      $('[data-act=role]', tr).onclick = async () => {
+        const role = $('[data-f=role]', tr).value;
+        try { await api('PUT', '/api/admin/users/' + id + '/role', { role }); toast('角色已更新'); loadUsers(); }
+        catch (err) { toast(err.message); }
+      };
+      $('[data-act=del]', tr).onclick = async () => {
+        if (!confirm('确认删除该账号？')) return;
+        try { await api('DELETE', '/api/admin/users/' + id); toast('已删除'); loadUsers(); }
+        catch (err) { toast(err.message); }
+      };
+      $('[data-f=preview]', tr).onchange = async () => {
+        const isPreview = $('[data-f=preview]', tr).checked;
+        try { await api('PUT', '/api/admin/users/' + id + '/preview', { isPreview }); toast('预览已' + (isPreview ? '开启' : '关闭')); }
+        catch (err) { toast(err.message); $('[data-f=preview]', tr).checked = !isPreview; }
+      };
+    });
+  } catch (e) {
+    $('#user-table').innerHTML = `<p class="hint">⚠️ 账号管理需要部署 Edge Function（admin-api）：${esc(e.message)}</p>`;
+  }
 }
 
 /* ===================== 日志 ===================== */
 async function loadLogs() {
-  const logs = await api('GET', '/api/admin/logs');
-  $('#log-table').innerHTML = `<table><thead><tr><th>时间</th><th>管理员</th><th>动作</th><th>目标</th><th>详情</th></tr></thead><tbody>
-    ${logs.map(l => `<tr><td>${esc((l.created_at || '').slice(0, 19))}</td><td>${esc(l.admin_name)}</td><td>${esc(l.action)}</td><td>${esc(l.target)}</td><td>${esc(l.detail)}</td></tr>`).join('')}
-    </tbody></table>`;
-  if (!logs.length) $('#log-table').innerHTML = '<p class="hint">暂无操作记录。</p>';
+  try {
+    const logs = await api('GET', '/api/admin/logs');
+    $('#log-table').innerHTML = `<table><thead><tr><th>时间</th><th>管理员</th><th>动作</th><th>目标</th><th>详情</th></tr></thead><tbody>
+      ${logs.map(l => `<tr><td>${esc((l.created_at || '').slice(0, 19))}</td><td>${esc(l.admin_name)}</td><td>${esc(l.action)}</td><td>${esc(l.target)}</td><td>${esc(l.detail)}</td></tr>`).join('')}
+      </tbody></table>`;
+    if (!logs.length) $('#log-table').innerHTML = '<p class="hint">暂无操作记录。</p>';
+  } catch (e) {
+    $('#log-table').innerHTML = `<p class="hint">⚠️ 日志需要部署 Edge Function（admin-api）：${esc(e.message)}</p>`;
+  }
 }
 
 /* ===================== 启动 ===================== */
