@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Generated images / browser caches
+generated-images/
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Debug / temp files
+tools/_debug_frames/
+tools/_debug_frames_v2/
+tools/_inspect/
+tools/__new_b64.txt
+tools/_celebrate_b64.txt
+yuji-app/assets/garden/raw/
+yuji-app/assets/field/_new/
+yuji-app/assets/field/*.jpg
+yuji-app/assets/tab-bg/*.jpg
+
+# Preview / test files
+*_preview*.png
+*_test*.png
+*_test*.html
+*.png.jpg
