@@ -34,12 +34,11 @@
   }
   bootMask.remove();
 
-  // 未登录 → 显示登录/注册遮罩；成功登录后直接继续（不刷新，避免 session 写入 race）
+  // 未登录 → 显示登录/注册遮罩；成功登录后延迟刷新（等待 session 写入完毕）
   if (!State.isAuthed()) {
     Account.showLogin(() => {
-      Account.renderChip();
-      // 首次 bootApp 已在遮罩下执行，这里只需刷新 Tab1 显示登录后的状态
-      if (typeof Tab1 !== 'undefined' && Tab1.refresh) Tab1.refresh();
+      // 延迟 800ms 后刷新，确保 Supabase session 已写入 localStorage
+      setTimeout(() => location.reload(), 800);
     });
     // 仍初始化 Tab（登录遮罩下不可见，但保证登录后能直接渲染）
     bootApp();
