@@ -2,6 +2,9 @@
   "version": 2,
   "name": "yuji-app",
   "routes": [
+    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/admin/", "dest": "/admin/index.html" },
+    { "src": "/admin/(.*)", "dest": "/admin/index.html" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
