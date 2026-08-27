@@ -22,7 +22,9 @@
   document.body.appendChild(bootMask);
 
   // 先恢复 Supabase 会话（若有）
-  try { await Api.init(); } catch (e) { /* 忽略 */ }
+  try { await Api.init(); } catch (e) {
+    console.error('[boot] Api.init 失败:', e);
+  }
 
   // 多用户初始化：拉配置 + 拉账号状态（未登录则离线兜底）
   try {
@@ -32,9 +34,13 @@
   }
   bootMask.remove();
 
-  // 未登录 → 显示登录/注册遮罩；成功登录后刷新页面（拿到 token 重新 init）
+  // 未登录 → 显示登录/注册遮罩；成功登录后直接继续（不刷新，避免 session 写入 race）
   if (!State.isAuthed()) {
-    Account.showLogin(() => location.reload());
+    Account.showLogin(() => {
+      Account.renderChip();
+      // 首次 bootApp 已在遮罩下执行，这里只需刷新 Tab1 显示登录后的状态
+      if (typeof Tab1 !== 'undefined' && Tab1.refresh) Tab1.refresh();
+    });
     // 仍初始化 Tab（登录遮罩下不可见，但保证登录后能直接渲染）
     bootApp();
     return;

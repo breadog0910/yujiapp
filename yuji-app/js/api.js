@@ -70,11 +70,17 @@ const Api = (() => {
   // 从 auth.user 填充 _user（含 public.users 扩展字段）
   async function _hydrateUser(authUser) {
     if (!authUser) { _setUser(null); return; }
-    const { data: profile } = await getClient()
-      .from('users')
-      .select('role, must_change_pw, is_preview')
-      .eq('id', authUser.id)
-      .single();
+    let profile = null;
+    try {
+      const { data } = await getClient()
+        .from('users')
+        .select('role, must_change_pw, is_preview')
+        .eq('id', authUser.id)
+        .single();
+      profile = data;
+    } catch (e) {
+      console.warn('[Api] 读取 users 表失败:', e.message);
+    }
 
     _setUser({
       id: authUser.id,
