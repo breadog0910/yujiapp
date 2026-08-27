@@ -4,8 +4,8 @@
   "routes": [
     { "src": "/admin", "dest": "/admin/index.html" },
     { "src": "/admin/", "dest": "/admin/index.html" },
-    { "src": "/admin/(.*)", "dest": "/admin/index.html" },
     { "handle": "filesystem" },
+    { "src": "/admin/(.*)", "dest": "/admin/index.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "headers": [
