@@ -180,7 +180,7 @@ async function api(method, path, body) {
 
   const resources = {
     'furniture': {
-      table: 'furniture_catalog', idField: 'type', mapper: mapFurniture,
+      table: 'furniture_catalog', idField: 'type', sortField: 'type', mapper: mapFurniture,
       mapBack: r => ({
         type: r.type, name: r.name, category: r.category, icon: r.icon,
         w: r.w, h: r.h, is_floor: r.isFloor ? 1 : 0, action: r.action,
@@ -188,7 +188,7 @@ async function api(method, path, body) {
       })
     },
     'room-layout': {
-      table: 'default_room_layout', idField: 'id', mapper: mapLayout,
+      table: 'default_room_layout', idField: 'id', sortField: 'sort_order', mapper: mapLayout,
       mapBack: r => ({
         id: r.id, type: r.type, x: r.x, y: r.y, z: r.z,
         scale: r.scale, flip: r.flip, rot: r.rot || 0, tilt: r.tilt || 0,
@@ -196,7 +196,7 @@ async function api(method, path, body) {
       })
     },
     'shop': {
-      table: 'shop_items', idField: 'id', mapper: mapShop,
+      table: 'shop_items', idField: 'id', sortField: 'sort_order', mapper: mapShop,
       mapBack: r => ({
         id: r.id, kind: r.kind, emoji: r.emoji, name: r.name,
         price: r.price, bonus: JSON.stringify(r.bonus || '{}'), desc: r.desc || '',
@@ -204,7 +204,7 @@ async function api(method, path, body) {
       })
     },
     'seeds': {
-      table: 'seed_catalog', idField: 'key', mapper: mapSeed,
+      table: 'seed_catalog', idField: 'key', sortField: 'sort_order', mapper: mapSeed,
       mapBack: r => ({
         key: r.key, emoji: r.emoji, name: r.name, dir: r.dir, desc: r.desc,
         feed_on: JSON.stringify(r.feedOn || '[]'), stages: JSON.stringify(r.stages || '[]'),
@@ -212,20 +212,20 @@ async function api(method, path, body) {
       })
     },
     'tab-backgrounds': {
-      table: 'tab_backgrounds', idField: 'tab_key', mapper: mapTabBg,
+      table: 'tab_backgrounds', idField: 'tab_key', sortField: 'tab_key', mapper: mapTabBg,
       mapBack: r => ({
         tab_key: r.tabKey, bg_path: r.bgPath, updated_at: r.updatedAt
       })
     },
     'default-care-options': {
-      table: 'default_care_options', idField: 'id', mapper: mapCare,
+      table: 'default_care_options', idField: 'id', sortField: 'sort_order', mapper: mapCare,
       mapBack: r => ({
         id: r.id, emoji: r.emoji, label: r.label,
         mode: r.mode, reward: r.reward, sort_order: r.sortOrder || 0
       })
     },
     'ai': {
-      table: 'ai_config', idField: 'key', mapper: mapAI,
+      table: 'ai_config', idField: 'key', sortField: 'key', mapper: mapAI,
       mapBack: r => ({
         key: r.key, name: r.name, provider: r.provider,
         base_url: r.base_url, api_key: r.api_key, model: r.model,
@@ -260,7 +260,7 @@ async function api(method, path, body) {
       if (error) throw new Error(error.message);
       return cfg.mapper(data);
     } else {
-      const { data, error } = await client.from(cfg.table).select('*').order('sort_order');
+      const { data, error } = await client.from(cfg.table).select('*').order(cfg.sortField);
       if (error) throw new Error(error.message);
       return (data || []).map(cfg.mapper);
     }
