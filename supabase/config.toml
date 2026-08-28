@@ -55,3 +55,6 @@ verify_jwt = false
 
 [functions.admin-api]
 verify_jwt = false
+
+[functions.star-miner]
+verify_jwt = false

@@ -18,8 +18,8 @@
   <link rel="stylesheet" href="css/tab1-home.css?v=54" />
   <link rel="stylesheet" href="css/tab2-forest.css?v=37" />
   <link rel="stylesheet" href="css/tab3-garden.css?v=39" />
-  <link rel="stylesheet" href="css/tab4-stars.css?v=37" />
-  <link rel="stylesheet" href="css/popups.css?v=37" />
+  <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
+  <link rel="stylesheet" href="css/popups.css?v=39" />
 </head>
 <body>
   <div class="app-container" id="app">
@@ -198,30 +198,24 @@
           </div>
         </section>
 
-        <!-- ============ Tab4 星迹·个人宇宙 ============ -->
+        <!-- ============ Tab4 星迹·个人宇宙（星座图） ============ -->
         <section id="tab4" class="tab-panel" data-tab="tab4">
           <div class="tab4-stars">
-            <!-- 远景层：晨昏天空底图 -->
+            <!-- 远景层：晨昏星空底图（保留） -->
             <div class="scene-layer layer-back">
-              <img class="tab4-bg" src="assets/tab4-stars.png" alt="晨昏星空" />
+              <img class="tab4-bg" src="assets/tab4-stars.png" alt="星空" />
             </div>
 
-            <!-- 中层：星点组件 + 两个入口物件 -->
-            <div class="scene-layer layer-mid">
-              <div class="stars-overlay" id="starsOverlay"></div>
-              <div class="stars-objects">
-                <button class="sobj sobj-nebula" data-popup="timeline" title="星云 · 成长时间轴">
-                  <div class="sobj-icon">🌌</div>
-                  <div class="sobj-name">星云</div>
-                </button>
-                <button class="sobj sobj-book" data-popup="archive" title="星之浮书 · 成长档案">
-                  <div class="sobj-icon">📚</div>
-                  <div class="sobj-name">星浮书</div>
-                </button>
-              </div>
+            <!-- 中层：6 星座区（SVG 画连线 + DOM 星星 + 星座标签浮标） -->
+            <div class="scene-layer layer-mid tab4-constellations" id="constellationsLayer">
+              <svg class="constellation-lines" id="consSvg"
+                   viewBox="0 0 100 100" preserveAspectRatio="none"
+                   aria-hidden="true"></svg>
+              <div class="stars-layer" id="starsLayer"></div>
+              <div class="constellation-labels" id="consLabels"></div>
             </div>
 
-            <!-- 前景层：云絮 + 流星 -->
+            <!-- 前景层：云絮 + 流星氛围（保留） -->
             <div class="scene-layer layer-front">
               <div class="stars-clouds"></div>
               <div class="shooting-star"></div>
@@ -267,14 +261,14 @@
       console.error('[Supabase] CDN 加载失败，请检查网络或尝试刷新页面');
     }
   </script>
-  <script src="js/api.js?v=37"></script>
-  <script src="js/state.js?v=37"></script>
+  <script src="js/api.js?v=38"></script>
+  <script src="js/state.js?v=38"></script>
   <script src="js/utils.js?v=37"></script>
   <script src="js/tab1.js?v=53"></script>
   <script src="js/tab2.js?v=37"></script>
   <script src="js/tab3.js?v=38"></script>
-  <script src="js/tab4.js?v=37"></script>
-  <script src="js/popups.js?v=37"></script>
+  <script src="js/tab4.js?v=40"></script>
+  <script src="js/popups.js?v=39"></script>
   <script src="js/account.js?v=37"></script>
   <script src="js/main.js?v=37"></script>
 </body>

@@ -721,9 +721,143 @@ const Popups = (() => {
         </div>
       `;
     },
+
+    // ============ 星星详情卡片（Tab4 新星座） ============
+    starCard(data) {
+      const p = State.state.starPoints.find(s => s.id === data.id);
+      if (!p) return `<div class="popup-body"><div class="hint">这颗星不见了…</div></div>`;
+      const cat = State.pickCategoryByType(p.type);
+      const CONS_META = {
+        emotion:      { emoji: '🌸', name: '情绪觉察座' },
+        hearttalk:    { emoji: '💌', name: '本心对话座' },
+        milestone:    { emoji: '✨', name: '成就里程碑座' },
+        selfcare:     { emoji: '🪴', name: '自我照顾座' },
+        deepdiscover: { emoji: '🪞', name: '深度发现座' },
+        growth:       { emoji: '🌱', name: '成长耕作座' },
+      };
+      const meta = CONS_META[cat] || CONS_META.milestone;
+      const impGlyph = '✦'.repeat(Math.max(1, Math.min(3, p.importance || 1)));
+      const ev = p.evidence || {};
+      const isAI = typeof p.type === 'string' && p.type.startsWith('ai_');
+      let srcHtml = '';
+      if (isAI) {
+        srcHtml = `🤖 <b>AI 深度挖掘</b><br/>基于你授权过的真实数据整理 · ${Utils.formatFullDate(p.date)}`;
+      } else if (p.source) {
+        srcHtml = `🔗 <b>源自你的真实记录</b><br/>📅 ${Utils.formatFullDate(p.date)} · ${escHtml(p.source)}`;
+      } else if (ev.kind || ev.date || ev.ref) {
+        const dateLine = ev.date ? `📅 ${Utils.formatFullDate(ev.date)} · ` : '';
+        const kindLine = ev.kind ? `${escHtml(ev.kind)}` : '';
+        const refLine  = ev.ref  ? `<br/>📝 ${escHtml(String(ev.ref).slice(0, 40))}` : '';
+        srcHtml = `🔗 <b>源自你的真实记录</b><br/>${dateLine}${kindLine}${refLine}`;
+      } else {
+        srcHtml = `📅 ${Utils.formatFullDate(p.date)} · ${escHtml(typeLabel(p.type))}`;
+      }
+      const collected = !!(p.collected || p.pinned);
+      return `
+        <div class="popup-head">
+          <div class="popup-title">${meta.emoji} ${meta.name}<span class="star-card-imp">${impGlyph}</span></div>
+          <button class="popup-close" aria-label="关闭">✕</button>
+        </div>
+        <div class="popup-body">
+          <div class="star-card-title">${escHtml(p.title)}</div>
+          <div class="star-card-body">${escHtml(p.desc || '').replace(/\n/g,'<br/>')}</div>
+          ${srcHtml ? `<div class="star-card-source">${srcHtml}</div>` : ''}
+        </div>
+        <div class="popup-foot">
+          <button class="popup-btn ${collected ? '' : 'ghost'}"
+                  data-act="togglePin" data-id="${p.id}" ${collected ? 'disabled' : ''}>
+            ${collected ? '⭐ 已珍藏' : '⭐ 珍藏这颗星'}
+          </button>
+          <button class="popup-btn primary" data-act="close">关闭</button>
+        </div>
+      `;
+    },
+
+    // ============ 星座总结卡片（点击星座标签打开） ============
+    constellationSummary(data) {
+      const cat = data.category || data.cat || 'milestone';
+      const CONS_META = {
+        emotion:      { emoji: '🌸', name: '情绪觉察座',   tips:['多记录几次情绪','愿意写出此刻烦躁/平静的那一瞬间','同一天记录 3 次以上会出大星'] },
+        hearttalk:    { emoji: '💌', name: '本心对话座',   tips:['第一次对小我说出心里话','累计 10 轮对话会出大星','小我回你的话里也许藏着一句答案'] },
+        milestone:    { emoji: '✨', name: '成就里程碑座', tips:['陪自己 7 天会亮一颗大星','累计 5 次以上自我照顾会亮大星','回头看，你的星越来越多'] },
+        selfcare:     { emoji: '🪴', name: '自我照顾座',   tips:['给今天的自己选一件小事做','同一件坚持 3 天会亮大星','加一件自定义照顾也会亮'] },
+        deepdiscover: { emoji: '🪞', name: '深度发现座',   tips:['完成「自我手册」章节就亮星','写一篇成长笔记就亮星','每 6 小时 AI 会挖出 1 颗大星'] },
+        growth:       { emoji: '🌱', name: '成长耕作座',   tips:['种下第一颗技能种子就亮一颗','种子进入成熟期会亮大星','技能收获后也算一段耕作'] },
+      };
+      const m = CONS_META[cat] || CONS_META.milestone;
+      const points = State.state.starPoints.filter(p => State.pickCategoryByType(p.type) === cat);
+      const pointsSorted = [...points].sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+      const latest = pointsSorted[0];
+      const collectedCount = points.filter(p => p.collected || p.pinned).length;
+      // 简易"锁态"：一颗星也没有 + 对应数据源也空着 → 提示去做更多行为亮星
+      const S = State.state;
+      const EMPTY_MARK = {
+        emotion:      { empty: !(S.emotionRecords||[]).length,                                               tip: '去「此刻」记录一次心情，这里会亮起' },
+        hearttalk:    { empty: !(S.chatHistory||[]).some(x => x && x.role==='user'),                         tip: '去「遇见」和森林里的小我聊一句，这里会亮起' },
+        milestone:    { empty: !(S.milestones||[]).length && (S.bubbleRecords||[]).length < 5,               tip: '完成 5 次自我照顾或添加一条里程碑，这里会亮起' },
+        selfcare:     { empty: !(S.bubbleRecords||[]).length,                                                tip: '完成一次自我照顾打卡，这里会亮起' },
+        deepdiscover: { empty: !(S.growthNotes||[]).length && !(S.starPoints||[]).filter(p => String(p.type||'').startsWith('ai_')).length && !Object.values(S.selfManual||{}).some(v => typeof v==='string' && !v.includes('还在认识中')), tip: '写一篇成长笔记 / 完成自我手册，AI 之后会挖出你没发现过的自己' },
+        growth:       { empty: !(S.farmPlots||[]).length && !(S.farmWarehouse||[]).length,                   tip: '去「生长」种下一颗种子或技能，这里会亮起' },
+      };
+      const mark = EMPTY_MARK[cat] || { empty:false, tip:'' };
+      const locked = points.length === 0 && mark.empty;
+      return `
+        <div class="popup-head">
+          <div class="popup-title">${m.emoji} ${m.name}</div>
+          <button class="popup-close" aria-label="关闭">✕</button>
+        </div>
+        <div class="popup-body">
+          ${locked
+            ? `<div class="chapter" style="background:rgba(250,230,210,0.7);">
+                 <div class="chapter-title">🔒 还没有亮星</div>
+                 <div class="chapter-content">${escHtml(mark.tip)}</div>
+               </div>`
+            : `<div class="stat-row"><span class="stat-label">✦ 已点亮</span><span class="stat-value"><b>${points.length}</b> 颗${collectedCount ? `（珍藏 ${collectedCount}）` : ''}</span></div>`
+          }
+          ${latest && !locked ? `
+            <div style="margin-top:14px;">
+              <div class="chapter-title">最近一颗 · ${Utils.formatDate(latest.date)}</div>
+              <div class="chapter" style="background:rgba(255,244,224,0.7); margin-top:6px;">
+                <div class="chapter-content" style="line-height:1.8;">
+                  <b>${escHtml(latest.title)}</b><br/>
+                  <span style="color:#7a5035;">${escHtml(String(latest.desc||'').slice(0,50))}${latest.desc && latest.desc.length > 50 ? '…' : ''}</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+          ${!locked ? `
+            <div style="margin-top:16px;">
+              <div class="chapter-title">💡 想点亮更多星？</div>
+              <ul style="margin:6px 0 0 16px; padding:0; line-height:2; font-family:var(--font-body); font-size:13px; color:#6a4030;">
+                ${m.tips.map(t => `<li>${escHtml(t)}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+        <div class="popup-foot">
+          <button class="popup-btn primary" data-act="close">好的</button>
+        </div>
+      `;
+    },
   };
 
   function typeLabel(t) {
+    if (typeof t === 'string' && t.startsWith('mined_')) {
+      const sub = t.replace('mined_', '');
+      return ({
+        // 新 6 星座 key
+        emotion: '情绪记录', hearttalk: '本心对话', milestone: '成就挖掘',
+        selfcare: '自我照顾', growth: '技能耕作', deepdiscover: '深度发现',
+        welcome: '系统欢迎',
+        bubble: '打卡记录', bubble_5: '累计打卡成就',
+        emotion_record: '情绪记录', chat: '本心对话',
+        farm_harvest: '技能收获', farm_plot: '技能耕作',
+        note: '成长笔记', selfmanual: '自我手册',
+        // 兼容旧 key
+        dialogue: '本心挖掘', garden: '耕作挖掘',
+      })[sub] || '模板挖掘';
+    }
+    if (typeof t === 'string' && t.startsWith('ai_')) return 'AI 深度挖掘';
     return ({
       letter: '小我的信',
       emotion: '情绪记录',
@@ -734,7 +868,17 @@ const Popups = (() => {
       manual: '手动记录',
       spirit: '精神体验',
       care: '自我照顾',
+      milestone: '里程碑',
+      manual_star: '手动星',
     })[t] || '记录';
+  }
+
+  // HTML 转义：防止用户输入 / starPoints 文本直接插到模板里引起 XSS 或 DOM 错位
+  function escHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
   }
 
   // 弹窗内交互初始化
@@ -1394,6 +1538,31 @@ ${ctx.join('\n\n')}`;
         close();
       });
       bindAct('cancel', close);
+    },
+
+    // ============ 星星详情卡片 Tab4：珍藏 + 关闭 ============
+    starCard(data) {
+      bindAct('close', close);
+      bindAct('togglePin', e => {
+        const id = e.currentTarget.dataset.id;
+        const p = (State.state.starPoints || []).find(x => x.id === id);
+        if (!p) return;
+        const already = !!(p.collected || p.pinned);
+        if (already) return;
+        p.collected = true;
+        p.pinned = true; // 兼容旧字段
+        State.save();
+        Utils.toast('已珍藏 · 不会被自动清理 ✨');
+        // 如果 Tab4 在当前视图，刷新星星显示（让 collected 样式生效）
+        try { if (typeof Tab4 !== 'undefined' && Tab4.renderAll) Tab4.renderAll(); } catch (_) {}
+        close();
+        setTimeout(() => open('starCard', { id }), 180);
+      });
+    },
+
+    // ============ 星座总结卡片 Tab4：关闭 ============
+    constellationSummary() {
+      bindAct('close', close);
     },
   };
 

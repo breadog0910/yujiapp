@@ -20,52 +20,7 @@
   mix-blend-mode: lighten;
 }
 
-/* 漂浮的星点层 */
-.stars-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.star {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  background: radial-gradient(circle, #fff8d8 0%, #f8d878 40%, #d8a858 70%, transparent 100%);
-  border-radius: 50%;
-  cursor: pointer;
-  pointer-events: auto;
-  box-shadow:
-    0 0 8px 2px rgba(255, 240, 200, 0.6),
-    0 0 16px 4px rgba(255, 220, 180, 0.3);
-  animation: star-twinkle 3s ease-in-out infinite;
-  transition: transform 0.2s ease;
-}
-
-.star.big {
-  width: 14px;
-  height: 14px;
-  background: radial-gradient(circle, #fff8d8 0%, #f8c878 50%, #d88058 80%, transparent 100%);
-  box-shadow:
-    0 0 12px 4px rgba(255, 220, 180, 0.8),
-    0 0 28px 8px rgba(248, 200, 120, 0.4);
-}
-
-.star.huge {
-  width: 22px;
-  height: 22px;
-  background: radial-gradient(circle, #ffffff 0%, #f8d488 40%, #e89878 80%, transparent 100%);
-  box-shadow:
-    0 0 16px 6px rgba(255, 230, 200, 0.9),
-    0 0 36px 12px rgba(248, 200, 160, 0.4);
-}
-
-.star:active { transform: scale(0.8); }
-
-@keyframes star-twinkle {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.15); }
-}
+/* Tab4 星迹老的散点星星层已被替换为星座层（见 tab4-constellations 下新样式） */
 
 /* 飘动云絮 */
 .stars-clouds {
@@ -118,9 +73,9 @@
   91%, 100% { opacity: 0; }
 }
 
-/* 顶部文案 */
+/* 顶部文案（Tab4 星座图） */
 .tab4-stars::before {
-  content: '✦  你一路走过的星星  ✦';
+  content: '✦  你的星座图  ✦';
   position: absolute;
   top: 18px;
   left: 50%;
@@ -135,63 +90,291 @@
   white-space: nowrap;
 }
 
-/* 中心物件 */
-.stars-objects {
+/* ============================================================
+   星座层（Tab4 中层新加的结构）
+   ============================================================ */
+
+.tab4-constellations {
+  position: absolute;
+  inset: 0;
+}
+
+.constellation-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+.constellation-lines line {
+  stroke: rgba(255, 210, 107, 0.85);
+  stroke-width: 0.1;
+  stroke-dasharray: 0.5, 0.6;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.65; /* 金黄虚线：与星星色调统一，稍淡不抢戏 */
+}
+
+.stars-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 2;
 }
 
-.sobj {
+/* 星座浮标容器：默认不显示（画面只保留星星），用户后续要"点亮星座提示"可重新打开 */
+.constellation-labels {
   position: absolute;
-  background: rgba(255, 250, 240, 0.78);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 3px solid rgba(180, 140, 160, 0.5);
-  border-radius: var(--r-md);
-  padding: 10px 12px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  display: none; /* 需求：不要显示文字/面板，只生成星星 */
+}
+/* 预留：如需重新显示星座浮标，把上面 display:none 删除即可，其它样式已就绪 */
+
+/* 单颗星星 v2（统一金黄色 + 四角星形 ✦） */
+.stars-v2,
+.star-v2 {
+  position: absolute;
   pointer-events: auto;
-  color: #5a4060;
-  font-family: var(--font-body);
-  box-shadow: 0 6px 18px rgba(120, 80, 100, 0.25);
-  transition: all 0.2s ease;
-  min-width: 70px;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.18s ease, filter 0.2s ease;
+  animation: starv2-twinkle 3.4s ease-in-out infinite;
+  /* 默认小星星尺寸 */
+  width: 12px;
+  height: 12px;
+  /* 四角星形：外框金黄实心，中心更亮 */
+  background: #FFD86B !important;
+  /* 用 clip-path 画四角星形 ✦：
+     路径顺序（相对 50% 中心）：
+       上尖 → 右上凹 → 右尖 → 右下凹 → 下尖 → 左下凹 → 左尖 → 左上凹 → 回到上尖 */
+  clip-path: polygon(
+    50% 0%,
+    62% 38%,
+    100% 50%,
+    62% 62%,
+    50% 100%,
+    38% 62%,
+    0% 50%,
+    38% 38%
+  );
+  /* 外发光（drop-shadow 支持 clip-path 形状，box-shadow 会被裁掉所以不用） */
+  filter:
+    drop-shadow(0 0 2px #fff4b0)
+    drop-shadow(0 0 5px rgba(255, 205, 78, 0.7));
 }
-
-.sobj:active { transform: scale(0.92); }
-
-.sobj-icon {
-  font-size: 30px;
+/* 内部更亮的核心（嵌套一个更小的四角星做中心白→金黄渐变） */
+.stars-v2::before,
+.star-v2::before {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  background: radial-gradient(circle, #ffffff 0%, #fff3a6 55%, #FFD86B 100%);
+  clip-path: polygon(
+    50% 0%,
+    62% 38%,
+    100% 50%,
+    62% 62%,
+    50% 100%,
+    38% 62%,
+    0% 50%,
+    38% 38%
+  );
+}
+/* 中等星：14 → 17px，光晕更大 */
+.stars-v2.big,
+.star-v2.big {
+  width: 17px;
+  height: 17px;
+  filter:
+    drop-shadow(0 0 2px #fff4b0)
+    drop-shadow(0 0 8px rgba(255, 205, 78, 0.82));
+}
+/* 大星（欢迎星/里程碑/AI） */
+.stars-v2.huge,
+.star-v2.huge {
+  width: 26px;
+  height: 26px;
+  animation-duration: 2.6s;
+  filter:
+    drop-shadow(0 0 3px #fff8d2)
+    drop-shadow(0 0 12px rgba(255, 205, 78, 0.9));
+}
+/* AI 星：额外的大光晕圈 */
+.stars-v2.ai-star,
+.star-v2.ai-star {
+  /* 给 AI 星加一层更宽的柔光（用 filter 叠多个 drop-shadow） */
+  filter:
+    drop-shadow(0 0 2px #fff4b0)
+    drop-shadow(0 0 6px rgba(255, 230, 140, 0.9))
+    drop-shadow(0 0 10px rgba(255, 205, 78, 0.7));
+}
+.stars-v2.big.ai-star,
+.star-v2.big.ai-star {
+  filter:
+    drop-shadow(0 0 3px #fff4b0)
+    drop-shadow(0 0 7px rgba(255, 230, 140, 0.92))
+    drop-shadow(0 0 14px rgba(255, 205, 78, 0.78));
+}
+.stars-v2.huge.ai-star,
+.star-v2.huge.ai-star {
+  filter:
+    drop-shadow(0 0 4px #fff8d2)
+    drop-shadow(0 0 10px rgba(255, 230, 140, 0.95))
+    drop-shadow(0 0 18px rgba(255, 205, 78, 0.82));
+}
+/* 珍藏态：整体再暖一点 + 右上角小星标 */
+.stars-v2.collected,
+.stars-v2.pinned,
+.star-v2.pinned {
+  filter:
+    drop-shadow(0 0 3px #fff8d2)
+    drop-shadow(0 0 7px #ffb74a) !important;
+}
+.stars-v2.collected::after,
+.stars-v2.pinned::after,
+.star-v2.pinned::after {
+  content: '✦'; /* 四角星 emoji 感的小标记 */
+  position: absolute;
+  top: -6px; right: -10px;
+  font-size: 10px;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  color: #fff0a3;
+  text-shadow: 0 0 3px #ffbb44, 0 0 6px #ffbb44;
+  background: transparent;
+  box-shadow: none;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+}
+.stars-v2:active,
+.star-v2:active { transform: translate(-50%, -50%) scale(0.78); }
+
+/* 兼容旧 data-cat 写法（如果 data-cat 被设置，则作为 --sc 兜底） */
+.stars-v2[data-cat="emotion"],
+.star-v2[data-cat="emotion"]          { --sc: #b497ff; }
+.stars-v2[data-cat="hearttalk"],
+.star-v2[data-cat="dialogue"]         { --sc: #ffc9de; }
+.stars-v2[data-cat="milestone"],
+.star-v2[data-cat="milestone"]        { --sc: #ffe066; }
+.stars-v2[data-cat="selfcare"],
+.star-v2[data-cat="selfcare"]         { --sc: #ffb199; }
+.stars-v2[data-cat="deepdiscover"],
+.star-v2[data-cat="mirror"]           { --sc: #7fd4ff; }
+.stars-v2[data-cat="growth"],
+.star-v2[data-cat="garden"]           { --sc: #9ee493; }
+
+@keyframes starv2-twinkle {
+  0%,100% { opacity: 0.82; }
+  50%     { opacity: 1; }
 }
 
-.sobj-name {
-  font-size: 12px;
+/* 星座浮标（点击打开星座总结） */
+.cons-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 3px 7px 3px 6px;
+  border-radius: 999px;
+  background: rgba(255,250,240,0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #5a3a50;
+  font-family: var(--font-body);
+  font-size: 11px;
   font-weight: bold;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(80,40,70,0.2);
+  transition: transform 0.16s ease;
+}
+.cons-label:active { transform: translate(-50%, -50%) scale(0.92); }
+.cons-label .cons-count {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 5px;
+  background: rgba(180,140,160,0.3);
+  color: #7a5060;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: bold;
 }
 
-.sobj-nebula {
-  top: 30%;
+/* 星座锁态（对应类数据未授权/无星时显示在星座中心锚点） */
+.cons-lock {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  font-size: 13px;
+  opacity: 0.55;
+  z-index: 4;
+  text-align: center;
+}
+.cons-lock-tip {
+  position: absolute;
   left: 50%;
-  transform: translateX(-50%);
-  animation: nebula-float 6s ease-in-out infinite;
+  top: 100%;
+  transform: translate(-50%, 6px);
+  width: 130px;
+  background: rgba(60,40,50,0.82);
+  color: #fff6e8;
+  font-family: var(--font-body);
+  font-size: 10px;
+  line-height: 1.5;
+  padding: 5px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: normal;
 }
-.sobj-nebula:active { transform: translateX(-50%) scale(0.92); }
+.cons-lock:hover .cons-lock-tip { opacity: 1; }
 
-.sobj-book {
-  bottom: 14%;
-  right: 8%;
-  animation: gentle-float 5s ease-in-out infinite 1s;
+/* ============================================================
+   星星详情卡片内部专属样式（.popup-body 内生效）
+   ============================================================ */
+
+.star-card-title {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: bold;
+  color: #5a3040;
+  padding: 6px 4px 12px;
+  letter-spacing: 0.8px;
 }
-
-@keyframes nebula-float {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%      { transform: translateX(-50%) translateY(-10px); }
+.star-card-body {
+  background: rgba(255,244,224,0.75);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  line-height: 1.85;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: #5a3a20;
+  border: 1px dashed rgba(180,140,100,0.4);
+}
+.star-card-source {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: rgba(250,240,220,0.6);
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #8a6050;
+  line-height: 1.65;
+}
+.star-card-source b {
+  color: #6a4030;
+  font-weight: bold;
+}
+.star-card-imp {
+  letter-spacing: 2px;
+  margin-left: 8px;
+  color: #d8a060;
+  font-size: 13px;
 }
