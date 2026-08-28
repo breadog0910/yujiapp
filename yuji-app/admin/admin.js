@@ -722,7 +722,13 @@ let layoutBgKey = 'room';
 layoutBgToggle.addEventListener('click', () => {
   layoutBgKey = layoutBgKey === 'room' ? 'forest' : 'room';
   const bg = $('#room-canvas .room-bg');
-  if (bg) bg.src = LAYOUT_BG[layoutBgKey];
+  let src = LAYOUT_BG[layoutBgKey];
+  if (layoutBgKey === 'forest') {
+    // 森林预览优先用 Tab2 后台自定义背景，无自定义则回退默认
+    const t2 = tabBgList.find(t => t.tabKey === 'tab2');
+    if (t2 && t2.bgPath) src = t2.bgPath;
+  }
+  if (bg) bg.src = src;
   layoutBgToggle.textContent = layoutBgKey === 'room' ? '🛋️ 房间' : '🌿 森林';
   layoutBgToggle.classList.toggle('active', layoutBgKey === 'forest');
   if (catalogFurn.length) renderPalette(catalogFurn);
