@@ -204,30 +204,28 @@ body.room-editing .room-item .ri-label { opacity: 1; }
 /* ---------- 布置工具 ---------- */
 .room-edit-btn {
   position: absolute;
-  top: 28px; /* 与右上角齿轮按钮（top:32, 高36）垂直居中对齐 */
+  top: 32px; /* 与右上角齿轮按钮顶部完全齐平（齿轮 top:32, 高36） */
   right: 56px; /* 布置在齿轮左侧：齿轮 right:14 + 宽36 + 间距6 */
   z-index: 20;
   min-width: 40px;
   height: 36px;
   padding: 0 12px;
-  border: var(--pixel-border);
-  border-radius: 12px;
-  background: var(--c-card-glass);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  font-family: var(--font-body);
-  font-size: 13px;
+  border: 2.5px solid var(--c-line);
+  border-radius: 999px; /* 像素胶囊，与金币标签同款 */
+  background: rgba(255, 252, 245, 0.8); /* 与金币同款米色玻璃 */
+  font-family: var(--font-pixel);
+  font-size: 10px;
   font-weight: bold;
-  color: var(--c-text);
+  color: #8a6a30;
   cursor: pointer;
-  box-shadow: 0 4px 10px var(--c-shadow);
+  box-shadow: 0 3px 8px var(--c-shadow);
   transition: all 0.2s ease;
 }
 
 /* 总金币标签 */
 .room-coin {
   position: absolute;
-  top: 10px;
+  top: 32px; /* 与右上角齿轮、布置按钮同一水平线对齐 */
   left: 10px;
   z-index: 20;
   font-family: var(--font-pixel);
