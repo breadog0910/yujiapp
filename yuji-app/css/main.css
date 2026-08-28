@@ -44,30 +44,34 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #f5e8d4;  /* 与 app-container 一致，防止顶部白色填充 */
+}
+
+body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   font-family: var(--font-body);
   color: var(--c-text);
-  background: #e6d8c0;
-  background-image:
-    radial-gradient(circle at 20% 10%, #f7e9d3 0%, transparent 50%),
-    radial-gradient(circle at 80% 90%, #e2d2b8 0%, transparent 50%),
-    linear-gradient(135deg, #efe1cc 0%, #d8c8a8 100%);
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: none;
-  position: fixed;
 }
 
-/* 应用容器：全屏自适应，fixed 锁定视口 */
+/* 应用容器：fixed 锁定视口，全屏覆盖 */
 .app-container {
   position: fixed;
   inset: 0;
+  width: 100%;
+  height: 100%;
   background: var(--c-bg);
   overflow: hidden;
   display: flex;
@@ -81,8 +85,12 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    position: static;
     overflow: auto;
+    background: #e6d8c0;
+    background-image:
+      radial-gradient(circle at 20% 10%, #f7e9d3 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, #e2d2b8 0%, transparent 50%),
+      linear-gradient(135deg, #efe1cc 0%, #d8c8a8 100%);
   }
 
   .app-container {
