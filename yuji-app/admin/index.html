@@ -38,6 +38,7 @@
       <button data-sec="furniture">📦 家具库</button>
       <button data-sec="shop">🛒 商店商品</button>
       <button data-sec="seeds">🌱 花园种子</button>
+      <button data-sec="farm">🌾 技能农场</button>
       <button data-sec="tabbg">🖼️ Tab 页面背景</button>
       <button data-sec="defcare">🫧 每日照顾选项</button>
       <button data-sec="ai">🤖 AI 接口</button>
@@ -125,6 +126,44 @@
     <section data-panel="seeds" class="panel hidden">
       <div class="panel-head"><h2>花园种子目录</h2><button id="seed-add" class="primary">+ 新增种子</button></div>
       <div id="seed-table" class="table-wrap"></div>
+    </section>
+
+    <!-- 技能农场 -->
+    <section data-panel="farm" class="panel hidden">
+      <div class="panel-head"><h2>🌾 技能农场</h2></div>
+      <p class="hint">配置 <b>土地格子位置</b>（拖拽）与 <b>作物品种库</b>（含各生长阶段图）。前端用户创建技能时从品种库选作物、从空格子选位置种下；记录学习时间/完成小目标推进生长。土地底图在「Tab 页面背景」tab3 项上传。保存后预览账号 2.5s 自动同步。</p>
+
+      <h3 style="margin-top:18px;">① 作物品种库</h3>
+      <div class="panel-head" style="margin-top:6px;">
+        <span class="hint" style="margin:0;">每行：key/名/各阶段图/每阶分钟</span>
+        <button id="farm-crop-add" class="primary">+ 新增品种</button>
+      </div>
+      <div id="farm-crop-table" class="table-wrap"></div>
+
+      <h3 style="margin-top:22px;">② 土地格子布置（拖拽）</h3>
+      <div class="panel-head" style="margin-top:6px;">
+        <span class="hint" style="margin:0;">把空格子拖到土地图上，用户在此处种技能。</span>
+        <div class="panel-actions">
+          <button id="farm-plot-add" class="primary">+ 添加格子</button>
+          <button id="farm-plot-save" class="primary">保存格子布局</button>
+          <button id="farm-plot-clear">清空</button>
+        </div>
+      </div>
+      <div class="layout-wrap">
+        <div id="farm-canvas" class="room-canvas">
+          <img class="room-bg" id="farm-land-bg" src="/assets/farm/land.png" alt="土地底图" draggable="false" />
+          <div id="farm-plots-stage" class="room-furniture"></div>
+        </div>
+        <div class="palette">
+          <div class="palette-title">格子属性</div>
+          <div id="farm-plot-props" class="piece-props hidden">
+            <label>层级 z <input id="fpp-z" type="range" min="1" max="6" step="1" /><span id="fpp-z-v"></span></label>
+            <label>缩放 <input id="fpp-scale" type="range" min="0.5" max="3" step="0.1" /><span id="fpp-scale-v"></span></label>
+            <button id="fpp-del" class="danger">删除该格子</button>
+          </div>
+          <div class="hint" style="margin-top:8px;">土地底图请到「Tab 页面背景 → tab3」上传。</div>
+        </div>
+      </div>
     </section>
 
     <!-- Tab 页面背景 -->
@@ -332,6 +371,36 @@
 
 <!-- 隐藏的通用 file input：给商店商品每行"上传图片"按钮复用（id 作为 data-id） -->
 <input id="shop-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
+
+<!-- ===== 农场品种（含阶段图上传）模态框 ===== -->
+<div id="farm-crop-modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="fc-modal-title">新增作物品种</h3>
+      <button type="button" id="fc-close" class="mini" title="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row two-col">
+        <div><label>Key *</label><input id="fc-key" type="text" placeholder="英文唯一，如 wheat" /></div>
+        <div><label>名称 *</label><input id="fc-name" type="text" placeholder="如 小麦" /></div>
+      </div>
+      <div class="row two-col">
+        <div><label>Emoji</label><input id="fc-emoji" type="text" placeholder="🌾" style="width:60px;" /></div>
+        <div><label>每阶段分钟</label><input id="fc-mps" type="number" min="1" value="600" /></div>
+      </div>
+      <div class="row">
+        <label>生长阶段（每阶段上传一张图 + 名称）</label>
+        <div id="fc-stages"></div>
+        <button type="button" id="fc-add-stage" class="ghost" style="margin-top:6px;">+ 增加阶段</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="fc-cancel">取消</button>
+      <button type="button" id="fc-submit" class="primary">保存品种</button>
+    </div>
+  </div>
+</div>
+<input id="fc-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
 
 <!-- 隐藏的通用 file input：给 4 个 Tab 背景上传复用（tabKey 作为 data-tabkey） -->
 <input id="tabbg-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
