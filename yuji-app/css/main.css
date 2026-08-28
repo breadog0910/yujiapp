@@ -121,57 +121,50 @@ body {
     /* 手机内部背景 */
     background: var(--c-bg);
     z-index: 2;
+    /* 桌面预览专用的顶部安全偏移：顶部按钮(布置/金币/田地日志等)
+       在各自 tab css 中用此变量下移，避免被状态栏+动态岛盖住 */
+    --desktop-safe-top: 40px;
   }
 
-  /* 顶部状态栏（桌面预览框专用）：时间 + 信号/WiFi/电量 */
+  /* 顶部状态栏（桌面预览框专用）：时间 + 信号/WiFi/电量
+     —— 改薄(22px) + 透明底，不抢内部视觉空间也不遮按钮 */
   .app-container::before {
-    content: '9:41  📶  📡  🔋';
+    content: '9:41     📶 📡 🔋';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 34px;
-    padding: 0 28px 0 32px;
+    height: 22px;
+    padding: 0 30px 0 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #2a2318;
-    background: linear-gradient(180deg, rgba(245,232,212,0.92) 0%, rgba(245,232,212,0.78) 70%, rgba(245,232,212,0) 100%);
+    letter-spacing: 0.3px;
+    color: rgba(42, 35, 24, 0.85);
+    background: transparent;
     font-family: system-ui, -apple-system, 'SF Pro Display', sans-serif;
     z-index: 9998;
     pointer-events: none;
   }
 
-  /* 中间动态岛（盖在状态栏上方） */
+  /* 中间动态岛（盖在状态栏上层，下移一点避开 22px 状态栏文字行） */
   .app-container::after {
     content: '';
     position: absolute;
-    top: 8px;
+    top: 5px;
     left: 50%;
     transform: translateX(-50%);
-    width: 108px;
-    height: 28px;
+    width: 96px;
+    height: 22px;
     background: #1a140e;
-    border-radius: 20px;
+    border-radius: 16px;
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.04),
       0 1px 2px rgba(0, 0, 0, 0.3);
     z-index: 9999;
     pointer-events: none;
-  }
-
-  /* 因为桌面预览有自定义状态栏，给内部内容下移一段避开遮挡 */
-  .app-container > * {
-    /* 子元素都下移，不遮挡顶部 34px 状态栏 */
-    transform: translateY(0);
-  }
-  .app-container > :first-child,
-  .app-container > .app-main {
-    padding-top: 34px;
-    box-sizing: border-box;
   }
 }
 

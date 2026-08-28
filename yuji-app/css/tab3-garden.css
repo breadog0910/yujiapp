@@ -277,3 +277,10 @@
   85%  { opacity: 0.35; }
   100% { transform: translateY(-90px) translateX(18px); opacity: 0; }
 }
+
+/* 桌面预览框（手机壳）：右上角「田地日志」下移，避免被状态栏+动态岛盖住 */
+@media (min-width: 768px) {
+  #tab3 .garden-journal-btn {
+    top: calc(var(--desktop-safe-top, 0px) + 10px);
+  }
+}

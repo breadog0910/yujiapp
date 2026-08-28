@@ -784,3 +784,13 @@ body.room-editing .room-edit-btn {
   color: #fff;
   font-size: 12px;
 }
+
+/* 桌面预览框（手机壳）：顶部有自定义状态栏+动态岛，
+   把左上角金币、右上角布置按钮整体下移，避免被盖住 */
+@media (min-width: 768px) {
+  #tab1 .room-coin,
+  #tab1 .room-edit-btn {
+    /* --desktop-safe-top 来自 main.css 桌面端 @media */
+    top: calc(var(--desktop-safe-top, 0px) + 10px);
+  }
+}
