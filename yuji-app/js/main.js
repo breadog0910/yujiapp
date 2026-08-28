@@ -127,22 +127,6 @@
       setTimeout(() => Utils.toast('你回来啦。不用急着做什么，先看看现在的自己就好。'), 400);
     }
 
-    // 帮助按钮 (双击屏幕中央触发)
-    let tapCount = 0;
-    let tapTimer = null;
-    document.getElementById('app').addEventListener('click', e => {
-      // 只在非交互区域触发
-      if (e.target.closest('button, .care-opt, .seed-item, .shop-item, .timeline-item, .obj, .fobj, .sobj, .plot, .xiaowo, .popup')) return;
-      tapCount++;
-      clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => tapCount = 0, 600);
-      if (tapCount >= 3) {
-        tapCount = 0;
-        // 三击屏幕中央：打开成长档案
-        Popups.open('archive');
-      }
-    });
-
     // 调试用：双击底部 tab-bar 区域可重置数据
     document.querySelector('.tab-bar')?.addEventListener('dblclick', () => {
       if (confirm('确定要重置所有数据吗？')) {
