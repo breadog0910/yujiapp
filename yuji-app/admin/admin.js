@@ -380,6 +380,22 @@ async function api(method, path, body) {
       if (!data || data.length === 0) throw new Error('更新失败：未找到记录或权限不足');
       return { ok: true, updated: data.length };
     }
+    // 家具删除前，必须先清掉 default_room_layout.type 引用了此家具的布局行，
+    // 否则会报 violates foreign key constraint "default_room_layout_type_fkey"
+    if (resource === 'furniture') {
+      const layoutCfg = RESOURCE_CONFIG['room-layout'];
+      const { error: layErr, data: layData } = await client
+        .from(layoutCfg.table)
+        .delete()
+        .eq('type', id)
+        .select();
+      if (layErr) throw new Error('清理默认房间布局引用失败：' + layErr.message);
+      const clearedCount = (layData && layData.length) || 0;
+      const { data, error } = await client.from(cfg.table).delete().eq(cfg.idField, id).select();
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) throw new Error('删除失败：记录不存在或无删除权限（请检查管理员身份/RLS 策略）');
+      return { ok: true, deleted: data.length, clearedRoomLayoutRefs: clearedCount };
+    }
     // 强制 .select() 返回被删行数，避免 RLS 拒绝时 error=null、data=[] 导致前端"假成功"
     const { data, error } = await client.from(cfg.table).delete().eq(cfg.idField, id).select();
     if (error) throw new Error(error.message);
@@ -1264,8 +1280,9 @@ function bindRowOps(sel, base, idField, fields, transforms, onReload) {
     delBtn.onclick = async () => {
       if (!confirm('确认删除？')) return;
       try {
-        await api('DELETE', base + id);
-        toast('已删除');
+        const r = await api('DELETE', base + id);
+        const extra = r && r.clearedRoomLayoutRefs ? `（同步清理默认房间布局 ${r.clearedRoomLayoutRefs} 条引用）` : '';
+        toast('已删除' + extra);
         // onReload 回调优先（直接刷新列表）；兜底才 dispatch reload 事件（兼容）
         if (typeof onReload === 'function') onReload();
         else try { $(sel).dispatchEvent(new Event('reload')); } catch (_) {}
