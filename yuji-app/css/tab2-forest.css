@@ -110,6 +110,13 @@
   height: auto;
   image-rendering: pixelated;
   -webkit-user-drag: none;
+  /* ===== alpha 硬边二值化：与 Tab1 家具共用 SVG filter，杜绝抠图半透边缘 ===== */
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.08)) url(#alpha-hard-edge) !important;
+  -webkit-filter: drop-shadow(0 2px 2px rgba(0,0,0,0.08)) url(#alpha-hard-edge) !important;
 }
 .tab2-entry:hover {
   filter: drop-shadow(0 10px 18px rgba(215, 255, 220, 0.45));

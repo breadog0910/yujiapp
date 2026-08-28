@@ -15,8 +15,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css?v=41" />
-  <link rel="stylesheet" href="css/tab1-home.css?v=55" />
-  <link rel="stylesheet" href="css/tab2-forest.css?v=39" />
+  <link rel="stylesheet" href="css/tab1-home.css?v=56" />
+  <link rel="stylesheet" href="css/tab2-forest.css?v=40" />
   <link rel="stylesheet" href="css/tab3-garden.css?v=41" />
   <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
   <link rel="stylesheet" href="css/popups.css?v=39" />
@@ -248,6 +248,25 @@
       <!-- 提示 toast -->
       <div class="toast" id="toast"></div>
   </div>
+
+  <!-- ============================================================
+       家具/SVG 精灵 alpha 硬边二值化 filter
+       解决抠图留下半透明像素导致"家具透背景"的问题：
+         A=0         → 0   (完全透明，保留形状外镂空)
+         A ∈ [1,255] → 255 (完全实心，不允许任何半透像素漏网)
+       所有 tab 的家具 / 精灵 / 入口木牌 img 统一引用此 filter
+       ============================================================ -->
+  <svg width="0" height="0" style="position:absolute;left:-9999px;pointer-events:none" aria-hidden="true">
+    <defs>
+      <filter id="alpha-hard-edge" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <!-- feFuncA: threshold 分段函数。tableValues 两个值 → 把 [0,0.5)→0, [0.5,1]→1
+             等价于 A<128→0, A>=128→255。家具像素只要不是纯透明就强制实心 -->
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 1"/>
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
 
   <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>

@@ -137,6 +137,11 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   background-blend-mode: normal !important;
+  /* ===== alpha 硬边二值化：彻底干掉抠图留下的半透明边缘 =====
+     A<128→完全透明，A>=128→完全实心。
+     与父层 brightness/saturate filter 独立（父级后 img 级），不冲突 */
+  filter: url(#alpha-hard-edge) !important;
+  -webkit-filter: url(#alpha-hard-edge) !important;
 }
 
 .room-item .ri-shadow {
