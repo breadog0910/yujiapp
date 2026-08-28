@@ -133,15 +133,16 @@ async function tryAutoLogin() {
   }
 
   async function init() {
+    // 1) 优先尝试自动登录（记住我）—— 最可靠，不依赖 Supabase 本地会话
+    const autoOk = await tryAutoLogin();
+    if (autoOk) return;
+
+    // 2) 自动登录失败，尝试恢复 Supabase 本地会话
     const { data: { session } } = await getClient().auth.getSession();
     if (session && session.user) {
       await _hydrateUser(session.user);
     } else {
-      // 会话已过期或不存在 → 尝试自动登录（记住我）
-      const ok = await tryAutoLogin();
-      if (!ok) {
-        _setUser(null);
-      }
+      _setUser(null);
     }
   }
 
