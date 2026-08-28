@@ -787,8 +787,13 @@ body.room-editing .room-edit-btn {
    把左上角金币、右上角布置按钮整体下移，避免被盖住 */
 @media (min-width: 768px) {
   #tab1 .room-coin,
-  #tab1 .room-edit-btn {
+  #tab1 .room-edit-btn,
+  body .yuji-acct-fab {
     /* --desktop-safe-top 来自 main.css 桌面端 @media */
     top: calc(var(--desktop-safe-top, 0px) + 10px);
+  }
+  /* 齿轮下拉菜单随齿轮按钮下移，避免遮挡按钮（原 top:74 = 按钮32+42） */
+  body .yuji-acct-menu {
+    top: calc(var(--desktop-safe-top, 0px) + 52px);
   }
 }
