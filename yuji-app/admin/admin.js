@@ -518,13 +518,17 @@ const A_TILT_MIN = -20, A_TILT_MAX = 20, A_TILT_STEP = 5;
 async function loadLayout() {
   const [furn, lay] = await Promise.all([api('GET', '/api/admin/furniture'), api('GET', '/api/admin/room-layout')]);
   catalogMap = {}; furn.forEach(f => catalogMap[f.type] = f);
+  catalogFurn = furn;
   layoutPieces = lay.map(p => ({ ...p, rot: p.rot || 0, tilt: p.tilt || 0 }));
   selectedId = null;
   renderPalette(furn); renderRoom(); $('#piece-props').classList.add('hidden');
 }
+let catalogFurn = [];
 function renderPalette(furn) {
-  $('#palette-list').innerHTML = furn.map(f =>
-    `<div class="palette-item" data-type="${esc(f.type)}"><img src="${iconUrl(f.icon)}" draggable="false"><span>${esc(f.name)}</span></div>`
+  // tab2_entry（本心对语木牌）只在本义森林背景时显示，避免出现在布置 Tab1 房间的家具库里
+  const list = layoutBgKey === 'forest' ? furn : furn.filter(f => f.type !== 'tab2_entry');
+  $('#palette-list').innerHTML = list.map(f =>
+    `<div class="palette-item" data-type="${esc(f.type)}"><img src="${iconUrl(f.icon)}" draggable="false"><span>${esc(f.name)}${f.type === 'tab2_entry' ? ' · Tab2' : ''}</span></div>`
   ).join('');
   $$('#palette-list .palette-item').forEach(el => el.addEventListener('click', () => addPiece(el.dataset.type)));
 }
@@ -543,7 +547,8 @@ function renderRoom() {
   const stage = $('#room-furniture');
   $$('.room-item', stage).forEach(e => e.remove());
   const items = [...layoutPieces].sort((a, b) => a.z - b.z);
-  items.forEach(p => {
+  const visible = layoutBgKey === 'forest' ? items : items.filter(p => p.type !== 'tab2_entry');
+  visible.forEach(p => {
     const f = catalogMap[p.type];
     if (!f) return;
     const el = document.createElement('div');
@@ -654,6 +659,20 @@ $('#layout-save').addEventListener('click', async () => {
   catch (err) { toast(err.message); }
 });
 $('#layout-clear').addEventListener('click', () => { if (confirm('确认清空默认布局？')) { layoutPieces = []; selectedId = null; renderRoom(); $('#piece-props').classList.add('hidden'); } });
+
+// 布局编辑背景切换（房间 / 森林）：编辑 Tab2「本心对语」入口木牌时用森林背景预览
+const layoutBgToggle = $('#layout-bg-toggle');
+const LAYOUT_BG = { room: '/assets/tab1beijing.png', forest: '/assets/tab2-forest.png' };
+let layoutBgKey = 'room';
+layoutBgToggle.addEventListener('click', () => {
+  layoutBgKey = layoutBgKey === 'room' ? 'forest' : 'room';
+  const bg = $('#room-canvas .room-bg');
+  if (bg) bg.src = LAYOUT_BG[layoutBgKey];
+  layoutBgToggle.textContent = layoutBgKey === 'room' ? '🛋️ 房间' : '🌿 森林';
+  layoutBgToggle.classList.toggle('active', layoutBgKey === 'forest');
+  if (catalogFurn.length) renderPalette(catalogFurn);
+  renderRoom();
+});
 
 /* ===================== 初始解锁家具 ===================== */
 async function loadUnlock() {

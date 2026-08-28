@@ -3,6 +3,8 @@ const AGENT_CONTEXT_KEYS: Record<string, string[]> = {
   self_manual: ['emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots', 'selfManual', 'letters'],
   insight: ['emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots', 'careValue', 'healthValue', 'happinessValue', 'comfortValue'],
   furni_story: ['emotionRecords', 'starPoints', 'careOptions', 'customCareOptions', 'plots', 'careValue', 'healthValue', 'happinessValue', 'comfortValue'],
+  // 本心对语：结合近期自我照顾事例 + 情绪 + 成长星点 + 说明书，给用户鼓励与陪伴
+  whisper: ['careOptions', 'customCareOptions', 'emotionRecords', 'starPoints', 'selfManual', 'careValue', 'happinessValue', 'healthValue', 'comfortValue'],
 };
 
 function buildContext(data: any, agentKey: string): string {

@@ -413,6 +413,8 @@ button.ghost {
 }
 button.ghost:hover { background: #faf8f2; }
 .panel-actions { display: flex; gap: 8px; align-items: center; }
+.panel-actions button { border: 1px solid var(--line); background: #fff; border-radius: 9px; padding: 8px 14px; cursor: pointer; font-family: inherit; }
+.panel-actions button.active { background: var(--brand2, #7ca688); color: #fff; border-color: var(--brand2, #7ca688); }
 .empty-tip {
   padding: 28px; text-align: center; color: var(--muted);
   border: 1px dashed var(--line); border-radius: 14px; margin-top: 8px;

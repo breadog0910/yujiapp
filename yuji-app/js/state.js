@@ -88,6 +88,14 @@ const State = (() => {
     { id: 'ri-letter',   type: 'letter',   x: 48, y: 44, z: 6, scale: 0.95, flip: 0, action: 'letter' },
   ];
 
+  // Tab2「本心对语」入口木牌（类型与兜底配置；位置/图标由后台 tab2_entry 控制，逻辑与 Tab1 家具一致）
+  const TAB2_ENTRY_TYPE = 'tab2_entry';
+  const FALLBACK_TAB2_ENTRY = {
+    id: 'tab2-entry', type: TAB2_ENTRY_TYPE, x: 18, y: 34, z: 6, scale: 1,
+    icon: 'assets/tab2/4f88a23bda43941aab21c7ba15d02900.png',
+  };
+  let tab2Entry = FALLBACK_TAB2_ENTRY; // 组装后的入口配置（含 {id,type,x,y,z,scale,icon}），缺省用兜底
+
   // ============================================================
   // 动态配置（由 init() 填充；默认取兜底值）
   // ============================================================
@@ -115,9 +123,29 @@ const State = (() => {
 
   function applyConfig(cfg) {
     if (!cfg) return;
-    if (Array.isArray(cfg.furnitureCatalog) && cfg.furnitureCatalog.length) roomCatalog = cfg.furnitureCatalog;
+    if (Array.isArray(cfg.furnitureCatalog) && cfg.furnitureCatalog.length) {
+      roomCatalog = cfg.furnitureCatalog.filter(f => f.type !== TAB2_ENTRY_TYPE);
+    }
     if (Array.isArray(cfg.seedCatalog) && cfg.seedCatalog.length) seedCatalog = cfg.seedCatalog;
-    if (Array.isArray(cfg.defaultRoomLayout) && cfg.defaultRoomLayout.length) defaultRoomItems = cfg.defaultRoomLayout;
+    if (Array.isArray(cfg.defaultRoomLayout) && cfg.defaultRoomLayout.length) {
+      defaultRoomItems = cfg.defaultRoomLayout.filter(r => r.type !== TAB2_ENTRY_TYPE);
+    }
+    // Tab2「本心对语」入口：从家具目录/默认布局中取 tab2_entry，组装成 tab2Entry
+    const catEntry = Array.isArray(cfg.furnitureCatalog) ? cfg.furnitureCatalog.find(f => f.type === TAB2_ENTRY_TYPE) : null;
+    const layEntry = Array.isArray(cfg.defaultRoomLayout) ? cfg.defaultRoomLayout.find(r => r.type === TAB2_ENTRY_TYPE) : null;
+    if (catEntry || layEntry) {
+      tab2Entry = {
+        id: layEntry && layEntry.id ? layEntry.id : FALLBACK_TAB2_ENTRY.id,
+        type: TAB2_ENTRY_TYPE,
+        x: layEntry && layEntry.x != null ? layEntry.x : FALLBACK_TAB2_ENTRY.x,
+        y: layEntry && layEntry.y != null ? layEntry.y : FALLBACK_TAB2_ENTRY.y,
+        z: layEntry && layEntry.z != null ? layEntry.z : FALLBACK_TAB2_ENTRY.z,
+        scale: layEntry && layEntry.scale != null ? layEntry.scale : FALLBACK_TAB2_ENTRY.scale,
+        icon: catEntry && catEntry.icon ? catEntry.icon : ((layEntry && layEntry.icon) || FALLBACK_TAB2_ENTRY.icon),
+      };
+    } else {
+      tab2Entry = FALLBACK_TAB2_ENTRY; // 后台无 tab2_entry 时用兜底
+    }
     if (cfg.dailyCoinCap) DAILY_COIN_CAP = parseInt(cfg.dailyCoinCap, 10) || 20;
     if (Array.isArray(cfg.unlockedTypes) && cfg.unlockedTypes.length) unlockedTypes = cfg.unlockedTypes;
     else unlockedTypes = roomCatalog.filter(f => f.unlockedByDefault).map(f => f.type);
@@ -206,6 +234,7 @@ const State = (() => {
       },
       letterRead: [],
       letters: [],
+      tab2Dialogue: [], // Tab2「本心对语」对话历史：[{role,content,date}]
       selfManual: { chapter1: '还在认识中…', chapter2: '还在认识中…', chapter3: '还在认识中…', chapter4: '还在认识中…', chapter5: '还在认识中…', updatedAt: '' },
       createdAt: new Date().toISOString(),
       visitDates: [],
@@ -529,6 +558,7 @@ const State = (() => {
     get unlockedTypes() { return unlockedTypes; },
     get aiConfig() { return aiConfig; },
     get appName() { return meta.appName; },
+    get tab2Entry() { return tab2Entry; },
     get farmCropCatalog() { return farmCropCatalog; },
     get farmPlotLayout() { return farmPlotLayout; },
     get defaultRoomItemIds() { return defaultRoomItems.map(i => i.id); },

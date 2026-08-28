@@ -105,6 +105,7 @@
       tabPanels.forEach(p => p.classList.toggle('active', p.id === target));
       // 触发各 Tab 的 refresh
       if (target === 'tab1') Tab1.refresh();
+      if (target === 'tab2') Tab2.renderEntry();
       if (target === 'tab3') Tab3.renderPlots();
       if (target === 'tab4') Tab4.refresh();
     }

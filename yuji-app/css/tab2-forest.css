@@ -82,79 +82,132 @@
   100% { transform: translateX(-20px) translateY(-10px); }
 }
 
-/* 森林物件 */
+/* 森林物件容器 */
 .forest-objects {
   position: absolute;
   inset: 0;
   pointer-events: none;
 }
 
-.fobj {
+/* ============================================================
+   Tab2 本心对语 · 入口木牌（位置/缩放由后台 tab2_entry 配置，
+   inline style 提供 left/bottom/z-index / --entry-scale）
+   ============================================================ */
+.tab2-entry {
   position: absolute;
-  background: var(--c-card-glass);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: var(--pixel-border);
-  border-radius: var(--r-md);
-  padding: 10px 12px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  width: calc(112px * var(--entry-scale, 1));
+  height: auto;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   pointer-events: auto;
-  color: var(--c-text);
-  font-family: var(--font-body);
-  box-shadow: 0 6px 16px rgba(20, 30, 20, 0.3);
-  transition: all 0.2s ease;
-  min-width: 70px;
-}
-
-.fobj:active { transform: scale(0.92); }
-
-.fobj-icon {
-  font-size: 32px;
-  line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
-}
-
-.fobj-name {
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
-}
-
-.fobj-mirror {
-  bottom: 32%;
-  left: 12%;
-  animation: gentle-float 4s ease-in-out infinite;
-}
-
-.fobj-monument {
-  top: 30%;
-  right: 10%;
-  animation: gentle-float 5s ease-in-out infinite 0.5s;
-}
-
-.fobj-book {
-  bottom: 14%;
-  left: 50%;
   transform: translateX(-50%);
-  animation: gentle-glow-pulse 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 14px rgba(15, 25, 18, 0.5));
+  animation: gentle-float 4.5s ease-in-out infinite;
+}
+.tab2-entry .tab2-entry-img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+}
+.tab2-entry:hover {
+  filter: drop-shadow(0 10px 18px rgba(215, 255, 220, 0.45));
+}
+.tab2-entry:active {
+  transform: translateX(-50%) translateY(3px) scale(0.95);
 }
 
-.fobj-book:active { transform: translateX(-50%) scale(0.92); }
-
+/* 木牌轻微漂浮 */
 @keyframes gentle-float {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-8px); }
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-8px); }
 }
 
-@keyframes gentle-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 6px 16px rgba(20, 30, 20, 0.3), 0 0 0 0 rgba(184, 168, 212, 0);
-  }
-  50% {
-    box-shadow: 0 6px 16px rgba(20, 30, 20, 0.3), 0 0 16px 4px rgba(184, 168, 212, 0.4);
-  }
+/* ============================================================
+   本心对语 · 弹窗
+   ============================================================ */
+.dialogue-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+}
+.dialogue-hint {
+  font-size: 12px;
+  color: #6d8f6d;
+  background: rgba(130, 175, 135, 0.14);
+  border: var(--pixel-border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  line-height: 1.7;
+}
+.dialogue-thread {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 150px;
+  max-height: 250px;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dialogue-empty {
+  color: #9aa88f;
+  font-size: 13px;
+  text-align: center;
+  padding-top: 40px;
+  line-height: 1.7;
+}
+.dialogue-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.dialogue-msg.my { flex-direction: row-reverse; }
+.dialogue-msg-avatar {
+  width: 26px;
+  text-align: center;
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+.dialogue-msg-bubble {
+  max-width: 76%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dialogue-msg.my .dialogue-msg-bubble {
+  background: #4a7a58;
+  color: #eef7ee;
+  border-bottom-right-radius: 3px;
+}
+.dialogue-msg.theirs .dialogue-msg-bubble {
+  background: #fffdf7;
+  color: #4a4038;
+  border: 2px solid #cfe0cf;
+  border-bottom-left-radius: 3px;
+}
+.dialogue-msg-time {
+  font-size: 10px;
+  color: #a98f76;
+  margin-top: 4px;
+  text-align: right;
+}
+.dialogue-msg.my .dialogue-msg-time { text-align: left; }
+.dialogue-input {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+.dialogue-input .popup-textarea {
+  flex: 1;
+  min-height: 46px;
+  resize: none;
 }

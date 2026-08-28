@@ -243,94 +243,22 @@ const Popups = (() => {
       `;
     },
 
-    // ============ 森林镜子 - 自我探索 ============
-    mirror() {
+    // ============ 本心对语 - 与森林里的小我通信 ============
+    dialogue() {
+      const s = State.state;
+      const msgs = s.tab2Dialogue || [];
       return `
         <div class="popup-head">
-          <div class="popup-title">🪞 森林镜子</div>
+          <div class="popup-title">🌿 本心对语</div>
           <button class="popup-close" aria-label="关闭">✕</button>
         </div>
-        <div class="popup-body">
-          <div class="hint">镜子不评判你，只轻轻照见此刻的你。</div>
-          <div style="margin-top:14px;">
-            <div class="chapter-title">我想探索…</div>
-            <div class="popup-tags" id="mirrorTags">
-              ${['我的性格','我的优势','我的雷区','适合我的事','我想要什么','我害怕什么','我的习惯','我的兴趣'].map(t => `
-                <span class="popup-tag" data-tag="${t}">${t}</span>
-              `).join('')}
-            </div>
+        <div class="popup-body dialogue-body">
+          <div class="dialogue-hint">把烦恼、心事、悄悄话留在这里。<br>森林里的小我会时常回信，通常 <b>1 – 3 分钟</b> 内慢慢送到。</div>
+          <div class="dialogue-thread" id="diaThread">${dialogueThreadHtml(msgs)}</div>
+          <div class="dialogue-input">
+            <textarea class="popup-textarea" id="diaText" placeholder="和小我说两句悄悄话…" maxlength="500"></textarea>
+            <button class="popup-btn primary" data-act="diaSend">寄出</button>
           </div>
-          <textarea class="popup-textarea" id="mirrorText" placeholder="把想到的写下来…"></textarea>
-        </div>
-        <div class="popup-foot">
-          <button class="popup-btn" data-act="cancel">再想想</button>
-          <button class="popup-btn primary" data-act="mirrorSave">照见一下</button>
-        </div>
-      `;
-    },
-
-    // ============ 树洞石碑 - 情绪深度记录 ============
-    monument() {
-      return `
-        <div class="popup-head">
-          <div class="popup-title">🗿 树洞石碑</div>
-          <button class="popup-close" aria-label="关闭">✕</button>
-        </div>
-        <div class="popup-body">
-          <div class="hint">树洞只听，不会告诉别人。</div>
-          <div style="margin-top:10px;">
-            <div class="chapter-title">发生了什么？</div>
-            <textarea class="popup-textarea" id="monEvt" placeholder="说说事件…"></textarea>
-          </div>
-          <div style="margin-top:10px;">
-            <div class="chapter-title">我的感受是…</div>
-            <textarea class="popup-textarea" id="monFeel" placeholder="不用分析，感受就好…"></textarea>
-          </div>
-          <div style="margin-top:10px;">
-            <div class="chapter-title">为什么会有这些感受？</div>
-            <textarea class="popup-textarea" id="monWhy" placeholder="如果愿意，试着想一想…"></textarea>
-          </div>
-        </div>
-        <div class="popup-foot">
-          <button class="popup-btn" data-act="cancel">先不写</button>
-          <button class="popup-btn primary" data-act="monSave">交给树洞</button>
-        </div>
-      `;
-    },
-
-    // ============ 古老石书 - 自我说明书 ============
-    book() {
-      const m = State.state.selfManual;
-      return `
-        <div class="popup-head">
-          <div class="popup-title">📖 自我说明书</div>
-          <button class="popup-close" aria-label="关闭">✕</button>
-        </div>
-        <div class="popup-body">
-          <div class="hint">这本书会随着你的记录，慢慢长出血肉。<br>它不是定论，只是此刻的观察。</div>
-          <div class="chapter-list" style="margin-top:12px;">
-            <div class="chapter">
-              <div class="chapter-title">第一章 · 我是怎样的人</div>
-              <div class="chapter-content">${m.chapter1}</div>
-            </div>
-            <div class="chapter">
-              <div class="chapter-title">第二章 · 我的优势</div>
-              <div class="chapter-content">${m.chapter2}</div>
-            </div>
-            <div class="chapter">
-              <div class="chapter-title">第三章 · 我的雷区</div>
-              <div class="chapter-content">${m.chapter3}</div>
-            </div>
-            <div class="chapter">
-              <div class="chapter-title">第四章 · 怎样好好对待我</div>
-              <div class="chapter-content">${m.chapter4}</div>
-            </div>
-            <div class="chapter">
-              <div class="chapter-title">第五章 · 适合我的成长方式</div>
-              <div class="chapter-content">${m.chapter5}</div>
-            </div>
-          </div>
-          <div class="hint" style="margin-top:10px;">最近更新：${m.updatedAt ? Utils.formatFullDate(m.updatedAt) : '尚未更新'}</div>
         </div>
       `;
     },
@@ -1163,85 +1091,19 @@ const Popups = (() => {
       });
     },
 
-    mirror() {
-      root().querySelectorAll('#mirrorTags .popup-tag').forEach(t => {
-        t.addEventListener('click', () => t.classList.toggle('selected'));
-      });
-      bindAct('mirrorSave', () => {
-        const tags = Array.from(root().querySelectorAll('#mirrorTags .popup-tag.selected')).map(t => t.dataset.tag);
-        const text = root().querySelector('#mirrorText').value.trim();
-        if (tags.length === 0 && !text) {
-          Utils.toast('选一个想探索的方向吧');
-          return;
-        }
-        const s = State.state;
-        // 简化的"AI 观察式"反馈
-        if (text || tags.length) {
-          s.starPoints.push({
-            id: Utils.uid(),
-            date: Utils.nowTs(),
-            type: 'discovery',
-            title: tags.length ? `探索了「${tags[0]}」` : '记下了一个观察',
-            desc: text || `关键词：${tags.join('、')}`,
-            importance: 2,
-          });
-          // 更新说明书
-          if (tags.length) {
-            s.selfManual.chapter1 = s.selfManual.chapter1 === '还在认识中…'
-              ? `最近在探索「${tags.join('、')}」，慢慢地看见了一些自己的样子。`
-              : s.selfManual.chapter1 + `\n最近继续在「${tags[0]}」上有新的发现。`;
-            s.selfManual.updatedAt = Utils.nowTs();
-          }
-          State.save();
-          Tab4.refresh();
-          let msg = '镜子记下了';
-          Utils.toast(msg);
-          close();
-        }
-      });
+    // ============ 本心对语 - 寄出与回信 ============
+    dialogue() {
+      root().querySelector('#diaText')?.focus();
+      bindAct('diaSend', sendDialogueMsg);
       bindAct('cancel', close);
-    },
-
-    monument() {
-      bindAct('monSave', () => {
-        const evt = root().querySelector('#monEvt').value.trim();
-        const feel = root().querySelector('#monFeel').value.trim();
-        const why = root().querySelector('#monWhy').value.trim();
-        if (!evt && !feel) {
-          Utils.toast('写一点吧，树洞会好好收着');
-          return;
+      // Enter 发送（Shift+Enter 换行）
+      root().querySelector('#diaText')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendDialogueMsg();
         }
-        const s = State.state;
-        // 喂给说明书
-        if (feel || why) {
-          const insight = feel ? `感受：${feel}` : '';
-          if (s.selfManual.chapter3 === '还在认识中…') {
-            s.selfManual.chapter3 = '目前还比较模糊，App 还在观察中。';
-          }
-          s.selfManual.chapter4 = s.selfManual.chapter4 === '还在认识中…'
-            ? '需要被温柔对待，节奏可以慢一点。'
-            : s.selfManual.chapter4;
-          s.selfManual.updatedAt = Utils.nowTs();
-        }
-        // 星点
-        s.starPoints.push({
-          id: Utils.uid(),
-          date: Utils.nowTs(),
-          type: 'emotion',
-          title: '交给树洞一份心事',
-          desc: [evt, feel, why].filter(Boolean).join(' · ').slice(0, 80),
-          importance: 2,
-        });
-        State.save();
-        Tab4.refresh();
-        let msg = '树洞收下了';
-        Utils.toast(msg);
-        close();
       });
-      bindAct('cancel', close);
     },
-
-    book() {},
 
     farmPlant(data) {
       let chosen = null;
@@ -1565,6 +1427,80 @@ ${ctx.join('\n\n')}`;
       bindAct('close', close);
     },
   };
+
+  // ============ 本心对语辅助函数 ============
+
+  function escHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function dialogueThreadHtml(msgs) {
+    if (!Array.isArray(msgs) || !msgs.length) {
+      return '<div class="dialogue-empty">还没有消息，写下第一封悄悄话吧…</div>';
+    }
+    return msgs.map(m => {
+      const isUser = m.role === 'user';
+      return `
+        <div class="dialogue-msg ${isUser ? 'my' : 'theirs'}">
+          <div class="dialogue-msg-avatar">${isUser ? '🙂' : '🌿'}</div>
+          <div class="dialogue-msg-bubble">
+            <div class="dialogue-msg-text">${escHtml(m.content)}</div>
+            <div class="dialogue-msg-time">${Utils.formatDate(m.date)}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function sendDialogueMsg() {
+    const textarea = root().querySelector('#diaText');
+    const text = textarea.value.trim();
+    if (!text) { Utils.toast('写点什么吧'); return; }
+    const s = State.state;
+    const msgs = s.tab2Dialogue || [];
+    // 用户消息
+    const userMsg = { role: 'user', content: text, date: Utils.nowTs() };
+    msgs.push(userMsg);
+    State.save();
+    // 刷新弹窗
+    const thread = root().querySelector('#diaThread');
+    if (thread) thread.innerHTML = dialogueThreadHtml(msgs);
+    textarea.value = '';
+    thread?.scrollTo(0, thread.scrollHeight);
+    // 调用 AI 小我回复
+    const btn = root().querySelector('[data-act="diaSend"]');
+    if (btn) { btn.disabled = true; btn.textContent = '寄出中…'; }
+    // 显示等待提示
+    const waitingBubble = document.createElement('div');
+    waitingBubble.className = 'dialogue-msg theirs';
+    waitingBubble.innerHTML = '<div class="dialogue-msg-avatar">🌿</div><div class="dialogue-msg-bubble"><div class="dialogue-msg-text" style="color:#999;">小我正伏在桌边给回信…</div></div>';
+    thread?.appendChild(waitingBubble);
+    thread?.scrollTo(0, thread.scrollHeight);
+    try {
+      const r = await Api.callAI('whisper', [
+        { role: 'system', content: '你是森林里那个温柔的小我，是用户内在的自己。用森林密信、说悄悄话的口吻回应。' },
+        ...s.tab2Dialogue.filter(m => m.role !== 'system').slice(-10).map(m => ({ role: m.role, content: m.content })),
+      ]);
+      // 移除等待气泡
+      waitingBubble.remove();
+      if (r && r.text) {
+        const reply = { role: 'assistant', content: r.text, date: Utils.nowTs() };
+        msgs.push(reply);
+        State.save();
+        if (thread) thread.innerHTML = dialogueThreadHtml(msgs);
+        thread?.scrollTo(0, thread.scrollHeight);
+      } else {
+        Utils.toast('森林暂时安静了，稍后再试试');
+      }
+    } catch (e) {
+      waitingBubble.remove();
+      Utils.toast(e.message || '小我暂时无法回信，稍后再试');
+      console.warn('[dialogue] AI 回复失败', e);
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '寄出'; }
+  }
 
   // 按钮动作绑定
   function bindAct(name, fn) {

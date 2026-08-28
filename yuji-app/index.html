@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css?v=40" />
   <link rel="stylesheet" href="css/tab1-home.css?v=54" />
-  <link rel="stylesheet" href="css/tab2-forest.css?v=37" />
+  <link rel="stylesheet" href="css/tab2-forest.css?v=38" />
   <link rel="stylesheet" href="css/tab3-garden.css?v=39" />
   <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
   <link rel="stylesheet" href="css/popups.css?v=39" />
@@ -142,19 +142,10 @@
               <div class="forest-fog far-fog"></div>
             </div>
 
-            <!-- 中层：三个可交互物件组件 -->
+            <!-- 中层：本心对语入口木牌（位置/图标由后台 tab2_entry 控制，逻辑同 Tab1 家具） -->
             <div class="scene-layer layer-mid forest-objects">
-              <button class="fobj fobj-mirror" data-popup="mirror" title="森林镜子">
-                <div class="fobj-icon">🪞</div>
-                <div class="fobj-name">镜子</div>
-              </button>
-              <button class="fobj fobj-monument" data-popup="monument" title="树洞石碑">
-                <div class="fobj-icon">🗿</div>
-                <div class="fobj-name">树洞石碑</div>
-              </button>
-              <button class="fobj fobj-book" data-popup="book" title="古老石书">
-                <div class="fobj-icon">📖</div>
-                <div class="fobj-name">石书</div>
+              <button class="tab2-entry" id="dialogueEntry" title="本心对语">
+                <img class="tab2-entry-img" src="" alt="本心对语" draggable="false" />
               </button>
             </div>
 
@@ -262,14 +253,14 @@
     }
   </script>
   <script src="js/api.js?v=38"></script>
-  <script src="js/state.js?v=38"></script>
+  <script src="js/state.js?v=39"></script>
   <script src="js/utils.js?v=37"></script>
   <script src="js/tab1.js?v=53"></script>
-  <script src="js/tab2.js?v=37"></script>
+  <script src="js/tab2.js?v=38"></script>
   <script src="js/tab3.js?v=38"></script>
   <script src="js/tab4.js?v=40"></script>
-  <script src="js/popups.js?v=39"></script>
+  <script src="js/popups.js?v=40"></script>
   <script src="js/account.js?v=37"></script>
-  <script src="js/main.js?v=38"></script>
+  <script src="js/main.js?v=39"></script>
 </body>
 </html>
