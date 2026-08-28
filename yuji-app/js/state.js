@@ -127,7 +127,8 @@ const State = (() => {
       roomCatalog = cfg.furnitureCatalog.filter(f => f.type !== TAB2_ENTRY_TYPE);
     }
     if (Array.isArray(cfg.seedCatalog) && cfg.seedCatalog.length) seedCatalog = cfg.seedCatalog;
-    if (Array.isArray(cfg.defaultRoomLayout) && cfg.defaultRoomLayout.length) {
+    // 空数组也要更新：后台清空布局后，预览账号轮询才能检测到指纹变化并刷新房间
+    if (Array.isArray(cfg.defaultRoomLayout)) {
       defaultRoomItems = cfg.defaultRoomLayout.filter(r => r.type !== TAB2_ENTRY_TYPE);
     }
     // Tab2「本心对语」入口：从家具目录/默认布局中取 tab2_entry，组装成 tab2Entry

@@ -247,10 +247,12 @@ async function tryAutoLogin() {
 
   // ---------- 用户状态（直接读写 user_state 表） ----------
   async function getState() {
+    // 用 maybeSingle：新用户无 user_state 行时返回 null 而非抛错，
+    // 否则 State.init 会 catch 后退回 load()（读 localStorage 旧状态），新用户看不到后台最新默认布局
     const { data, error } = await getClient()
       .from('user_state')
       .select('data, updated_at')
-      .single();
+      .maybeSingle();
     if (error) throw new Error(error.message);
     return { data: data ? JSON.parse(data.data) : null, updated_at: data?.updated_at };
   }
