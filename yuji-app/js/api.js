@@ -50,7 +50,7 @@ async function tryAutoLogin() {
   const cred = getRemember();
   if (!cred || !cred.u || !cred.p) return false;
   try {
-    await login(cred.u, cred.p);
+    await login(cred.u, cred.p, true);
     return true;
   } catch (e) {
     // 自动登录失败 → 清除记住的凭据（密码已过期或账号已变）
