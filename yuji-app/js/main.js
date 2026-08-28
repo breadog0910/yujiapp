@@ -21,6 +21,21 @@
   bootMask.textContent = '正在准备你的小屋…';
   document.body.appendChild(bootMask);
 
+  // 8 秒兜底超时：Supabase 网络 hang 住时强制移除 bootMask，避免永久卡死
+  let bootMaskRemoved = false;
+  const bootTimeout = setTimeout(() => {
+    if (bootMaskRemoved) return;
+    bootMaskRemoved = true;
+    try { bootMask.remove(); } catch (_) {}
+    console.warn('[boot] 初始化超时（8s），已强制移除启动遮罩');
+  }, 8000);
+  function removeBootMask() {
+    if (bootMaskRemoved) return;
+    bootMaskRemoved = true;
+    clearTimeout(bootTimeout);
+    try { bootMask.remove(); } catch (_) {}
+  }
+
   // 先恢复 Supabase 会话（若有）
   try { await Api.init(); } catch (e) {
     console.error('[boot] Api.init 失败:', e);
@@ -32,7 +47,7 @@
   } catch (e) {
     console.warn('[boot] State.init 失败', e);
   }
-  bootMask.remove();
+  removeBootMask();
 
   // 未登录 → 显示登录/注册遮罩；成功登录后原地重新初始化（不刷新页面，避免 session 丢失）
   if (!State.isAuthed()) {

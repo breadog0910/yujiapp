@@ -291,6 +291,7 @@ async function tryAutoLogin() {
 
   // ---------- 导出 ----------
   return {
+    init,
     getClient,
     isAuthed, isPreview,
     getUser,
