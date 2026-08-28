@@ -21,13 +21,43 @@ const Api = (() => {
   }
 
   // ---------- 辅助：username ↔ email ----------
-  // 用 encodeURIComponent 支持中文用户名（email local-part 不能含非 ASCII）
-  function toEmail(username) { return encodeURIComponent(username.trim().toLowerCase()) + '@yujiapp.local'; }
-  function fromEmail(email) {
-    if (!email) return '';
-    const localPart = email.replace(/@yujiapp\.local$/i, '');
-    try { return decodeURIComponent(localPart); } catch { return localPart; }
+// 用 encodeURIComponent 支持中文用户名（email local-part 不能含非 ASCII）
+function toEmail(username) { return encodeURIComponent(username.trim().toLowerCase()) + '@yujiapp.local'; }
+function fromEmail(email) {
+  if (!email) return '';
+  const localPart = email.replace(/@yujiapp\.local$/i, '');
+  try { return decodeURIComponent(localPart); } catch { return localPart; }
+}
+
+// ---------- 记住我：自动登录 ----------
+const REMEMBER_KEY = 'yuji_remember';
+function saveRemember(username, password) {
+  try {
+    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ u: username, p: password }));
+  } catch (e) { /* ignore */ }
+}
+function clearRemember() {
+  try { localStorage.removeItem(REMEMBER_KEY); } catch (e) { /* ignore */ }
+}
+function getRemember() {
+  try {
+    const raw = localStorage.getItem(REMEMBER_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+async function tryAutoLogin() {
+  const cred = getRemember();
+  if (!cred || !cred.u || !cred.p) return false;
+  try {
+    await login(cred.u, cred.p);
+    return true;
+  } catch (e) {
+    // 自动登录失败 → 清除记住的凭据（密码已过期或账号已变）
+    clearRemember();
+    return false;
   }
+}
 
   // ---------- 当前用户缓存 ----------
   let _user = null;
@@ -36,7 +66,7 @@ const Api = (() => {
   function _setUser(u) { _user = u || null; }
 
   // ---------- 认证 ----------
-  async function login(username, password) {
+  async function login(username, password, remember = false) {
     const { data, error } = await getClient().auth.signInWithPassword({
       email: toEmail(username),
       password,
@@ -44,6 +74,11 @@ const Api = (() => {
     if (error) throw new Error(error.message === 'Invalid login credentials' ? '用户名或密码错误' : error.message);
     if (!data.user) throw new Error('登录失败：该账号可能未验证邮箱或已被禁用');
     await _hydrateUser(data.user);
+    if (remember) {
+      saveRemember(username, password);
+    } else {
+      clearRemember();
+    }
     return { user: _user };
   }
 
@@ -60,6 +95,7 @@ const Api = (() => {
   }
 
   async function logout() {
+    clearRemember();
     await getClient().auth.signOut();
     _setUser(null);
   }
@@ -100,6 +136,12 @@ const Api = (() => {
     const { data: { session } } = await getClient().auth.getSession();
     if (session && session.user) {
       await _hydrateUser(session.user);
+    } else {
+      // 会话已过期或不存在 → 尝试自动登录（记住我）
+      const ok = await tryAutoLogin();
+      if (!ok) {
+        _setUser(null);
+      }
     }
   }
 
