@@ -98,6 +98,8 @@ const State = (() => {
   let DAILY_COIN_CAP = 20;
   let unlockedTypes = [];                        // 初始解锁的家具类型（新用户可用）
   let aiConfig = [];                            // 公开 AI 配置（不含密钥）：[{key,name,provider,model,enabled}]
+  let farmCropCatalog = [];
+  let farmPlotLayout = [];
   let meta = { appName: '予己' };
 
   // 新用户初始「每日自我照顾」选项（applyConfig 用后端值填充；缺省回退内置默认 6 项）
@@ -142,6 +144,8 @@ const State = (() => {
       // tab2/3/4 走 DOM <img> 直接改 src（首屏 init 时 DOM 可能尚未渲染，预览轮询时已渲染）
       if (changed) applyTabBgToDom();
     }
+    if (Array.isArray(cfg.farmCropCatalog)) farmCropCatalog = cfg.farmCropCatalog;
+    if (Array.isArray(cfg.farmPlotLayout)) farmPlotLayout = cfg.farmPlotLayout;
   }
 
   // ============================================================
@@ -177,8 +181,8 @@ const State = (() => {
       selectedForPlace: [],
       roomBg: 'day',
       emotionRecords: [],
-      plots: [null,null,null, null,null,null, null,null,null],
-      gardenWarehouse: [],
+      farmPlots: [],          // 技能农场：每个已占格子一条 {plotId,skillName,cropKey,progress,sessions,goals,createdAt,matured}
+      farmWarehouse: [],     // 成熟收获纪念
       shopItems: {
         physical: [
           { id: 'teddy',  emoji: '🧸', name: '小熊玩偶', price: 15, bonus: { happiness: 2, health: 1 }, owned: false },
@@ -293,6 +297,7 @@ const State = (() => {
       k: roomCatalog.map(f => f.type).join(','),
       b: tabBackgrounds,
       d: defaultCareOptions,
+      f: farmCropCatalog, p: farmPlotLayout,
     });
   }
   let previewTimer = null;
@@ -311,6 +316,7 @@ const State = (() => {
         console.log('[State] 预览轮询：检测到后台配置变更，刷新房间');
         // 后端配置变更：重建房间为最新默认布局，重置照顾选项，通知 Tab1 重渲染
         state.roomItems = buildDefaultRoomItems();
+        state.farmPlots = [];   // 预览账号：后台格子变更后重置农场为空（始终反映最新格子布局）
         // 仅在预览账号重置照顾选项（避免普通用户轮询时自己的选项被冲掉）
         if (typeof Api !== 'undefined' && Api.isPreview && Api.isPreview()) {
           const rebuilt = buildDefaultState();
@@ -398,49 +404,77 @@ const State = (() => {
     return state.letters[state.letters.length - 1];
   }
 
-  // 花园
-  function plantSeed(idx, seedKey) {
-    if (idx < 0 || idx >= state.plots.length) return false;
-    if (state.plots[idx] || !getSeed(seedKey)) return false;
-    state.plots[idx] = { seedKey, stage: 0, feed: 0, plantedAt: new Date().toISOString() };
+  // 技能农场
+  function getFarmCrop(key) { return farmCropCatalog.find(c => c.key === key) || null; }
+  function getFarmPlotByPlotId(plotId) { return state.farmPlots.find(p => p.plotId === plotId) || null; }
+
+  function farmStageOf(p) {
+    const crop = getFarmCrop(p.cropKey);
+    if (!crop || !crop.stages.length) return 0;
+    return Math.min(Math.floor(p.progress / Math.max(1, crop.minutesPerStage)), crop.stages.length - 1);
+  }
+
+  function plantSkill(plotId, skillName, cropKey, goals = []) {
+    if (!plotId || !skillName || !getFarmCrop(cropKey)) return false;
+    if (getFarmPlotByPlotId(plotId)) return false;           // 格子已占
+    state.farmPlots.push({
+      plotId, skillName, cropKey, progress: 0,
+      sessions: [], goals: goals.map(g => ({ id: Utils.uid(), label: g.label, points: +g.points || 0, completed: false })),
+      createdAt: new Date().toISOString(), matured: false,
+    });
     save();
     return true;
   }
-  function feedGarden(eventKey, n = 1) {
-    const fed = [];
-    state.plots.forEach((p, idx) => {
-      if (!p) return;
-      const seed = getSeed(p.seedKey);
-      if (!seed || !seed.feedOn.includes(eventKey)) return;
-      const maxStage = seed.stages.length - 1;
-      if (p.stage >= maxStage) return;
-      p.feed += n;
-      while (p.feed >= FEED_PER_STAGE && p.stage < maxStage) {
-        p.feed -= FEED_PER_STAGE;
-        p.stage += 1;
-      }
-      if (p.stage >= maxStage) p.feed = 0;
-      fed.push({ idx, seedKey: p.seedKey, name: seed.name, stage: p.stage, maxStage, matured: p.stage >= maxStage });
-    });
-    if (fed.length) save();
-    return fed;
+
+  function logSession(plotId, minutes, note) {
+    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+    const m = Math.max(0, +minutes || 0);
+    p.sessions.push({ id: Utils.uid(), date: new Date().toISOString(), minutes: m, note: String(note || '') });
+    p.progress += m;
+    const stage = farmStageOf(p);
+    p.matured = stage >= (getFarmCrop(p.cropKey)?.stages.length || 0) - 1;
+    save();
+    return { progress: p.progress, stage, matured: p.matured };
   }
-  function harvestPlot(idx) {
-    const p = state.plots[idx];
-    if (!p) return null;
-    const seed = getSeed(p.seedKey);
-    if (!seed) return null;
-    const maxStage = seed.stages.length - 1;
-    if (p.stage < maxStage) return null;
+
+  function toggleGoal(plotId, goalId) {
+    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+    const g = p.goals.find(x => x.id === goalId); if (!g) return null;
+    g.completed = !g.completed;
+    p.progress += g.completed ? g.points : -g.points;
+    const stage = farmStageOf(p);
+    p.matured = stage >= (getFarmCrop(p.cropKey)?.stages.length || 0) - 1;
+    save();
+    return { progress: p.progress, stage, matured: p.matured };
+  }
+
+  function addGoal(plotId, label, points) {
+    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+    const g = { id: Utils.uid(), label: String(label || ''), points: Math.max(0, +points || 0), completed: false };
+    p.goals.push(g);
+    save();
+    return g;
+  }
+
+  function harvestSkill(plotId) {
+    const p = getFarmPlotByPlotId(plotId); if (!p || !p.matured) return null;
+    const crop = getFarmCrop(p.cropKey);
     const item = {
-      type: 'garden',
-      id: 'gw-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4),
-      seedKey: seed.key, name: seed.yield.name, emoji: seed.yield.emoji,
-      source: '生长花园', bonus: { ...seed.yield.bonus },
+      id: 'fw-' + Utils.uid(), skillName: p.skillName, cropKey: p.cropKey,
+      emoji: crop?.emoji || '🌱', name: p.skillName, source: '技能农场',
+      progress: p.progress, createdAt: p.createdAt, harvestedAt: new Date().toISOString(),
     };
-    state.plots[idx] = null;
+    state.farmWarehouse.push(item);
+    state.farmPlots = state.farmPlots.filter(x => x.plotId !== plotId);
     save();
     return item;
+  }
+
+  function removeSkill(plotId) {
+    const before = state.farmPlots.length;
+    state.farmPlots = state.farmPlots.filter(x => x.plotId !== plotId);
+    if (state.farmPlots.length !== before) { save(); return true; }
+    return false;
   }
 
   // AI 是否启用
@@ -464,6 +498,8 @@ const State = (() => {
     get unlockedTypes() { return unlockedTypes; },
     get aiConfig() { return aiConfig; },
     get appName() { return meta.appName; },
+    get farmCropCatalog() { return farmCropCatalog; },
+    get farmPlotLayout() { return farmPlotLayout; },
     get defaultRoomItemIds() { return defaultRoomItems.map(i => i.id); },
 
     isAuthed: () => (typeof Api !== 'undefined' && Api.isAuthed()),
@@ -471,6 +507,7 @@ const State = (() => {
     aiEnabled,
 
     getCatalog, getSeed,
-    plantSeed, feedGarden, harvestPlot,
+    plantSkill, logSession, toggleGoal, addGoal, harvestSkill, removeSkill,
+    getFarmCrop, getFarmPlotByPlotId, farmStageOf,
   };
 })();
