@@ -64,13 +64,14 @@ body {
   -webkit-overflow-scrolling: none;
 }
 
-/* 应用容器：绝对定位填满 body，避免 position:fixed 在移动端的问题 */
+/* 应用容器：填满视口（dvh 适配移动端 URL bar 动态伸缩） */
 .app-container {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: var(--c-bg);
   overflow: hidden;
   display: flex;
@@ -78,29 +79,23 @@ body {
   isolation: isolate;
 }
 
-/* 桌面端：居中 + 柔和投影，限制最大宽度 */
+/* 桌面端：占满整个视口，让 tab 背景图能铺满屏幕 */
 @media (min-width: 768px) {
   body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: auto;
-    background: #e6d8c0;
-    background-image:
-      radial-gradient(circle at 20% 10%, #f7e9d3 0%, transparent 50%),
-      radial-gradient(circle at 80% 90%, #e2d2b8 0%, transparent 50%),
-      linear-gradient(135deg, #efe1cc 0%, #d8c8a8 100%);
+    overflow: hidden;
+    background: var(--c-bg);
   }
 
   .app-container {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100vw;
-    max-width: 430px;
-    height: min(100vh, 900px);
-    max-height: 900px;
-    box-shadow:
-      0 0 0 1px rgba(120, 90, 60, 0.12),
-      0 20px 50px rgba(80, 50, 20, 0.18);
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    box-shadow: none;
     border-radius: 0;
   }
 }
