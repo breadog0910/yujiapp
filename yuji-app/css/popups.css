@@ -683,3 +683,310 @@
   backdrop-filter: blur(10px);
   z-index: 50;
 }
+
+
+/* ============================================================
+   心灵树洞弹窗 · Treehole / Diary
+   ============================================================ */
+
+.th-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.th-card {
+  background: rgba(255,255,255,0.78);
+  border: 1.5px solid var(--c-line);
+  border-radius: var(--r-md);
+  padding: 10px;
+  position: relative;
+  transition: transform .15s, box-shadow .15s;
+  cursor: pointer;
+}
+.th-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(100,70,40,.12);
+}
+.th-card .th-date {
+  font-size: 10px;
+  color: var(--c-text-soft);
+  margin-bottom: 4px;
+}
+.th-card .th-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--c-text);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.th-card .th-mood {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  background: var(--c-chip-bg);
+  border-radius: 10px;
+  color: var(--c-chip-text);
+  margin-bottom: 5px;
+}
+.th-card .th-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  color: var(--c-text-soft);
+}
+.th-card .th-del {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  font-size: 10px;
+  color: #c85040;
+  background: rgba(255,255,255,.95);
+  border: 1px solid #e8c4a0;
+  border-radius: 6px;
+  padding: 0 4px;
+  cursor: pointer;
+  line-height: 14px;
+}
+
+.th-new {
+  text-align: center;
+  border: 1.5px dashed var(--c-brand2);
+  background: rgba(255,255,255,0.5);
+  color: var(--c-brand2);
+  min-height: 94px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: bold;
+}
+.th-new:hover { background: rgba(255,255,255,0.82); }
+.th-new .plus { font-size: 22px; line-height: 1; }
+
+.th-empty {
+  text-align: center;
+  padding: 36px 14px;
+  color: var(--c-text-soft);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* 编辑区 */
+.th-edit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: var(--c-text-soft);
+}
+.th-moods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.th-moods .th-mood {
+  cursor: pointer;
+  padding: 2px 8px;
+  border: 1.5px solid transparent;
+}
+.th-moods .th-mood.active {
+  border-color: var(--c-brand2);
+  background: rgba(110, 180, 140, 0.18);
+}
+.th-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.th-checkbox input {
+  accent-color: var(--c-brand2);
+}
+.th-checkbox-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--c-text-soft);
+  margin-top: 2px;
+  margin-left: 22px;
+  line-height: 1.5;
+}
+
+/* AI 引导问题区 */
+.th-guide {
+  background: rgba(245, 235, 220, 0.55);
+  border: 1.5px dashed #c9a878;
+  border-radius: var(--r-md);
+  padding: 10px 10px 4px;
+  margin-bottom: 10px;
+}
+.th-guide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--c-text-soft);
+  margin-bottom: 8px;
+}
+.th-guide-head strong { color: var(--c-text); font-size: 12px; }
+.th-guide-refresh {
+  font-size: 10px;
+  padding: 2px 8px;
+  border: 1.5px solid var(--c-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.th-guide-refresh:hover { background: #f8f0e2; }
+
+.th-question {
+  margin-bottom: 8px;
+}
+.th-question .th-q-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+  font-size: 10px;
+  color: var(--c-text-soft);
+}
+.th-question .th-tier {
+  font-size: 9px;
+  background: rgba(110,180,140,.18);
+  color: var(--c-brand2);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+.th-question .th-q-text {
+  display: block;
+  font-size: 11px;
+  color: var(--c-text);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.th-question textarea {
+  width: 100%;
+  min-height: 50px;
+  font-size: 11px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--c-line);
+  border-radius: var(--r-sm);
+  background: #fff;
+  color: var(--c-text);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+}
+.th-question textarea:focus {
+  border-color: var(--c-brand2);
+}
+
+.th-ai-answer {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.85);
+  border-left: 3px solid var(--c-brand2);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 10px;
+  font-size: 11px;
+  color: var(--c-text);
+  line-height: 1.75;
+}
+.th-ai-answer .th-ai-label {
+  font-size: 9px;
+  color: var(--c-brand2);
+  font-weight: bold;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+
+.th-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.th-actions .mini-btn {
+  font-size: 10px;
+  padding: 3px 10px;
+  border: 1.5px solid var(--c-line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.th-actions .mini-btn:hover { background: #f8f0e2; }
+.th-actions .mini-btn.primary {
+  background: var(--c-brand2);
+  color: #fff;
+  border-color: var(--c-brand2);
+}
+.th-actions .mini-btn.primary:hover { filter: brightness(1.05); }
+
+/* ============ 自我洞察说明书（镜子弹窗）============ */
+.manual-version {
+  margin-bottom: 12px;
+  text-align: right;
+}
+.manual-chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.manual-chapter {
+  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid var(--c-line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.manual-chapter-title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--c-accent);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+}
+.manual-chapter-body {
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--c-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-body);
+}
+.manual-chapter-body.placeholder {
+  color: var(--c-text-light);
+  font-style: italic;
+}
+.manual-sources .chev {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  margin-right: 2px;
+  font-size: 14px;
+  color: var(--c-text-soft);
+}
+.manual-sources .chev.open {
+  transform: rotate(90deg);
+}
+.sources-detail {
+  padding: 2px 4px 0 4px;
+}
+/* popup-foot 里 aiDisabledHint 独占一行 */
+.popup-foot #aiDisabledHint {
+  width: 100%;
+  text-align: left;
+  padding: 4px 2px;
+}

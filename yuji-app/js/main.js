@@ -96,54 +96,66 @@
   }
 
   function bootApp() {
-    // Tab 切换
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabPanels = document.querySelectorAll('.tab-panel');
-
-    function switchTab(target) {
-      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.target === target));
-      tabPanels.forEach(p => p.classList.toggle('active', p.id === target));
-      // 账号菜单按钮（右上角齿轮）只在 tab1 显示
-      const acctFab = document.getElementById('yujiAcctFab');
-      const acctMenu = document.getElementById('yujiAcctMenu');
-      if (acctFab) acctFab.style.display = (target === 'tab1') ? '' : 'none';
-      if (target !== 'tab1' && acctMenu) acctMenu.style.display = 'none';
-      // 触发各 Tab 的 refresh
-      if (target === 'tab1') Tab1.refresh();
-      if (target === 'tab2') { Tab2.renderEntry(); Tab2.renderTreeholeEntry(); }
-      if (target === 'tab3') Tab3.refresh();
-      if (target === 'tab4') Tab4.refresh();
-    }
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => switchTab(btn.dataset.target));
-    });
-
-    // 各 Tab 初始化
-    Tab1.init();
-    Tab2.init();
-    Tab3.init();
-    Tab4.init();
-
-    // 首次访问欢迎
-    const s = State.state;
-    if (s.visitDates.length <= 1) {
-      setTimeout(() => Utils.toast('欢迎来到「予己」 · 好好爱自己，慢慢成为自己'), 400);
-    } else {
-      setTimeout(() => Utils.toast('你回来啦。不用急着做什么，先看看现在的自己就好。'), 400);
-    }
-
-    // 调试用：双击底部 tab-bar 区域可重置数据
-    document.querySelector('.tab-bar')?.addEventListener('dblclick', () => {
-      if (confirm('确定要重置所有数据吗？')) {
-        State.reset();
-        location.reload();
+    try {
+      // Tab 切换（先绑定 tab-bar，即使下面某个 Tab.init 抛异常，tab 键也能正常点）
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabPanels = document.querySelectorAll('.tab-panel');
+      function switchTab(target) {
+        tabBtns.forEach(b => b.classList.toggle('active', b.dataset.target === target));
+        tabPanels.forEach(p => p.classList.toggle('active', p.id === target));
+        // 账号菜单按钮（右上角齿轮）只在 tab1 显示
+        const acctFab = document.getElementById('yujiAcctFab');
+        const acctMenu = document.getElementById('yujiAcctMenu');
+        if (acctFab) acctFab.style.display = (target === 'tab1') ? '' : 'none';
+        if (target !== 'tab1' && acctMenu) acctMenu.style.display = 'none';
+        // 触发各 Tab 的 refresh（单项 try/catch：坏掉一个 Tab 不影响别的切换）
+        try {
+          if (target === 'tab1') { if (typeof Tab1 !== 'undefined') Tab1.refresh(); }
+          if (target === 'tab2') {
+            if (typeof Tab2 !== 'undefined') {
+              try { Tab2.renderEntry(); } catch (e) { console.warn('[switchTab] Tab2.renderEntry 失败:', e); }
+              try { Tab2.renderTreeholeEntry(); } catch (e) { console.warn('[switchTab] Tab2.renderTreeholeEntry 失败:', e); }
+            }
+          }
+          if (target === 'tab3') { if (typeof Tab3 !== 'undefined' && Tab3.refresh) Tab3.refresh(); }
+          if (target === 'tab4') { if (typeof Tab4 !== 'undefined') Tab4.refresh(); }
+        } catch (e) { console.warn('[switchTab] refresh 异常（已忽略）：', e); }
       }
-    });
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          try { switchTab(btn.dataset.target); }
+          catch (e) { console.warn('[tab] click 异常：', e); }
+        });
+      });
 
-    // 控制台签名
-    console.log('%c予己 v0.1', 'font-size:18px;color:#d4a574;font-weight:bold;');
-    console.log('好好爱自己，慢慢成为自己。');
+      // 各 Tab 初始化（单项 try/catch：一项挂不影响剩余，也不影响 tab 已绑定好的切换）
+      try { if (typeof Tab1 !== 'undefined') Tab1.init(); } catch (e) { console.error('[Tab1.init 失败]', e); }
+      try { if (typeof Tab2 !== 'undefined') Tab2.init(); } catch (e) { console.error('[Tab2.init 失败]', e); }
+      try { if (typeof Tab3 !== 'undefined') Tab3.init(); } catch (e) { console.error('[Tab3.init 失败]', e); }
+      try { if (typeof Tab4 !== 'undefined') Tab4.init(); } catch (e) { console.error('[Tab4.init 失败]', e); }
+
+      // 首次访问欢迎
+      try {
+        const s = State.state;
+        if (s && s.visitDates && s.visitDates.length <= 1) {
+          setTimeout(() => Utils.toast('欢迎来到「予己」 · 好好爱自己，慢慢成为自己'), 400);
+        } else {
+          setTimeout(() => Utils.toast('你回来啦。不用急着做什么，先看看现在的自己就好。'), 400);
+        }
+      } catch (_) {}
+
+      // 调试用：双击底部 tab-bar 区域可重置数据
+      try {
+        document.querySelector('.tab-bar')?.addEventListener('dblclick', () => {
+          if (confirm('确定要重置所有数据吗？')) { State.reset(); location.reload(); }
+        });
+      } catch (_) {}
+
+      // 控制台签名
+      console.log('%c予己 v0.1', 'font-size:18px;color:#d4a574;font-weight:bold;');
+      console.log('好好爱自己，慢慢成为自己。');
+    } catch (e) {
+      console.error('[bootApp] 致命错误（tab 切换已尽量保证）：', e);
+    }
   }
-
 })();

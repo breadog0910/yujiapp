@@ -263,6 +263,119 @@ const Popups = (() => {
       `;
     },
 
+    // ============ 心灵树洞 - 日记记录（含 AI 引导写作）============
+    treehole(data = {}) {
+      const s = State.state;
+      const diaries = s.treeholeDiaries || [];
+      // 当前模式：列表 / 新建 / 编辑
+      const mode = data.mode || 'list';
+      const editId = data.editId || null;
+
+      // ===== 列表视图 =====
+      if (mode === 'list') {
+        const sorted = [...diaries].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const listHtml = sorted.length === 0
+          ? `<div class="timeline-empty"><span class="emoji">🕳️</span>心灵树洞还是空的。<br/>写第一篇日记，把今天的感受放进来吧～</div>`
+          : `<div class="treehole-list">${sorted.map(d => `
+              <div class="treehole-card" data-id="${d.id}" data-act="thEdit">
+                <div class="th-card-head">
+                  <div class="th-card-title">${escHtml(d.title || '（无标题）')}</div>
+                  <div class="th-card-date">${Utils.formatDate(d.date)}</div>
+                </div>
+                <div class="th-card-mood">
+                  ${d.mood ? `<span class="popup-tag mood-tag">${escHtml(d.mood)}</span>` : ''}
+                  ${d.aiGuided ? `<span class="popup-tag ai-tag">✨ AI 引导写作</span>` : ''}
+                  ${(d.tags || []).slice(0, 3).map(t => `<span class="popup-tag">${escHtml(t)}</span>`).join('')}
+                </div>
+                <div class="th-card-preview">${escHtml(String(d.content || '').slice(0, 80))}${(d.content || '').length > 80 ? '…' : ''}</div>
+                <button class="th-card-del" data-id="${d.id}" data-act="thDel" title="删除">🗑️</button>
+              </div>
+            `).join('')}</div>`;
+        return `
+          <div class="popup-head">
+            <div class="popup-title">🕳️ 心灵树洞 · 我的日记</div>
+            <button class="popup-close" aria-label="关闭">✕</button>
+          </div>
+          <div class="popup-body">
+            <div class="hint">把心事、情绪、碎碎念都写进这里。只有你能看到。<br/>不知道怎么下笔？写新日记时勾选「让 AI 引导我」，AI 会一步步陪你写。</div>
+            <button class="popup-btn primary" data-act="thNew" style="width:100%;margin-top:10px;">📝 写新日记</button>
+            <div class="chapter-title" style="margin-top:16px;">过往日记（${diaries.length}）</div>
+            ${listHtml}
+          </div>
+        `;
+      }
+
+      // ===== 新建 / 编辑视图 =====
+      const editDiary = editId ? diaries.find(d => d.id === editId) : null;
+      if (editId && !editDiary) {
+        return `<div class="popup-body"><div class="hint">日记不见了…</div><div class="popup-foot"><button class="popup-btn primary" data-act="thBack">返回列表</button></div></div>`;
+      }
+      const d = editDiary || {};
+      const aiGuided = d.aiGuided === true;
+      const aiQuestions = Array.isArray(d.aiQuestions) ? d.aiQuestions : [];
+      const aiThoughts = d.aiThoughts || '';
+      return `
+        <div class="popup-head">
+          <div class="popup-title">🕳️ ${editDiary ? '编辑日记' : '写新日记'}</div>
+          <button class="popup-close" aria-label="关闭">✕</button>
+        </div>
+        <div class="popup-body treehole-edit-body">
+          <div class="cfg-group">
+            <div class="cfg-label">标题</div>
+            <input class="popup-input" id="thTitle" placeholder="今天的一句话…" maxlength="50" value="${escHtml(d.title || '')}" />
+          </div>
+          <div class="cfg-group">
+            <div class="cfg-label">今天的心情</div>
+            <div class="popup-tags" id="thMoodTags">
+              ${['开心','平静','疲惫','焦虑','难过','迷茫','温暖','烦躁','放松','感动','无力'].map(m => `
+                <span class="popup-tag mood-tag-pick ${d.mood === m ? 'selected' : ''}" data-mood="${m}">${m}</span>
+              `).join('')}
+            </div>
+          </div>
+          <div class="cfg-group">
+            <label class="cfg-check">
+              <input type="checkbox" id="thAIGuide" ${aiGuided ? 'checked' : ''} />
+              <span><b>让 AI 引导我写</b>（不知道怎么写的时候勾我～AI 会问你 3 层问题：今天的情绪→发生的事→内心/哲学的思考，最后 AI 也会写下它的想法）</span>
+            </label>
+          </div>
+
+          <!-- AI 引导区（勾选时显示） -->
+          <div id="thAIGuideArea" style="display:${aiGuided ? 'block' : 'none'};">
+            <div class="chapter-title" style="margin-top:6px;">🌱 AI 引导提问</div>
+            <div class="hint" style="font-size:12px;">从浅到深，一层一层回答。不一定全答，想写的写就好。</div>
+            <div id="thAIQuestionsList">${aiQuestionsHtml(aiQuestions)}</div>
+            ${State.aiEnabled('diaryguide') ? `
+              <div class="th-ai-row">
+                <button class="popup-btn ghost" data-act="thGenQuestions" id="thGenQBtn">✨ 让 AI 重新出引导题</button>
+                <button class="popup-btn" data-act="thGenThoughts" id="thGenTBtn">💭 让 AI 写下它的想法</button>
+              </div>
+            ` : `
+              <div class="hint" style="font-size:12px;color:#b98a4a;">💡 后台未开启「日记引导」AI 智能体。当前使用内置引导题；如需 AI 出题 + AI 想法，可在管理后台 → AI 配置 → 启用 <code>diaryguide</code>。</div>
+              <div class="th-ai-row">
+                <button class="popup-btn ghost" data-act="thDefaultQuestions">🔄 使用另一组内置引导题</button>
+              </div>
+            `}
+            <!-- AI 想法展示区 -->
+            ${aiThoughts ? `
+              <div class="chapter" style="background:rgba(230,244,255,0.7);margin-top:12px;">
+                <div class="chapter-title">💭 AI 的一点想法</div>
+                <div class="chapter-content" id="thAIThoughtsText" style="line-height:1.9;">${escHtml(aiThoughts).replace(/\n/g,'<br/>')}</div>
+              </div>
+            ` : `<div id="thAIThoughtsWrap"></div>`}
+          </div>
+
+          <div class="cfg-group" style="margin-top:10px;">
+            <div class="cfg-label">日记正文${aiGuided ? '（AI 会把上面的问答整理进来，你也可以自己再润色）' : ''}</div>
+            <textarea class="popup-textarea" id="thContent" placeholder="把今天想记录的一切写在这里…" maxlength="5000" style="min-height:160px;">${escHtml(d.content || '')}</textarea>
+          </div>
+        </div>
+        <div class="popup-foot">
+          <button class="popup-btn" data-act="thBack">← 返回列表</button>
+          <button class="popup-btn primary" data-act="thSave" data-edit-id="${editId || ''}">💾 保存日记</button>
+        </div>
+      `;
+    },
+
     // ============ 农场：种下技能（整块地 = 1 个种植位）============
     farmPlant() {
       const crops = State.farmCropCatalog;
@@ -762,6 +875,66 @@ const Popups = (() => {
         </div>
       `;
     },
+
+    // ============ 自我洞察说明书（镜子家具弹窗）============
+    selfManual() {
+      return `
+        <div class="popup-head">
+          <div class="popup-title">🪞 自我洞察说明书</div>
+          <button class="popup-close" aria-label="关闭">✕</button>
+        </div>
+        <div class="popup-body">
+          <div class="manual-version">
+            <span class="hint">版本更新于：<span id="manualUpdatedAt"></span></span>
+          </div>
+          <div class="manual-chapters">
+            <div class="manual-chapter">
+              <div class="manual-chapter-title">🌸 第一章 · 我是怎样的人</div>
+              <div class="manual-chapter-body manual-ch1"></div>
+            </div>
+            <div class="manual-chapter">
+              <div class="manual-chapter-title">✨ 第二章 · 我的优势</div>
+              <div class="manual-chapter-body manual-ch2"></div>
+            </div>
+            <div class="manual-chapter">
+              <div class="manual-chapter-title">⚠️ 第三章 · 我的雷区</div>
+              <div class="manual-chapter-body manual-ch3"></div>
+            </div>
+            <div class="manual-chapter">
+              <div class="manual-chapter-title">🤍 第四章 · 怎样好好对待我</div>
+              <div class="manual-chapter-body manual-ch4"></div>
+            </div>
+            <div class="manual-chapter">
+              <div class="manual-chapter-title">🌱 第五章 · 适合我的成长方式</div>
+              <div class="manual-chapter-body manual-ch5"></div>
+            </div>
+          </div>
+          <div class="manual-sources" style="margin-top:14px;">
+            <button class="popup-btn ghost" data-act="toggleSources" style="width:100%;justify-content:flex-start;">
+              <span class="chev">›</span> 查看小我读取了哪些数据来生成这份说明书
+            </button>
+            <div class="sources-detail hidden">
+              <div class="hint" style="margin-top:8px;">
+                说明书内容综合来源于你记录并授权给小我的以下六类数据：<br>
+                · 🌸 情绪记录（此刻 · 心情标签 + 文字）<br>
+                · 💧 自我照顾打卡（今日照顾气泡完成记录）<br>
+                · 🌌 成长星点（星迹 · 里程碑、自我发现、星点正文）<br>
+                · 🌻 花园耕作（生长 · 种下的种子 / 成长阶段 / 收获纪念）<br>
+                · 🌲 本心对语（遇见 · 与小我的对话历史）<br>
+                · ✉️ 小我信件（房间 · 小我的写给你的所有信）
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="popup-foot">
+          <div id="aiDisabledHint" class="hint hidden" style="flex:1 1 100%;margin-bottom:8px;">
+            当前未配置 AI 智能体，请在后台开启「洞察」+「自我说明书」智能体后使用重新总结功能。
+          </div>
+          <button class="popup-btn" data-act="closeManual">完成</button>
+          <button id="aiRegenBtn" class="popup-btn primary" data-act="regen">✨ 让 AI 重新总结我</button>
+        </div>
+      `;
+    },
   };
 
   function typeLabel(t) {
@@ -793,6 +966,7 @@ const Popups = (() => {
       care: '自我照顾',
       milestone: '里程碑',
       manual_star: '手动星',
+      note: '心灵树洞',
     })[t] || '记录';
   }
 
@@ -1097,6 +1271,261 @@ const Popups = (() => {
           e.preventDefault();
           sendDialogueMsg();
         }
+      });
+    },
+
+    // ============ 心灵树洞：列表 + 新建/编辑（含 AI 引导）============
+    treehole(data = {}) {
+      const s = State.state;
+      const mode = data.mode || 'list';
+      const _tmpMood = { val: data.mood || '' };
+      const _tmpGuide = { val: data.guided };
+
+      // ===== 列表模式绑定 =====
+      if (mode === 'list') {
+        bindAct('thNew', () => {
+          Popups.close();
+          setTimeout(() => Popups.open('treehole', { mode: 'edit' }), 50);
+        });
+        bindAct('thEdit', (e) => {
+          const id = e.currentTarget.dataset.id;
+          Popups.close();
+          setTimeout(() => Popups.open('treehole', { mode: 'edit', editId: id }), 50);
+        });
+        bindAct('thDel', async (e) => {
+          e.stopPropagation();
+          const id = e.currentTarget.dataset.id;
+          if (!confirm('确认删除这篇日记？删了就找不回来啦～')) return;
+          const arr = s.treeholeDiaries || [];
+          const idx = arr.findIndex(x => x.id === id);
+          if (idx >= 0) { arr.splice(idx, 1); State.save(); Utils.toast('已删除'); }
+          Popups.close();
+          setTimeout(() => Popups.open('treehole', { mode: 'list' }), 50);
+        });
+        return;
+      }
+
+      // ===== 编辑模式绑定 =====
+      // 心情标签
+      const tagWrap = root().querySelector('#thMoodTags');
+      if (tagWrap) {
+        // 恢复 data 中暂存的 mood（AI 出题切回可能丢失）
+        if (_tmpMood.val) {
+          tagWrap.querySelectorAll('.mood-tag-pick').forEach(el => {
+            el.classList.toggle('selected', el.dataset.mood === _tmpMood.val);
+          });
+        }
+        tagWrap.querySelectorAll('.mood-tag-pick').forEach(t => {
+          t.addEventListener('click', () => {
+            tagWrap.querySelectorAll('.mood-tag-pick').forEach(x => x.classList.remove('selected'));
+            t.classList.add('selected');
+            _tmpMood.val = t.dataset.mood;
+          });
+        });
+      }
+      // AI 引导开关
+      const cb = root().querySelector('#thAIGuide');
+      const area = root().querySelector('#thAIGuideArea');
+      if (cb && area) {
+        cb.addEventListener('change', () => {
+          area.style.display = cb.checked ? 'block' : 'none';
+          _tmpGuide.val = cb.checked;
+          if (cb.checked) {
+            const list = root().querySelector('#thAIQuestionsList');
+            if (list && !list.children.length) {
+              list.innerHTML = aiQuestionsHtml(defaultGuideQuestions());
+            }
+          }
+        });
+      }
+      // 换一组内置引导题
+      bindAct('thDefaultQuestions', () => {
+        const list = root().querySelector('#thAIQuestionsList');
+        if (!list) return;
+        const qs = collectTHQuestions();
+        // 记录已有回答（按问题文本匹配）
+        const ansMap = {};
+        qs.forEach(x => { if ((x.a || '').trim()) ansMap[x.q] = x.a; });
+        const next = defaultGuideQuestions(Math.floor(Math.random() * GUIDE_QUESTION_SETS.length));
+        // 恢复相同问题的回答
+        next.forEach(x => { if (ansMap[x.q]) x.a = ansMap[x.q]; });
+        list.innerHTML = aiQuestionsHtml(next);
+      });
+      // AI 出题（替换引导题）
+      bindAct('thGenQuestions', async () => {
+        const btn = root().querySelector('#thGenQBtn');
+        if (!btn) return;
+        btn.disabled = true; const old = btn.textContent; btn.textContent = 'AI 出题中…';
+        try {
+          const title = root().querySelector('#thTitle')?.value.trim() || '';
+          const mood = _tmpMood.val || (root().querySelector('#thMoodTags .mood-tag-pick.selected')?.dataset.mood) || '';
+          const sys = '你是一个温柔陪伴用户写日记的引导者。请生成 6 个中文引导问题，严格分 3 层（每层 2 题）：L1 情绪层（关于用户今天的心情/感受）、L2 事件层（关于今天发生了什么）、L3 内心/哲学层（关于内心需求/价值观/人生视角）。请用 JSON 返回，格式固定为数组，每个元素形如 {"tier":"L1 · 情绪层","tierEmoji":"🌸","q":"问题文本"}，不要加多余文字或 Markdown 包裹。';
+          const user = `用户想写一篇日记${title ? '，标题意向：「' + title + '」' : ''}${mood ? '，当前心情：' + mood : ''}。请据此生成 6 道最能帮 TA 打开话匣子的引导题。`;
+          const r = await Api.callAI('diaryguide', [
+            { role: 'system', content: sys },
+            { role: 'user', content: user },
+          ]);
+          if (!r || !r.text) throw new Error('AI 没返回结果');
+          // 解析 JSON：可能被 ```json 包裹
+          let txt = r.text.trim();
+          const m = txt.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (m) txt = m[1].trim();
+          let parsed = null;
+          try { parsed = JSON.parse(txt); } catch(_) { parsed = null; }
+          if (!Array.isArray(parsed)) {
+            // 降级：用默认题
+            throw new Error('AI 返回格式无法解析，换用内置引导题');
+          }
+          const qs = parsed.map(x => ({
+            tier: x.tier || 'L?',
+            tierEmoji: x.tierEmoji || '🌿',
+            q: String(x.q || '').trim(),
+            a: '',
+          })).filter(x => x.q);
+          if (!qs.length) throw new Error('AI 没出题目');
+          const list = root().querySelector('#thAIQuestionsList');
+          if (list) list.innerHTML = aiQuestionsHtml(qs);
+          Utils.toast('✨ AI 已为你定制了 6 道引导题');
+        } catch (e) {
+          Utils.toast(e.message || '出题失败，换一组内置题给你');
+          const list = root().querySelector('#thAIQuestionsList');
+          if (list) list.innerHTML = aiQuestionsHtml(defaultGuideQuestions());
+        } finally {
+          btn.disabled = false; btn.textContent = old;
+        }
+      });
+      // AI 写想法
+      bindAct('thGenThoughts', async () => {
+        const btn = root().querySelector('#thGenTBtn');
+        if (!btn) return;
+        const qs = collectTHQuestions();
+        const hasAnswer = qs.some(x => (x.a || '').trim());
+        if (!hasAnswer) { Utils.toast('先至少回答一道题吧～'); return; }
+        btn.disabled = true; const old = btn.textContent; btn.textContent = 'AI 思考中…';
+        const wrap = root().querySelector('#thAIThoughtsWrap') || (() => {
+          const existing = root().querySelector('#thAIThoughtsText');
+          return existing ? existing.parentElement : null;
+        })();
+        // 先显示"思考中"占位
+        let box = root().querySelector('#thThoughtsBox');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'thThoughtsBox';
+          box.className = 'chapter';
+          box.style.cssText = 'background:rgba(230,244,255,0.7);margin-top:12px;';
+          box.innerHTML = `<div class="chapter-title">💭 AI 的一点想法</div><div class="chapter-content" id="thAIThoughtsText" style="line-height:1.9;">（AI 正在静静写下它的话…）</div>`;
+          if (wrap && wrap.tagName) wrap.parentNode.insertBefore(box, wrap.nextSibling);
+          else {
+            const listNode = root().querySelector('#thAIQuestionsList');
+            if (listNode) listNode.insertAdjacentElement('afterend', box);
+          }
+        }
+        try {
+          const title = root().querySelector('#thTitle')?.value.trim() || '';
+          const mood = _tmpMood.val || (root().querySelector('#thMoodTags .mood-tag-pick.selected')?.dataset.mood) || '';
+          const sys = '你是用户内在那个温柔的、陪伴型的小我的声音。用户通过回答引导题写了一篇日记的问答素材，请你基于问答，用 400-700 字写一段你的想法：第一，帮 TA 看见 TA 自己都没发现的闪光点或温柔；第二，不需要说教，像一个老朋友坐在旁边说悄悄话；第三，可以点出 1-2 句你觉得最动人的回答，回应它；第四，最后留一句轻轻的小祝愿。直接输出中文正文，不要用 Markdown 列表，不要加标题。';
+          const lines = [];
+          if (title) lines.push('日记标题：' + title);
+          if (mood) lines.push('心情：' + mood);
+          qs.forEach((x, i) => {
+            if ((x.a || '').trim()) lines.push(`Q${i+1}(${x.tier}): ${x.q} → A: ${x.a.trim()}`);
+          });
+          const r = await Api.callAI('diaryguide', [
+            { role: 'system', content: sys },
+            { role: 'user', content: lines.join('\n') },
+          ]);
+          if (!r || !r.text) throw new Error('AI 没返回内容');
+          const textNode = root().querySelector('#thAIThoughtsText');
+          if (textNode) textNode.innerHTML = escHtml(r.text).replace(/\n/g, '<br/>');
+          // 自动整理到正文（若正文还空）
+          const ta = root().querySelector('#thContent');
+          if (ta && !ta.value.trim()) {
+            ta.value = composeFromQA(qs, r.text);
+          } else if (ta) {
+            // 追加一段引导
+            if (confirm('要不要把这次的问答 + AI 想法整理到正文下面（可继续润色）？')) {
+              const piece = '\n\n——— AI 引导补充 ———\n' + composeFromQA(qs, r.text);
+              ta.value = (ta.value || '') + piece;
+            }
+          }
+          Utils.toast('💭 AI 写下了一段话，去看看吧～');
+        } catch (e) {
+          const textNode = root().querySelector('#thAIThoughtsText');
+          if (textNode) textNode.innerHTML = '（暂时无法生成想法，稍后再试：' + escHtml(e.message || '未知错误') + '）';
+          Utils.toast(e.message || 'AI 暂时无法回应');
+        } finally {
+          btn.disabled = false; btn.textContent = old;
+        }
+      });
+      // 返回列表
+      bindAct('thBack', () => {
+        Popups.close();
+        setTimeout(() => Popups.open('treehole', { mode: 'list' }), 50);
+      });
+      // 保存日记
+      bindAct('thSave', (e) => {
+        const editId = e.currentTarget.dataset.editId || null;
+        const title = root().querySelector('#thTitle')?.value.trim() || '';
+        const content = root().querySelector('#thContent')?.value || '';
+        const mood = _tmpMood.val || (root().querySelector('#thMoodTags .mood-tag-pick.selected')?.dataset.mood) || '';
+        const guided = !!(root().querySelector('#thAIGuide')?.checked);
+        const questions = guided ? collectTHQuestions() : [];
+        const thoughtsNode = root().querySelector('#thAIThoughtsText');
+        let thoughts = '';
+        if (thoughtsNode) {
+          // innerHTML 包含 <br/>，转回换行
+          thoughts = thoughtsNode.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+          if (thoughts.includes('静静写下') || thoughts.includes('暂时无法生成')) thoughts = '';
+        }
+        if (!title && !content.trim()) {
+          Utils.toast('至少写点标题或内容吧～'); return;
+        }
+        const arr = s.treeholeDiaries = (s.treeholeDiaries || []);
+        let target = editId ? arr.find(x => x.id === editId) : null;
+        if (target) {
+          // 更新已有
+          target.title = title;
+          target.content = content;
+          target.mood = mood;
+          target.aiGuided = guided;
+          target.aiQuestions = questions;
+          target.aiThoughts = thoughts;
+          target.updatedAt = Utils.nowTs();
+          Utils.toast('✓ 日记已更新');
+        } else {
+          // 新增
+          arr.push({
+            id: Utils.uid(),
+            title: title || Utils.formatFullDate(Utils.nowTs()) + ' 的日记',
+            content: content,
+            mood: mood,
+            tags: [],
+            aiGuided: guided,
+            aiQuestions: questions,
+            aiThoughts: thoughts,
+            date: Utils.nowTs(),
+          });
+          // 触发奖励
+          State.addCare(1);
+          const got = State.addCoin(3);
+          if (got > 0) State.addHappiness(1);
+          // 亮星
+          s.starPoints.push({
+            id: Utils.uid(),
+            date: Utils.nowTs(),
+            type: 'note',
+            title: `在心灵树洞写了日记：${title || '无题'}`,
+            desc: content.trim().slice(0, 60) || mood || '',
+            importance: guided ? 2 : 1,
+            source: '心灵树洞 · Tab2',
+          });
+          Utils.toast(`✓ 已收进树洞 · +1 关爱值${got > 0 ? ` +${got} 金币` : ''}`);
+        }
+        State.save();
+        Tab1.refresh && Tab1.refresh();
+        Tab4.refresh && Tab4.refresh();
+        Popups.close();
+        setTimeout(() => Popups.open('treehole', { mode: 'list' }), 50);
       });
     },
 
@@ -1423,6 +1852,123 @@ ${ctx.join('\n\n')}`;
     constellationSummary() {
       bindAct('close', close);
     },
+
+    // ============ 自我洞察说明书：填充内容 + AI 重新总结 ============
+    selfManual() {
+      const PLACEHOLDER = '还在认识中…';
+      const S = State.state;
+      const sm = S.selfManual || { chapter1: PLACEHOLDER, chapter2: PLACEHOLDER, chapter3: PLACEHOLDER, chapter4: PLACEHOLDER, chapter5: PLACEHOLDER, updatedAt: '' };
+      const r = root();
+
+      // 1. 填五章内容 + 灰化兜底 + 统一走 textContent（天然 XSS 安全）
+      const map = [
+        ['ch1', sm.chapter1], ['ch2', sm.chapter2], ['ch3', sm.chapter3],
+        ['ch4', sm.chapter4], ['ch5', sm.chapter5],
+      ];
+      map.forEach(([cls, txt]) => {
+        const el = r.querySelector('.manual-' + cls);
+        if (!el) return;
+        const isEmpty = !txt || txt === PLACEHOLDER;
+        el.textContent = isEmpty ? PLACEHOLDER : String(txt);
+        el.classList.toggle('placeholder', isEmpty);
+      });
+
+      // 2. 填更新时间
+      const upEl = r.querySelector('#manualUpdatedAt');
+      if (upEl) {
+        if (sm.updatedAt) {
+          try { upEl.textContent = Utils.formatFullDate(sm.updatedAt); }
+          catch (_) { upEl.textContent = sm.updatedAt; }
+        } else {
+          upEl.textContent = '尚未生成';
+        }
+      }
+
+      // 3. AI 可用判断（两个 agent 都启用才算 ready；退而求其次：只要 insight 或任意 AI 已启用也可以）
+      const aiReady = !!(State.aiEnabled && (State.aiEnabled('insight') || State.aiEnabled('self_manual')));
+      const regenBtn = r.querySelector('#aiRegenBtn');
+      const hintEl = r.querySelector('#aiDisabledHint');
+      if (!aiReady) {
+        if (regenBtn) regenBtn.classList.add('hidden');
+        if (hintEl) hintEl.classList.remove('hidden');
+      }
+
+      // 4. 数据来源展开切换
+      const tog = r.querySelector('[data-act="toggleSources"]');
+      const det = r.querySelector('.sources-detail');
+      const chev = tog ? tog.querySelector('.chev') : null;
+      if (tog) {
+        tog.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (det) det.classList.toggle('hidden');
+          if (chev) chev.classList.toggle('open');
+        });
+      }
+
+      // 5. 完成按钮
+      bindAct('closeManual', close);
+
+      // 6. AI 重新总结（含 10 分钟前端节流）
+      if (regenBtn && aiReady) {
+        const THROTTLE_KEY = 'yuji_last_manual_regen_ts';
+        const THROTTLE_MS = 10 * 60 * 1000;
+        regenBtn.addEventListener('click', async () => {
+          const last = parseInt(localStorage.getItem(THROTTLE_KEY) || '0', 10);
+          if (last && Date.now() - last < THROTTLE_MS) {
+            const left = Math.ceil((THROTTLE_MS - (Date.now() - last)) / 60000);
+            Utils.toast(`刚总结过，${left} 分钟后再试试吧～`);
+            return;
+          }
+          regenBtn.disabled = true;
+          const oldBtnText = regenBtn.textContent;
+          regenBtn.textContent = '小我在总结你…（通常 1-3 分钟）';
+          try {
+            const result = await Api.callChain('insight_manual', []);
+            localStorage.setItem(THROTTLE_KEY, String(Date.now()));
+
+            // 尝试从后端响应的 self_manual step.text 中解析 JSON
+            let newManual = null;
+            if (result && typeof result === 'object' && Array.isArray(result.steps)) {
+              const lastStep = result.steps[result.steps.length - 1];
+              if (lastStep && typeof lastStep.text === 'string') {
+                const match = lastStep.text.match(/\{[\s\S]*?"chapter1"[\s\S]*?\}/);
+                if (match) {
+                  try { newManual = JSON.parse(match[0]); } catch (_) { newManual = null; }
+                }
+              }
+            }
+            // 如果响应里没有解析出 JSON，拉远端 user_state 取最新
+            if (!newManual && typeof Api.getState === 'function' && Api.isAuthed()) {
+              try {
+                const remote = await Api.getState();
+                const remoteData = remote && remote.data ? remote.data : (remote && typeof remote === 'object' ? remote : null);
+                if (remoteData && remoteData.selfManual) newManual = remoteData.selfManual;
+              } catch (_) { /* 忽略远端拉取错误 */ }
+            }
+
+            if (newManual && typeof newManual === 'object') {
+              const merged = Object.assign(
+                { chapter1: PLACEHOLDER, chapter2: PLACEHOLDER, chapter3: PLACEHOLDER, chapter4: PLACEHOLDER, chapter5: PLACEHOLDER, updatedAt: new Date().toISOString() },
+                newManual
+              );
+              State.state.selfManual = merged;
+              State.save();
+            } else {
+              Utils.toast('说明书已在后端生成，3 秒后自动刷新～');
+              await new Promise(res => setTimeout(res, 3000));
+            }
+
+            close();
+            setTimeout(() => Popups.open('selfManual'), 120);
+          } catch (e) {
+            Utils.toast((e && e.message) ? e.message : '重新总结失败了，请稍后再试');
+          } finally {
+            regenBtn.disabled = false;
+            regenBtn.textContent = oldBtnText;
+          }
+        });
+      }
+    },
   };
 
   // ============ 本心对语辅助函数 ============
@@ -1449,6 +1995,95 @@ ${ctx.join('\n\n')}`;
         </div>
       `;
     }).join('');
+  }
+
+  // ===== 心灵树洞：AI 引导题 HTML =====
+  // 3 层：L1 情绪、L2 事件、L3 内心/哲学
+  const GUIDE_QUESTION_SETS = [
+    [
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '今天最明显的感受是什么？可以用 2-3 个词描述，也可以写具体一瞬间。' },
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '如果把此刻的心情比作一种颜色/天气/味道，它会是什么？为什么？' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天发生了哪 3 件值得记一下的小事？哪怕是「喝了一杯喜欢的咖啡」。' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天哪一件事最让你挂心、反复想到？它让你产生了什么感觉？' },
+      { tier: 'L3 · 内心层', tierEmoji: '🪞', q: '这件让你挂心的事背后，你真正在意的是什么？是被理解、被爱、还是一种安全感？' },
+      { tier: 'L3 · 哲学层', tierEmoji: '✨', q: '如果十年之后的你，坐下来回看今天这一天，TA 会对你说一句什么？' },
+    ],
+    [
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '从早上醒来到现在，你的心情经历了怎样的变化？' },
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '此刻你身体上有什么感觉？（紧、累、轻松、胸口空…都可以写）' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天有没有一个瞬间，你想对自己说「你辛苦了」？为什么？' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天和谁有过比较深的互动？让你感觉靠近还是疏离？' },
+      { tier: 'L3 · 内心层', tierEmoji: '🪞', q: '最近一段时间，你心里有没有一个反复出现的声音或问题？它在提醒你什么？' },
+      { tier: 'L3 · 哲学层', tierEmoji: '✨', q: '如果现在的你可以给小时候的自己一个拥抱/一句话，你想给什么？' },
+    ],
+    [
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '今天的情绪里，有没有一种是你「不太想承认」的？试着把它写下来，不用评判它。' },
+      { tier: 'L1 · 情绪层', tierEmoji: '🌸', q: '如果今天有个情绪需要被看见、被温柔对待，它是哪一个？' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天有什么事让你觉得「我做得还不错」？写下来，别漏了。' },
+      { tier: 'L2 · 事件层', tierEmoji: '📅', q: '今天有没有一件事没按预期发生？你当时的第一反应是什么？' },
+      { tier: 'L3 · 内心层', tierEmoji: '🪞', q: '你心里有没有一段关系/一个选择，让你最近常常在想「我做得对吗」？它对你来说重要在哪？' },
+      { tier: 'L3 · 哲学层', tierEmoji: '✨', q: '如果不用考虑钱、别人的眼光和现实限制，你现在最想去做的一件小事是什么？为什么？' },
+    ],
+  ];
+  function defaultGuideQuestions(setIdx) {
+    const i = (setIdx == null ? (Date.now() % GUIDE_QUESTION_SETS.length) : (+setIdx % GUIDE_QUESTION_SETS.length));
+    return GUIDE_QUESTION_SETS[i].map(item => ({ tier: item.tier, tierEmoji: item.tierEmoji, q: item.q, a: '' }));
+  }
+  function aiQuestionsHtml(qs) {
+    const list = (Array.isArray(qs) && qs.length) ? qs : defaultGuideQuestions();
+    return list.map((item, idx) => `
+      <div class="th-question tier-${(item.tier||'').slice(0,2)}" data-qidx="${idx}">
+        <div class="th-q-tier">${item.tierEmoji || '🌿'} <b>${escHtml(item.tier || '')}</b></div>
+        <div class="th-q-text">${escHtml(item.q || '')}</div>
+        <textarea class="popup-textarea th-a-textarea" placeholder="你的回答…（可以写一句话，也可以写一大段）" data-qidx="${idx}" maxlength="1000" style="min-height:60px;">${escHtml(item.a || '')}</textarea>
+      </div>
+    `).join('');
+  }
+  // 读取当前编辑器里 AI 引导问答（从 DOM textareas 收集）
+  function collectTHQuestions() {
+    const nodes = root().querySelectorAll('#thAIQuestionsList .th-question');
+    const out = [];
+    nodes.forEach(n => {
+      const idx = n.dataset.qidx;
+      const tierNode = n.querySelector('.th-q-tier b');
+      const qNode = n.querySelector('.th-q-text');
+      const ta = n.querySelector('.th-a-textarea');
+      const tierEmojiNode = n.querySelector('.th-q-tier');
+      out.push({
+        tier: tierNode ? tierNode.textContent.trim() : '',
+        tierEmoji: tierEmojiNode ? tierEmojiNode.textContent.trim().split(' ')[0] : '',
+        q: qNode ? qNode.textContent.trim() : '',
+        a: ta ? ta.value : '',
+      });
+    });
+    return out;
+  }
+  // 将 Q&A 整理为日记正文（用户可继续润色）
+  function composeFromQA(qs, aiThoughts) {
+    const lines = [];
+    let curTier = '';
+    qs.forEach((item, i) => {
+      if (item.tier !== curTier) {
+        if (curTier) lines.push('');
+        lines.push(`【${item.tierEmoji || ''} ${item.tier}】`);
+        curTier = item.tier;
+      }
+      if ((item.a || '').trim()) {
+        lines.push(`Q${i+1}. ${item.q}`);
+        lines.push(`A. ${item.a.trim()}`);
+        lines.push('');
+      } else {
+        lines.push(`Q${i+1}. ${item.q}`);
+        lines.push(`（未回答，跳过）`);
+        lines.push('');
+      }
+    });
+    if (aiThoughts && String(aiThoughts).trim()) {
+      lines.push('');
+      lines.push('【💭 AI 的一点想法】');
+      lines.push(String(aiThoughts).trim());
+    }
+    return lines.join('\n');
   }
 
   async function sendDialogueMsg() {

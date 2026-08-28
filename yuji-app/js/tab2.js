@@ -1,7 +1,7 @@
 /* ============================================================
-   Tab2 遇见·内心森林 —— 本心对语
-   用户点击森林木牌，与"小我"通信：倾诉烦恼、心事、情绪，
-   小我不定时回信，结合近期自我照顾事例给鼓励与陪伴
+   Tab2 遇见·内心森林 —— 本心对语 + 心灵树洞
+   - 本心对语：点击森林木牌，与"小我"通信：倾诉烦恼、心事、情绪
+   - 心灵树洞：点击心灵树洞木牌，记录日记；可勾选 AI 引导，通过问题引导写作并附上 AI 回应
    ============================================================ */
 
 const Tab2 = (() => {
@@ -19,8 +19,22 @@ const Tab2 = (() => {
     if (e.scale) btn.style.setProperty('--entry-scale', e.scale);
   }
 
+  // 心灵树洞入口木牌（同本心对语模式）
+  function renderTreeholeEntry() {
+    const btn = document.getElementById('treeholeEntry');
+    if (!btn) return;
+    const e = (State.treeholeEntry) || {};
+    const img = btn.querySelector('.tab2-entry-img');
+    if (img && e.icon) img.src = e.icon;
+    btn.style.left = (e.x != null ? e.x : 72) + '%';
+    btn.style.bottom = (e.y != null ? e.y : 32) + '%';
+    btn.style.zIndex = 10 + (e.z != null ? e.z : 6);
+    if (e.scale) btn.style.setProperty('--entry-scale', e.scale);
+  }
+
   function init() {
     renderEntry();
+    renderTreeholeEntry();
     // 森林萤火氛围
     Utils.spawnParticles(document.getElementById('forestMotes'), {
       count: 14,
@@ -32,7 +46,11 @@ const Tab2 = (() => {
     document.getElementById('dialogueEntry')?.addEventListener('click', () => {
       Popups.open('dialogue');
     });
+    // 点击心灵树洞 → 打开「心灵树洞」日记面板
+    document.getElementById('treeholeEntry')?.addEventListener('click', () => {
+      Popups.open('treehole');
+    });
   }
 
-  return { init, renderEntry };
+  return { init, renderEntry, renderTreeholeEntry };
 })();

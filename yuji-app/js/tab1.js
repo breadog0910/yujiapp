@@ -102,6 +102,7 @@ const Tab1 = (() => {
     teddy:    '玩偶是你小时候的伙伴，后来走丢了，又被你找了回来。',
     piggy:    '存钱罐里装的不是钱，是你一次次"值得被善待"的决心。',
     letter:   '小我写给你的信，会在这里等你愿意拆开的时候。',
+    mirror:   '你在墙上挂了这面镜子。它不只是用来照脸——偶尔凝视里面，也看看这段时间你慢慢长成了什么样。',
   };
   const DEFAULT_STORY_FALLBACK = '这是你房间里的老伙计，陪你度过了不少平淡又珍贵的日子。';
 
@@ -291,6 +292,8 @@ const Tab1 = (() => {
             Popups.open('shop');
           } else if (cat.action === 'letter') {
             Popups.open('letter');
+          } else if (cat.action === 'mirror') {
+            Popups.open('selfManual');
           } else {
             Popups.open('furniInfo', { id: it.id });
           }

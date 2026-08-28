@@ -30,7 +30,9 @@ VALUES
   ('tea',      '茶杯',   '陪伴', 'assets/pixel/tea.png',      32, 36, 0, NULL, 0, 8),
   ('letter',   '小我的信', '陪伴', 'assets/pixel/letter.png', 40, 32, 0, 'letter', 1, 12),
   ('piggy',    '存钱罐', '功能', 'assets/pixel/piggy.png',    40, 44, 0, 'shop', 1, 28),
-  ('tab2_entry', '本心对语', '入口', 'assets/tab2/4f88a23bda43941aab21c7ba15d02900.png', 80, 80, 0, NULL, 0, 0)
+  ('mirror',   '镜子',   '功能', 'assets/pixel/mirror.png',   56, 72, 0, 'mirror', 1, 0),
+  ('tab2_entry', '本心对语', '入口', 'assets/tab2/4f88a23bda43941aab21c7ba15d02900.png', 80, 80, 0, NULL, 0, 0),
+  ('treehole_entry', '心灵树洞', '入口', 'assets/tab2/d0c500e16498ab7de1ce28335ef8bef9.png', 80, 80, 0, NULL, 0, 0)
 ON CONFLICT (type) DO NOTHING;
 
 -- -----------------------------------------------------------
@@ -50,7 +52,9 @@ VALUES
   ('ri-teddy',    'teddy',    70, 14, 5, 1,    0, 0, 0, NULL,   9),
   ('ri-piggy',    'piggy',    88, 10, 6, 1,    0, 0, 0, 'shop', 10),
   ('ri-letter',   'letter',   48, 44, 6, 0.95, 0, 0, 0, 'letter', 11),
-  ('tab2-entry',  'tab2_entry', 18, 34, 6, 1,    0, 0, 0, NULL,    12)
+  ('ri-mirror',   'mirror',   45, 44, 2, 1,    0, 0, 0, 'mirror', 12),
+  ('tab2-entry',  'tab2_entry', 18, 34, 6, 1,    0, 0, 0, NULL,    13),
+  ('treehole-entry', 'treehole_entry', 72, 32, 6, 1, 0, 0, 0, NULL, 14)
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------
@@ -102,7 +106,10 @@ VALUES
    0, NOW()),
   ('whisper',     '本心对语',   'openai', 'https://api.openai.com/v1', '', 'gpt-4o-mini', 0.85,
    '你是森林里那个温柔的小我，是用户内在的自己，不是心理医生、老师或评判者。用森林密信、说悄悄话的口吻回应。回复要：1) 先轻轻接住用户此刻的烦恼、情绪或分享，不评判、不否定、不急着给出方案；2) 结合上下文里用户近期"自我照顾"的事例（如完成的照顾任务、情绪记录、成长星点、说明书内容），真诚地肯定ta为自己做过的努力；3) 给出一两句鼓励与陪伴。语气克制温柔、口语化，悄悄话一样。禁止诊断心理疾病、禁止"你应该/你必须"式压迫、禁止说教。控制在 80–160 字中文。',
-   1, NOW())
+   1, NOW()),
+  ('diaryguide',  '日记引导',   'openai', 'https://api.openai.com/v1', '', 'gpt-4o-mini', 0.8,
+   '你是温柔陪伴用户写日记的引导者。分两种任务：① 出题：严格用 JSON 数组输出 6 道分 3 层（每层 2 题）的中文引导题，格式固定为 [{"tier":"L1 · 情绪层","tierEmoji":"🌸","q":"问题文本"}]，L1 情绪层、L2 事件层、L3 内心/哲学层；② 写想法：基于用户的问答，以小我的温柔陪伴口吻写 400–700 字中文回应，看见闪光点、点出最动人的回答、最后留一句轻轻祝愿。全程不用 Markdown 列表、不贴标题、不说教不诊断。',
+   0, NOW())
 ON CONFLICT (key) DO NOTHING;
 
 -- -----------------------------------------------------------
