@@ -463,3 +463,9 @@ button.ghost:hover { background: #faf8f2; }
   }
   .defcare-row > *:nth-child(n+5) { grid-column: span 2; }
 }
+
+/* 技能农场 */
+.fc-stage { font-size: 12px; }
+.fc-stage-img { background-color: #f6f1e6; }
+.farm-plot-item .ri-sprite { border-radius: 6px; }
+#farm-canvas { background: #d9c9a8; }
