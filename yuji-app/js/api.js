@@ -161,6 +161,8 @@ async function tryAutoLogin() {
       { data: tabBgRows, error: e6 },
       { data: careRows, error: e7 },
       { data: aiRows, error: e8 },
+      { data: farmCrops, error: e9 },
+      { data: farmPlots, error: e10 },
     ] = await Promise.all([
       client.from('furniture_catalog').select('*').order('category').order('type'),
       client.from('default_room_layout').select('*').order('sort_order'),
@@ -170,10 +172,14 @@ async function tryAutoLogin() {
       client.from('tab_backgrounds').select('tab_key, bg_path, updated_at'),
       client.from('default_care_options').select('*').order('sort_order').order('id'),
       client.from('ai_config').select('key, name, provider, model, enabled').order('key'),
+      client.from('farm_crop_catalog').select('*').order('sort_order'),
+      client.from('farm_plot_layout').select('*').order('sort_order'),
     ]);
 
     if (e1) console.warn('[Api] furniture_catalog 查询失败', e1.message);
     if (e2) console.warn('[Api] default_room_layout 查询失败', e2.message);
+    if (e9) console.warn('[Api] farm_crop_catalog 查询失败', e9.message);
+    if (e10) console.warn('[Api] farm_plot_layout 查询失败', e10.message);
 
     const settings = {};
     (settingsRows || []).forEach((s) => { settings[s.key] = s.value; });
@@ -209,6 +215,15 @@ async function tryAutoLogin() {
       feedOn: JSON.parse(r.feed_on || '[]'), stages: JSON.parse(r.stages || '[]'),
       yield: JSON.parse(r.yield || '{}'),
     });
+    const mapFarmCrop = (r) => ({
+      key: r.key, name: r.name, emoji: r.emoji,
+      stages: JSON.parse(r.stages || '[]'),
+      minutesPerStage: r.minutes_per_stage || 600,
+      sortOrder: r.sort_order,
+    });
+    const mapFarmPlot = (r) => ({
+      id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sortOrder: r.sort_order,
+    });
 
     return {
       appName: settings.appName || '予己',
@@ -217,6 +232,8 @@ async function tryAutoLogin() {
       defaultRoomLayout: (layout || []).map(mapLayout),
       shopItems: (shop || []).map(mapShop),
       seedCatalog: (seeds || []).map(mapSeed),
+      farmCropCatalog: (farmCrops || []).map(mapFarmCrop),
+      farmPlotLayout: (farmPlots || []).map(mapFarmPlot),
       aiConfig: (aiRows || []).map((a) => ({ key: a.key, name: a.name, provider: a.provider, model: a.model, enabled: !!a.enabled })),
       tabBackgrounds,
       defaultCareOptions: (careRows || []).map((r) => ({
