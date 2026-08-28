@@ -66,7 +66,7 @@ if ($linkedRef -eq $PROJECT_REF) {
 # ---------- 部署 Edge Functions ----------
 Write-Info "开始部署 Edge Functions..."
 
-$functions = @("ai-agent", "ai-chain", "admin-api")
+$functions = @("ai-agent", "ai-chain", "admin-api", "star-miner")
 $failed = @()
 
 foreach ($fn in $functions) {

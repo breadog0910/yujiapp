@@ -18,8 +18,8 @@
   <link rel="stylesheet" href="css/tab1-home.css?v=54" />
   <link rel="stylesheet" href="css/tab2-forest.css?v=37" />
   <link rel="stylesheet" href="css/tab3-garden.css?v=38" />
-  <link rel="stylesheet" href="css/tab4-stars.css?v=38" />
-  <link rel="stylesheet" href="css/popups.css?v=38" />
+  <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
+  <link rel="stylesheet" href="css/popups.css?v=39" />
 </head>
 <body>
   <div class="app-container" id="app">
@@ -206,12 +206,13 @@
               <img class="tab4-bg" src="assets/tab4-stars.png" alt="星空" />
             </div>
 
-            <!-- 中层：6 星座区（SVG 画连线 + DOM 星星） -->
+            <!-- 中层：6 星座区（SVG 画连线 + DOM 星星 + 星座标签浮标） -->
             <div class="scene-layer layer-mid tab4-constellations" id="constellationsLayer">
-              <svg class="constellation-lines" id="consLines"
+              <svg class="constellation-lines" id="consSvg"
                    viewBox="0 0 100 100" preserveAspectRatio="none"
                    aria-hidden="true"></svg>
               <div class="stars-layer" id="starsLayer"></div>
+              <div class="constellation-labels" id="consLabels"></div>
             </div>
 
             <!-- 前景层：云絮 + 流星氛围（保留） -->
@@ -266,8 +267,8 @@
   <script src="js/tab1.js?v=53"></script>
   <script src="js/tab2.js?v=37"></script>
   <script src="js/tab3.js?v=37"></script>
-  <script src="js/tab4.js?v=38"></script>
-  <script src="js/popups.js?v=38"></script>
+  <script src="js/tab4.js?v=40"></script>
+  <script src="js/popups.js?v=39"></script>
   <script src="js/account.js?v=37"></script>
   <script src="js/main.js?v=37"></script>
 </body>
