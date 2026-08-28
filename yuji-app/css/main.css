@@ -54,10 +54,10 @@ html, body {
     radial-gradient(circle at 20% 10%, #f7e9d3 0%, transparent 50%),
     radial-gradient(circle at 80% 90%, #e2d2b8 0%, transparent 50%),
     linear-gradient(135deg, #efe1cc 0%, #d8c8a8 100%);
-  min-height: 100vh;
-  overflow: auto; /* 兜底：极端小窗口可滚动 */
+  overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  overscroll-behavior: none;
 }
 
 /* 应用容器：全屏自适应 */
