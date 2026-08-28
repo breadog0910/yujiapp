@@ -54,12 +54,12 @@ CREATE POLICY storage_auth_update ON storage.objects FOR UPDATE
 CREATE POLICY storage_auth_delete ON storage.objects FOR DELETE
   USING (bucket_id IN ('furniture-images','shop-images','tab-backgrounds','farm-images') AND auth.role() = 'authenticated');
 
--- 5. 种子数据：作物品种（阶段图复用 assets/farm/crop-s1..s4.png 与 crop-h1.png）
+-- 5. 种子数据：作物品种（阶段图复用 assets/field/crop-s1..s4.png 与 crop-h1.png）
 INSERT INTO farm_crop_catalog (key, name, emoji, stages, minutes_per_stage, sort_order, updated_at)
 VALUES
-  ('wheat',     '小麦',   '🌾', '[{"image":"assets/farm/crop-s1.png","name":"破土"},{"image":"assets/farm/crop-s2.png","name":"生长"},{"image":"assets/farm/crop-s3.png","name":"繁茂"},{"image":"assets/farm/crop-h1.png","name":"成熟"}]', 600, 0, NOW()),
-  ('flower',    '向日葵', '🌻', '[{"image":"assets/farm/crop-s1.png","name":"破土"},{"image":"assets/farm/crop-s2.png","name":"生长"},{"image":"assets/farm/crop-s3.png","name":"繁茂"},{"image":"assets/farm/crop-h1.png","name":"成熟"}]', 900, 1, NOW()),
-  ('tree',      '果树',   '🌳', '[{"image":"assets/farm/crop-s1.png","name":"破土"},{"image":"assets/farm/crop-s2.png","name":"生长"},{"image":"assets/farm/crop-s3.png","name":"繁茂"},{"image":"assets/farm/crop-h1.png","name":"成熟"}]', 1200, 2, NOW())
+  ('wheat',     '小麦',   '🌾', '[{"image":"assets/field/crop-s1.png","name":"破土"},{"image":"assets/field/crop-s2.png","name":"生长"},{"image":"assets/field/crop-s3.png","name":"繁茂"},{"image":"assets/field/crop-h1.png","name":"成熟"}]', 600, 0, NOW()),
+  ('flower',    '向日葵', '🌻', '[{"image":"assets/field/crop-s1.png","name":"破土"},{"image":"assets/field/crop-s2.png","name":"生长"},{"image":"assets/field/crop-s3.png","name":"繁茂"},{"image":"assets/field/crop-h1.png","name":"成熟"}]', 900, 1, NOW()),
+  ('tree',      '果树',   '🌳', '[{"image":"assets/field/crop-s1.png","name":"破土"},{"image":"assets/field/crop-s2.png","name":"生长"},{"image":"assets/field/crop-s3.png","name":"繁茂"},{"image":"assets/field/crop-h1.png","name":"成熟"}]', 1200, 2, NOW())
 ON CONFLICT (key) DO NOTHING;
 
 -- 6. 种子数据：默认格子位置（旧 PLOT_LAYOUT 像素 / 容器 331x290 → 百分比近似；3x3 菱形）
