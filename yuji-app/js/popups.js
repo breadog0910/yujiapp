@@ -784,8 +784,6 @@ const Popups = (() => {
         setTimeout(() => document.getElementById('xiaowo')?.classList.remove('mood-happy'), 1500);
         // 达到关爱值门槛 → 自动生成信件
         maybeGenerateLetter();
-        // 田地输送养料（行动驱动生长）
-        const fed = State.feedGarden('emotion');
         // 添加星点
         s.starPoints.push({
           id: Utils.uid(),
@@ -799,7 +797,6 @@ const Popups = (() => {
         Tab1.refresh();
         Tab4.refresh();
         let msg = `记下了 · +1 关爱值${got > 0 ? ` +${got} 金币` : ''}`;
-        if (fed.length) msg += gardenFeedMsg(fed);
         Utils.toast(msg);
         close();
       });
@@ -1031,9 +1028,7 @@ const Popups = (() => {
           }
           State.save();
           Tab4.refresh();
-          const fed = State.feedGarden('interest');
           let msg = '镜子记下了';
-          if (fed.length) msg += gardenFeedMsg(fed);
           Utils.toast(msg);
           close();
         }
@@ -1073,9 +1068,7 @@ const Popups = (() => {
         });
         State.save();
         Tab4.refresh();
-        const fed = State.feedGarden('express');
         let msg = '树洞收下了';
-        if (fed.length) msg += gardenFeedMsg(fed);
         Utils.toast(msg);
         close();
       });

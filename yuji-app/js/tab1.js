@@ -711,17 +711,9 @@ const Tab1 = (() => {
       Utils.recalcComfort && Utils.recalcComfort();
     }
 
-    // 花园输送养料
-    const fed = State.feedGarden('selfcare', 1);
     renderStats();
 
     let msg = `+1 关爱值${got > 0 ? ` · +${got} 金币` : ''}`;
-    if (fed.length) {
-      const matured = fed.filter(f => f.matured);
-      msg += matured.length
-        ? ` · 花园收到养料，「${matured[0].name}」成熟了！`
-        : ` · 花园 ${fed.length} 株收到养料`;
-    }
     Utils.toast(msg);
 
     State.save();
