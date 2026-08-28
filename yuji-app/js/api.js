@@ -306,6 +306,19 @@ async function tryAutoLogin() {
     return { path: data.path, publicUrl: urlData.publicUrl };
   }
 
+  // ---------- Tab4: 调用 star-miner Edge Function（AI 深度挖掘大星） ----------
+  // 返回 Promise<{ stars: Star[] }>；未登录或调用失败 throw
+  async function callStarMiner() {
+    // 需登录：star-miner 后端强制 JWT 校验、读 user_state 表
+    const { data: sessionData } = await getClient().auth.getSession();
+    if (!sessionData?.session?.access_token) throw new Error('未登录，无法挖掘星星');
+    const { data, error } = await getClient().functions.invoke('star-miner', {
+      body: {},        // 不传用户数据：后端从 JWT 拿 user_id 自己查 user_state
+    });
+    if (error) throw new Error(error.message || 'star-miner 调用失败');
+    return data || { stars: [] };
+  }
+
   // ---------- 导出 ----------
   return {
     init,
@@ -315,6 +328,7 @@ async function tryAutoLogin() {
     login, register, logout, me,
     getConfig, getState, saveState,
     callAI, getChains, callChain,
+    callStarMiner,
     uploadFile,
   };
 })();
