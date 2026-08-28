@@ -2,7 +2,7 @@
  * Tab3 生长·技能农场（单地块版）
  *
  * - Tab3 背景（底层）= assets/farm/tab3-bg.png（草地/天空）
- * - 土地图层（中景，整块地=1 个按钮）= assets/farm/land.png，位置/大小来自
+ * - 土地图层（中景，整块地=1 个按钮）= assets/farm/land-v2.png，位置/大小来自
  *   State.farmLandConfig。前端运行时 canvas flood fill 去四边沿的白/浅灰 → 透明
  * - 已种状态：在土地上方叠当前阶段的作物大图（阶段越往后越大）
  * - 点击整块土地 → 未种→farmPlant，已种→farmLog
@@ -92,7 +92,7 @@ const Tab3 = (() => {
     el.style.imageRendering = 'pixelated';
 
     // 图片加载 → flood fill 去白底（带缓存 key = imgURL + threshold）
-    const url = cfg.image || 'assets/farm/land.png';
+    const url = cfg.image || 'assets/farm/land-v2.png';
     const threshold = getThreshold();
     const cacheKey = url + '|t=' + threshold;
     if (el.dataset.cacheKey !== cacheKey) {

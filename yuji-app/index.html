@@ -14,12 +14,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/main.css?v=41" />
+  <link rel="stylesheet" href="css/main.css?v=42" />
   <link rel="stylesheet" href="css/tab1-home.css?v=56" />
-  <link rel="stylesheet" href="css/tab2-forest.css?v=40" />
-  <link rel="stylesheet" href="css/tab3-garden.css?v=42" />
+  <link rel="stylesheet" href="css/tab2-forest.css?v=41" />
+  <link rel="stylesheet" href="css/tab3-garden.css?v=50" />
   <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
-  <link rel="stylesheet" href="css/popups.css?v=39" />
+  <link rel="stylesheet" href="css/popups.css?v=40" />
 </head>
 <body>
   <div class="app-container" id="app">
@@ -143,9 +143,13 @@
             </div>
 
             <!-- 中层：本心对语入口木牌（位置/图标由后台 tab2_entry 控制，逻辑同 Tab1 家具） -->
+            <!-- 心灵树洞入口木牌（同本心对语模式；用于写日记 + AI 引导写作） -->
             <div class="scene-layer layer-mid forest-objects">
               <button class="tab2-entry" id="dialogueEntry" title="本心对语">
                 <img class="tab2-entry-img" src="" alt="本心对语" draggable="false" />
+              </button>
+              <button class="tab2-entry treehole-entry" id="treeholeEntry" title="心灵树洞">
+                <img class="tab2-entry-img" src="" alt="心灵树洞" draggable="false" />
               </button>
             </div>
 
@@ -167,7 +171,7 @@
 
             <!-- 中-远景层：土地覆盖图层（整块地=单按钮，管理员可拖拽位置/大小/抠图阈值） -->
             <div class="scene-layer layer-mid" style="position:absolute;inset:0;pointer-events:none;z-index:5;">
-              <img id="farmLandLayer" src="assets/farm/land.png" alt="土地"
+              <img id="farmLandLayer" src="assets/farm/land-v2.png" alt="土地"
                    style="position:absolute;display:none;pointer-events:none;user-select:none;object-fit:contain;image-rendering:pixelated;filter:url(#alpha-hard-edge);" />
             </div>
 
@@ -276,15 +280,15 @@
       console.error('[Supabase] CDN 加载失败，请检查网络或尝试刷新页面');
     }
   </script>
-  <script src="js/api.js?v=41"></script>
-  <script src="js/state.js?v=43"></script>
+  <script src="js/api.js?v=50"></script>
+  <script src="js/state.js?v=50"></script>
   <script src="js/utils.js?v=37"></script>
   <script src="js/tab1.js?v=53"></script>
-  <script src="js/tab2.js?v=38"></script>
-  <script src="js/tab3.js?v=42"></script>
+  <script src="js/tab2.js?v=39"></script>
+  <script src="js/tab3.js?v=50"></script>
   <script src="js/tab4.js?v=40"></script>
-  <script src="js/popups.js?v=41"></script>
+  <script src="js/popups.js?v=42"></script>
   <script src="js/account.js?v=38"></script>
-  <script src="js/main.js?v=41"></script>
+  <script src="js/main.js?v=50"></script>
 </body>
 </html>

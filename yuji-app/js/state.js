@@ -62,6 +62,7 @@ const State = (() => {
     { type: 'tea',      icon: 'assets/pixel/tea.png',      w: 32, h: 36, name: '茶杯',     category: '陪伴', price: 8,  unlockedByDefault: 0 },
     { type: 'letter',   icon: 'assets/pixel/letter.png',   w: 40, h: 32, name: '小我的信', category: '陪伴', action: 'letter', price: 12, unlockedByDefault: 1 },
     { type: 'piggy',    icon: 'assets/pixel/piggy.png',    w: 40, h: 44, name: '存钱罐',   category: '功能', action: 'shop', price: 28, unlockedByDefault: 1 },
+    { type: 'mirror',   icon: 'assets/pixel/mirror.png',   w: 56, h: 72, name: '镜子',     category: '功能', action: 'mirror', price: 0,  unlockedByDefault: 1 },
   ];
 
   const FALLBACK_SEED_CATALOG = [
@@ -86,6 +87,7 @@ const State = (() => {
     { id: 'ri-teddy',    type: 'teddy',    x: 70, y: 14, z: 5, scale: 1,    flip: 0 },
     { id: 'ri-piggy',    type: 'piggy',    x: 88, y: 10, z: 6, scale: 1,    flip: 0, action: 'shop' },
     { id: 'ri-letter',   type: 'letter',   x: 48, y: 44, z: 6, scale: 0.95, flip: 0, action: 'letter' },
+    { id: 'ri-mirror',   type: 'mirror',   x: 45, y: 44, z: 2, scale: 1,    flip: 0, action: 'mirror' },
   ];
 
   // Tab2「本心对语」入口木牌（类型与兜底配置；位置/图标由后台 tab2_entry 控制，逻辑与 Tab1 家具一致）
@@ -95,6 +97,14 @@ const State = (() => {
     icon: 'assets/tab2/4f88a23bda43941aab21c7ba15d02900.png',
   };
   let tab2Entry = FALLBACK_TAB2_ENTRY; // 组装后的入口配置（含 {id,type,x,y,z,scale,icon}），缺省用兜底
+
+  // Tab2「心灵树洞」入口木牌（同本心对语模式；用于日记记录与 AI 引导写作）
+  const TAB2_TREEHOLE_TYPE = 'treehole_entry';
+  const FALLBACK_TREEHOLE_ENTRY = {
+    id: 'treehole-entry', type: TAB2_TREEHOLE_TYPE, x: 72, y: 32, z: 6, scale: 1,
+    icon: 'assets/tab2/d0c500e16498ab7de1ce28335ef8bef9.png',
+  };
+  let treeholeEntry = FALLBACK_TREEHOLE_ENTRY;
 
   // ============================================================
   // 动态配置（由 init() 填充；默认取兜底值）
@@ -135,7 +145,7 @@ const State = (() => {
   let farmCropCatalog = DEFAULT_FARM_CROP_CATALOG;
   let farmPlotLayout = DEFAULT_FARM_PLOT_LAYOUT;
   const DEFAULT_FARM_LAND_CONFIG = {
-    id: 'main', image: 'assets/farm/land.png',
+    id: 'main', image: 'assets/farm/land-v2.png',
     x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
   };
   let farmLandConfig = DEFAULT_FARM_LAND_CONFIG;
@@ -155,12 +165,12 @@ const State = (() => {
   function applyConfig(cfg) {
     if (!cfg) return;
     if (Array.isArray(cfg.furnitureCatalog) && cfg.furnitureCatalog.length) {
-      roomCatalog = cfg.furnitureCatalog.filter(f => f.type !== TAB2_ENTRY_TYPE);
+      roomCatalog = cfg.furnitureCatalog.filter(f => f.type !== TAB2_ENTRY_TYPE && f.type !== TAB2_TREEHOLE_TYPE);
     }
     if (Array.isArray(cfg.seedCatalog) && cfg.seedCatalog.length) seedCatalog = cfg.seedCatalog;
     // 空数组也要更新：后台清空布局后，预览账号轮询才能检测到指纹变化并刷新房间
     if (Array.isArray(cfg.defaultRoomLayout)) {
-      defaultRoomItems = cfg.defaultRoomLayout.filter(r => r.type !== TAB2_ENTRY_TYPE);
+      defaultRoomItems = cfg.defaultRoomLayout.filter(r => r.type !== TAB2_ENTRY_TYPE && r.type !== TAB2_TREEHOLE_TYPE);
     }
     // Tab2「本心对语」入口：从家具目录/默认布局中取 tab2_entry，组装成 tab2Entry
     const catEntry = Array.isArray(cfg.furnitureCatalog) ? cfg.furnitureCatalog.find(f => f.type === TAB2_ENTRY_TYPE) : null;
@@ -177,6 +187,22 @@ const State = (() => {
       };
     } else {
       tab2Entry = FALLBACK_TAB2_ENTRY; // 后台无 tab2_entry 时用兜底
+    }
+    // Tab2「心灵树洞」入口：同模式组装 treeholeEntry
+    const catTH = Array.isArray(cfg.furnitureCatalog) ? cfg.furnitureCatalog.find(f => f.type === TAB2_TREEHOLE_TYPE) : null;
+    const layTH = Array.isArray(cfg.defaultRoomLayout) ? cfg.defaultRoomLayout.find(r => r.type === TAB2_TREEHOLE_TYPE) : null;
+    if (catTH || layTH) {
+      treeholeEntry = {
+        id: layTH && layTH.id ? layTH.id : FALLBACK_TREEHOLE_ENTRY.id,
+        type: TAB2_TREEHOLE_TYPE,
+        x: layTH && layTH.x != null ? layTH.x : FALLBACK_TREEHOLE_ENTRY.x,
+        y: layTH && layTH.y != null ? layTH.y : FALLBACK_TREEHOLE_ENTRY.y,
+        z: layTH && layTH.z != null ? layTH.z : FALLBACK_TREEHOLE_ENTRY.z,
+        scale: layTH && layTH.scale != null ? layTH.scale : FALLBACK_TREEHOLE_ENTRY.scale,
+        icon: catTH && catTH.icon ? catTH.icon : ((layTH && layTH.icon) || FALLBACK_TREEHOLE_ENTRY.icon),
+      };
+    } else {
+      treeholeEntry = FALLBACK_TREEHOLE_ENTRY;
     }
     if (cfg.dailyCoinCap) DAILY_COIN_CAP = parseInt(cfg.dailyCoinCap, 10) || 20;
     if (Array.isArray(cfg.unlockedTypes) && cfg.unlockedTypes.length) unlockedTypes = cfg.unlockedTypes;
@@ -276,6 +302,7 @@ const State = (() => {
       letterRead: [],
       letters: [],
       tab2Dialogue: [], // Tab2「本心对语」对话历史：[{role,content,date}]
+      treeholeDiaries: [], // Tab2「心灵树洞」日记列表：[{id,title,content,date,mood,tags,aiGuided:boolean,aiQuestions:[{q,a}],aiThoughts:''}]
       selfManual: { chapter1: '还在认识中…', chapter2: '还在认识中…', chapter3: '还在认识中…', chapter4: '还在认识中…', chapter5: '还在认识中…', updatedAt: '' },
       createdAt: new Date().toISOString(),
       visitDates: [],
@@ -385,6 +412,7 @@ const State = (() => {
       b: tabBackgrounds,
       d: defaultCareOptions,
       f: farmCropCatalog, p: farmPlotLayout, L: farmLandConfig,
+      th: treeholeEntry, t2: tab2Entry,
     });
   }
   let previewTimer = null;
@@ -411,6 +439,8 @@ const State = (() => {
           state.careOptions = rebuilt.careOptions;
         }
         if (typeof Tab1 !== 'undefined' && Tab1.refresh) Tab1.refresh();
+        if (typeof Tab2 !== 'undefined' && Tab2.renderEntry) Tab2.renderEntry();
+        if (typeof Tab2 !== 'undefined' && Tab2.renderTreeholeEntry) Tab2.renderTreeholeEntry();
         if (typeof Tab3 !== 'undefined' && Tab3.refresh) Tab3.refresh();
       }
     } catch (e) {
@@ -597,6 +627,7 @@ const State = (() => {
     harvest:         'garden',
     manual:          'mirror',
     discovery:       'mirror',
+    note:            'dialogue',  // 心灵树洞日记 → 本心对话座
   };
   function pickCategoryByType(type) {
     return TYPE_TO_CONS[type] || 'milestone';
@@ -621,6 +652,7 @@ const State = (() => {
     get aiConfig() { return aiConfig; },
     get appName() { return meta.appName; },
     get tab2Entry() { return tab2Entry; },
+    get treeholeEntry() { return treeholeEntry; },
     get farmCropCatalog() { return farmCropCatalog; },
     get farmPlotLayout() { return farmPlotLayout; },
     get farmLandConfig() { return farmLandConfig; },

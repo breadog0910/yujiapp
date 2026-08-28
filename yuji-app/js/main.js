@@ -64,7 +64,7 @@
       if (activeTab) {
         const tabId = activeTab.id;
         if (tabId === 'tab1') Tab1.refresh();
-        if (tabId === 'tab3') Tab3.renderPlots();
+        if (tabId === 'tab3') Tab3.refresh();
         if (tabId === 'tab4') Tab4.refresh();
       }
       Utils.toast('登录成功！');
@@ -110,8 +110,8 @@
       if (target !== 'tab1' && acctMenu) acctMenu.style.display = 'none';
       // 触发各 Tab 的 refresh
       if (target === 'tab1') Tab1.refresh();
-      if (target === 'tab2') Tab2.renderEntry();
-      if (target === 'tab3') Tab3.renderPlots();
+      if (target === 'tab2') { Tab2.renderEntry(); Tab2.renderTreeholeEntry(); }
+      if (target === 'tab3') Tab3.refresh();
       if (target === 'tab4') Tab4.refresh();
     }
 

@@ -597,10 +597,10 @@ async function loadLayout() {
 }
 let catalogFurn = [];
 function renderPalette(furn) {
-  // tab2_entry（本心对语木牌）只在本义森林背景时显示，避免出现在布置 Tab1 房间的家具库里
-  const list = layoutBgKey === 'forest' ? furn : furn.filter(f => f.type !== 'tab2_entry');
+  // tab2_entry / treehole_entry（本心对语木牌 & 心灵树洞）只在本义森林背景时显示，避免出现在布置 Tab1 房间的家具库里
+  const list = layoutBgKey === 'forest' ? furn : furn.filter(f => f.type !== 'tab2_entry' && f.type !== 'treehole_entry');
   $('#palette-list').innerHTML = list.map(f =>
-    `<div class="palette-item" data-type="${esc(f.type)}"><img src="${iconUrl(f.icon)}" draggable="false"><span>${esc(f.name)}${f.type === 'tab2_entry' ? ' · Tab2' : ''}</span></div>`
+    `<div class="palette-item" data-type="${esc(f.type)}"><img src="${iconUrl(f.icon)}" draggable="false"><span>${esc(f.name)}${(f.type === 'tab2_entry' || f.type === 'treehole_entry') ? ' · Tab2' : ''}</span></div>`
   ).join('');
   $$('#palette-list .palette-item').forEach(el => el.addEventListener('click', () => addPiece(el.dataset.type)));
 }
@@ -620,8 +620,8 @@ function renderRoom() {
   $$('.room-item', stage).forEach(e => e.remove());
   const items = [...layoutPieces].sort((a, b) => a.z - b.z);
   const visible = layoutBgKey === 'forest'
-    ? items.filter(p => p.type === 'tab2_entry')   // 森林模式只摆本心对语木牌，不带家具
-    : items.filter(p => p.type !== 'tab2_entry');  // 房间模式隐藏木牌，只摆普通家具
+    ? items.filter(p => p.type === 'tab2_entry' || p.type === 'treehole_entry')   // 森林模式只摆本心对语 + 心灵树洞木牌，不带家具
+    : items.filter(p => p.type !== 'tab2_entry' && p.type !== 'treehole_entry');  // 房间模式隐藏两块木牌，只摆普通家具
   visible.forEach(p => {
     const f = catalogMap[p.type];
     if (!f) return;
@@ -1398,7 +1398,7 @@ const FARM_LAND_ID = '__land__';  // 虚拟选择 id（不进入数据库）
 let farmSelectedId = null;        // '__land__'
 
 const FARM_LAND_DEFAULTS = {
-  id: 'main', image: '/assets/farm/land.png',
+  id: 'main', image: '/assets/farm/land-v2.png',
   x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
 };
 
@@ -1445,7 +1445,7 @@ function renderFarmStage() {
     el.style.setProperty('--ri-h', '100%');
     el.style.setProperty('--ri-scale', s);
     el.innerHTML = `<span class="ri-visual" style="position:absolute;inset:0;">
-      <img src="${esc(farmLand.image||'/assets/farm/land.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;filter:url(#alpha-hard-edge);" alt="土地" />
+      <img src="${esc(farmLand.image||'/assets/farm/land-v2.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;filter:url(#alpha-hard-edge);" alt="土地" />
     </span>`;
     stage.appendChild(el);
     bindFarmLandEvents(el);
