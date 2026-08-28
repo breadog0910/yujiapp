@@ -375,13 +375,16 @@ async function api(method, path, body) {
   if (method === 'DELETE') {
     if (resource === 'tab-backgrounds') {
       // 重置为默认：把 bg_path 设为 null，让前端回退到 assets/
-      const { error } = await client.from(cfg.table).update({ bg_path: null }).eq(cfg.idField, id);
+      const { data, error } = await client.from(cfg.table).update({ bg_path: null }).eq(cfg.idField, id).select();
       if (error) throw new Error(error.message);
-      return { ok: true };
+      if (!data || data.length === 0) throw new Error('更新失败：未找到记录或权限不足');
+      return { ok: true, updated: data.length };
     }
-    const { error } = await client.from(cfg.table).delete().eq(cfg.idField, id);
+    // 强制 .select() 返回被删行数，避免 RLS 拒绝时 error=null、data=[] 导致前端"假成功"
+    const { data, error } = await client.from(cfg.table).delete().eq(cfg.idField, id).select();
     if (error) throw new Error(error.message);
-    return { ok: true };
+    if (!data || data.length === 0) throw new Error('删除失败：记录不存在或无删除权限（请检查管理员身份/RLS 策略）');
+    return { ok: true, deleted: data.length };
   }
 
   throw new Error('不支持的 method: ' + method);
@@ -783,7 +786,7 @@ async function loadFurniture() {
       <td class="row-actions"><button class="mini" data-act="save">保存</button><button class="mini del" data-act="del">删</button></td>
     </tr>`).join('')}
     </tbody></table>`;
-  bindRowOps('#furn-table', '/api/admin/furniture/', 'type', ['name', 'category', 'icon', 'w', 'h', 'isFloor', 'price', 'action']);
+  bindRowOps('#furn-table', '/api/admin/furniture/', 'type', ['name', 'category', 'icon', 'w', 'h', 'isFloor', 'price', 'action'], null, loadFurniture);
   bindFurnUpload();
 }
 function bindFurnUpload() {
@@ -921,7 +924,7 @@ async function loadShop() {
       <td class="row-actions"><button class="mini" data-act="save">保存</button><button class="mini del" data-act="del">删</button></td>
     </tr>`).join('')}
     </tbody></table>`;
-  bindRowOps('#shop-table', '/api/admin/shop/', 'id', ['kind', 'icon', 'name', 'price', 'bonus', 'desc', 'unlocked']);
+  bindRowOps('#shop-table', '/api/admin/shop/', 'id', ['kind', 'icon', 'name', 'price', 'bonus', 'desc', 'unlocked'], null, loadShop);
   bindShopUpload();
 }
 function bindShopUpload() {
@@ -1040,7 +1043,7 @@ async function loadSeeds() {
     </tr>`).join('')}
     </tbody></table>`;
   bindRowOps('#seed-table', '/api/admin/seeds/', 'key', ['emoji', 'name', 'dir', 'desc', 'feedOn', 'stages', 'yield'],
-    { feedOn: v => v.split(',').map(x => x.trim()).filter(Boolean), stages: v => v.split(',').map(x => x.trim()).filter(Boolean), yield: v => JSON.parse(v || '{}') });
+    { feedOn: v => v.split(',').map(x => x.trim()).filter(Boolean), stages: v => v.split(',').map(x => x.trim()).filter(Boolean), yield: v => JSON.parse(v || '{}') }, loadSeeds);
 }
 $('#seed-add').addEventListener('click', async () => {
   const key = prompt('新种子 key（英文）：'); if (!key) return;
@@ -1242,7 +1245,7 @@ $('#defcare-restore').addEventListener('click', async () => {
 });
 
 /* 通用：表格行 保存/删除 绑定 */
-function bindRowOps(sel, base, idField, fields, transforms) {
+function bindRowOps(sel, base, idField, fields, transforms, onReload) {
   transforms = transforms || {};
   $$(sel + ' tbody tr').forEach(tr => {
     const id = tr.dataset[idField];
@@ -1253,14 +1256,20 @@ function bindRowOps(sel, base, idField, fields, transforms) {
         const el = $('[data-f=' + f + ']', tr);
         if (!el) return;
         let v = el.type === 'checkbox' ? el.checked : el.value;
-        if (transforms[f]) v = transforms[f](el.value);
+        if (transforms[f]) v = transforms[f](v); // 传入归一化后的值（含 checkbox）
         body[f] = v;
       });
-      try { await api('PUT', base + id, body); toast('已保存'); } catch (err) { toast(err.message); }
+      try { await api('PUT', base + id, body); toast('已保存'); if (typeof onReload==='function') onReload(); } catch (err) { toast(err.message); }
     };
     delBtn.onclick = async () => {
       if (!confirm('确认删除？')) return;
-      try { await api('DELETE', base + id); toast('已删除'); $(sel).dispatchEvent(new Event('reload')); }
+      try {
+        await api('DELETE', base + id);
+        toast('已删除');
+        // onReload 回调优先（直接刷新列表）；兜底才 dispatch reload 事件（兼容）
+        if (typeof onReload === 'function') onReload();
+        else try { $(sel).dispatchEvent(new Event('reload')); } catch (_) {}
+      }
       catch (err) { toast(err.message); }
     };
   });
@@ -1460,7 +1469,7 @@ function renderFarmCrops(crops) {
   </tbody></table>`;
   bindRowOps('#farm-crop-table', '/api/admin/farm-crops/', 'key',
     ['emoji','name','stages','minutesPerStage','sortOrder'],
-    { stages: v => JSON.parse(v||'[]'), minutesPerStage: v=>+v||600, sortOrder: v=>+v||0 });
+    { stages: v => JSON.parse(v||'[]'), minutesPerStage: v=>+v||600, sortOrder: v=>+v||0 }, loadFarm);
   $$('#farm-crop-table [data-act="edit"]').forEach(b => b.addEventListener('click', () => openFarmCropModal(b.dataset.key)));
 }
 
