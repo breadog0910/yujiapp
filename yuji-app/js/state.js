@@ -106,8 +106,34 @@ const State = (() => {
   let DAILY_COIN_CAP = 20;
   let unlockedTypes = [];                        // 初始解锁的家具类型（新用户可用）
   let aiConfig = [];                            // 公开 AI 配置（不含密钥）：[{key,name,provider,model,enabled}]
-  let farmCropCatalog = [];
-  let farmPlotLayout = [];
+  // 技能农场：未执行 SQL 迁移时的前端兜底（3 品种 + 3x3 菱形 9 格）
+  const DEFAULT_FARM_CROP_CATALOG = [
+    { key:'wheat',  name:'小麦',   emoji:'🌾',
+      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
+             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+      minutesPerStage: 600, sortOrder: 0 },
+    { key:'flower', name:'向日葵', emoji:'🌻',
+      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
+             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+      minutesPerStage: 900, sortOrder: 1 },
+    { key:'tree',   name:'果树',   emoji:'🌳',
+      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
+             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+      minutesPerStage: 1200, sortOrder: 2 },
+  ];
+  const DEFAULT_FARM_PLOT_LAYOUT = [
+    { id:'p-2-0', x:30, y:22, z:3, scale:1, sortOrder:0 },
+    { id:'p-3-0', x:50, y:22, z:3, scale:1, sortOrder:1 },
+    { id:'p-4-0', x:70, y:22, z:3, scale:1, sortOrder:2 },
+    { id:'p-1-1', x:20, y:45, z:3, scale:1, sortOrder:3 },
+    { id:'p-2-1', x:40, y:45, z:3, scale:1, sortOrder:4 },
+    { id:'p-3-1', x:60, y:45, z:3, scale:1, sortOrder:5 },
+    { id:'p-2-2', x:30, y:68, z:3, scale:1, sortOrder:6 },
+    { id:'p-3-2', x:50, y:68, z:3, scale:1, sortOrder:7 },
+    { id:'p-4-2', x:70, y:68, z:3, scale:1, sortOrder:8 },
+  ];
+  let farmCropCatalog = DEFAULT_FARM_CROP_CATALOG;
+  let farmPlotLayout = DEFAULT_FARM_PLOT_LAYOUT;
   let meta = { appName: '予己' };
 
   // 新用户初始「每日自我照顾」选项（applyConfig 用后端值填充；缺省回退内置默认 6 项）
@@ -173,8 +199,11 @@ const State = (() => {
       // tab2/3/4 走 DOM <img> 直接改 src（首屏 init 时 DOM 可能尚未渲染，预览轮询时已渲染）
       if (changed) applyTabBgToDom();
     }
-    if (Array.isArray(cfg.farmCropCatalog)) farmCropCatalog = cfg.farmCropCatalog;
-    if (Array.isArray(cfg.farmPlotLayout)) farmPlotLayout = cfg.farmPlotLayout;
+    // SQL 未执行时 cfg.farmCropCatalog/farmPlotLayout 为空数组 → 保留前端内置兜底
+    if (Array.isArray(cfg.farmCropCatalog) && cfg.farmCropCatalog.length)
+      farmCropCatalog = cfg.farmCropCatalog;
+    if (Array.isArray(cfg.farmPlotLayout) && cfg.farmPlotLayout.length)
+      farmPlotLayout = cfg.farmPlotLayout;
   }
 
   // ============================================================
