@@ -104,7 +104,6 @@
   pointer-events: auto;
   transform: translateX(-50%);
   filter: drop-shadow(0 8px 14px rgba(15, 25, 18, 0.5));
-  animation: gentle-float 4.5s ease-in-out infinite;
 }
 .tab2-entry .tab2-entry-img {
   width: 100%;
@@ -117,12 +116,6 @@
 }
 .tab2-entry:active {
   transform: translateX(-50%) translateY(3px) scale(0.95);
-}
-
-/* 木牌轻微漂浮 */
-@keyframes gentle-float {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%      { transform: translateX(-50%) translateY(-8px); }
 }
 
 /* ============================================================
