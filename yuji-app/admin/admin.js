@@ -84,6 +84,16 @@ function mapSeed(r) {
     yield: JSON.parse(r.yield || '{}')
   };
 }
+function mapFarmCrop(r) {
+  return {
+    key: r.key, name: r.name, emoji: r.emoji,
+    stages: JSON.parse(r.stages || '[]'),
+    minutesPerStage: r.minutes_per_stage, sortOrder: r.sort_order,
+  };
+}
+function mapFarmPlot(r) {
+  return { id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sortOrder: r.sort_order };
+}
 function mapTabBg(r) {
   return {
     tabKey: r.tab_key, bgPath: r.bg_path, updatedAt: r.updated_at,
@@ -211,6 +221,19 @@ async function api(method, path, body) {
         yield: JSON.stringify(r.yield || '{}')
       })
     },
+    'farm-crops': {
+      table: 'farm_crop_catalog', idField: 'key', sortField: 'sort_order', mapper: mapFarmCrop,
+      mapBack: r => ({
+        key: r.key, name: r.name, emoji: r.emoji,
+        stages: JSON.stringify(r.stages || '[]'),
+        minutes_per_stage: r.minutesPerStage || 600, sort_order: r.sortOrder || 0,
+        updated_at: new Date().toISOString(),
+      })
+    },
+    'farm-plots': {
+      table: 'farm_plot_layout', idField: 'id', sortField: 'sort_order', mapper: mapFarmPlot,
+      mapBack: r => ({ id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sort_order: r.sortOrder || 0 })
+    },
     'tab-backgrounds': {
       table: 'tab_backgrounds', idField: 'tab_key', sortField: 'tab_key', mapper: mapTabBg,
       mapBack: r => ({
@@ -275,6 +298,16 @@ async function api(method, path, body) {
 
   if (method === 'PUT') {
     if (resource === 'room-layout') {
+      const items = body.items || [];
+      await client.from(cfg.table).delete().neq('id', '');
+      if (items.length) {
+        const rows = items.map(cfg.mapBack);
+        const { error } = await client.from(cfg.table).insert(rows);
+        if (error) throw new Error(error.message);
+      }
+      return { ok: true };
+    }
+    if (resource === 'farm-plots') {
       const items = body.items || [];
       await client.from(cfg.table).delete().neq('id', '');
       if (items.length) {
@@ -350,6 +383,19 @@ async function handleUpload(method, path, fd) {
     }
     // 普通行内上传
     return { path: urlData.publicUrl, filename: file.name, size: file.size, wasMattled: false };
+  }
+
+  // 农场品种阶段图上传
+  if (path.includes('/farm-crops/with-image')) {
+    const forceName = fd.get('forceName') || ('farm-' + file.name);
+    const filePath = (forceName + '.png').replace(/\//g,'-');
+    const { data, error } = await client.storage.from('farm-images').upload(filePath, file, { upsert: true });
+    if (error) throw new Error(error.message);
+    const { data: urlData } = client.storage.from('farm-images').getPublicUrl(data.path);
+    // 返回相对路径入库（去掉公共 URL 前缀，保留 storage path 对应的 assets-friendly 路径）
+    // 约定：farm-images 桶公共 URL 形如 https://<proj>.supabase.co/storage/v1/object/public/farm-images/<file>
+    // 前端用绝对 URL 即可（iconUrl 保留 http 开头）
+    return { path: urlData.publicUrl };
   }
 
   // 商店上传
@@ -437,6 +483,7 @@ const loaders = {
   dashboard: loadDashboard, layout: loadLayout, unlock: loadUnlock,
   furniture: loadFurniture, shop: loadShop, seeds: loadSeeds,
   tabbg: loadTabBg, defcare: loadDefaultCare, ai: loadAI, users: loadUsers, logs: loadLogs,
+  farm: loadFarm,
 };
 function switchPanel(sec) {
   $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.sec === sec));
@@ -1223,3 +1270,184 @@ async function loadLogs() {
     showApp(); switchPanel('dashboard');
   } catch (e) { showLogin(); }
 })();
+
+/* ===================== 技能农场 ===================== */
+let farmPlots = [];
+let farmSelectedId = null;
+
+async function loadFarm() {
+  const [crops, plots, tabbg] = await Promise.all([
+    api('GET', '/api/admin/farm-crops'),
+    api('GET', '/api/admin/farm-plots'),
+    api('GET', '/api/admin/tab-backgrounds'),
+  ]);
+  const t3 = tabbg.find(t => t.tabKey === 'tab3');
+  $('#farm-land-bg').src = t3 && t3.bgPath ? iconUrl(t3.bgPath) : '/assets/farm/land.png';
+  farmPlots = plots.map(p => ({ ...p }));
+  farmSelectedId = null;
+  renderFarmCrops(crops);
+  renderFarmPlots();
+  $('#farm-plot-props').classList.add('hidden');
+}
+
+function renderFarmCrops(crops) {
+  $('#farm-crop-table').innerHTML = `<table><thead><tr>
+    <th>key</th><th>emoji</th><th>名称</th><th>阶段数</th><th>每阶分钟</th><th></th></tr></thead><tbody>
+    ${crops.map(c => `<tr data-id="${esc(c.key)}">
+      <td>${esc(c.key)}</td>
+      <td>${esc(c.emoji||'')}</td>
+      <td>${esc(c.name)}</td>
+      <td>${c.stages.length}</td>
+      <td>${c.minutesPerStage}</td>
+      <td class="row-actions">
+        <button class="mini" data-act="edit" data-key="${esc(c.key)}">编辑</button>
+        <button class="mini del" data-act="del" data-key="${esc(c.key)}">删</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  bindRowOps('#farm-crop-table', '/api/admin/farm-crops/', 'key',
+    ['emoji','name','stages','minutesPerStage','sortOrder'],
+    { stages: v => JSON.parse(v||'[]'), minutesPerStage: v=>+v||600, sortOrder: v=>+v||0 });
+  $$('#farm-crop-table [data-act="edit"]').forEach(b => b.addEventListener('click', () => openFarmCropModal(b.dataset.key)));
+}
+
+// ---- 格子拖拽画布（镜像 room-layout） ----
+function renderFarmPlots() {
+  const stage = $('#farm-plots-stage');
+  $$('.farm-plot-item', stage).forEach(e => e.remove());
+  [...farmPlots].sort((a,b)=>a.z-b.z).forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'room-item farm-plot-item' + (p.id===farmSelectedId?' selected':'');
+    el.dataset.id = p.id;
+    el.style.left = p.x + '%';
+    el.style.bottom = p.y + '%';
+    el.style.zIndex = 10 + p.z;
+    el.style.setProperty('--ri-w','48px');
+    el.style.setProperty('--ri-h','32px');
+    el.style.setProperty('--ri-scale', p.scale || 1);
+    el.innerHTML = `<span class="ri-visual"><span class="ri-sprite" style="background:rgba(120,80,40,.35);border:2px dashed #6b4a22;border-radius:6px;display:block;width:100%;height:100%;"></span><span class="ri-badge del" data-badge="del" title="删除">✕</span></span>`;
+    stage.appendChild(el);
+    bindFarmPlotEvents(el, p);
+  });
+}
+function bindFarmPlotEvents(el, p) {
+  el.querySelector('.ri-badge.del').addEventListener('click', e => {
+    e.stopPropagation();
+    farmPlots = farmPlots.filter(x => x.id !== p.id);
+    if (farmSelectedId === p.id) { farmSelectedId = null; $('#farm-plot-props').classList.add('hidden'); }
+    renderFarmPlots();
+  });
+  el.addEventListener('pointerdown', e => {
+    if (e.target.dataset.badge) return;
+    e.preventDefault(); e.stopPropagation();
+    farmSelectedId = p.id; setSelectedFarmUI();
+    const stage = $('#farm-plots-stage');
+    const rect = stage.getBoundingClientRect();
+    const anchorX = rect.left + (p.x/100)*rect.width;
+    const anchorY = rect.bottom - (p.y/100)*rect.height;
+    const offX = e.clientX - anchorX, offY = e.clientY - anchorY;
+    el.classList.add('dragging');
+    const move = ev => {
+      const nx = (ev.clientX-rect.left-offX)/rect.width*100;
+      const ny = (rect.bottom-ev.clientY+offY)/rect.height*100;
+      p.x = Math.max(2, Math.min(98, nx));
+      p.y = Math.max(2, Math.min(98, ny));
+      el.style.left = p.x+'%'; el.style.bottom = p.y+'%';
+    };
+    const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  });
+}
+function setSelectedFarmUI() {
+  $$('#farm-canvas .farm-plot-item').forEach(n => n.classList.toggle('selected', n.dataset.id===farmSelectedId));
+  if (farmSelectedId) {
+    const p = farmPlots.find(x=>x.id===farmSelectedId); if(!p) return;
+    const box = $('#farm-plot-props'); box.classList.remove('hidden');
+    $('#fpp-z').value = p.z; $('#fpp-z-v').textContent = p.z;
+    $('#fpp-scale').value = p.scale; $('#fpp-scale-v').textContent = (+p.scale).toFixed(1)+'×';
+    $('#fpp-z').oninput = () => { p.z = +$('#fpp-z').value; $('#fpp-z-v').textContent = p.z; const e = farmEl(p.id); if(e) e.style.zIndex = 10+p.z; };
+    $('#fpp-scale').oninput = () => { p.scale = +$('#fpp-scale').value; $('#fpp-scale-v').textContent = p.scale.toFixed(1)+'×'; const e = farmEl(p.id); if(e) e.style.setProperty('--ri-scale', p.scale); };
+    $('#fpp-del').onclick = () => { farmPlots = farmPlots.filter(x=>x.id!==p.id); farmSelectedId=null; renderFarmPlots(); box.classList.add('hidden'); };
+  } else $('#farm-plot-props').classList.add('hidden');
+}
+function farmEl(id){ return document.querySelector('#farm-canvas .farm-plot-item[data-id="'+id+'"]'); }
+
+$('#farm-plot-add').addEventListener('click', () => {
+  const id = 'fp-' + Date.now().toString(36);
+  farmPlots.push({ id, x:50, y:45, z:3, scale:1, sortOrder: farmPlots.length });
+  farmSelectedId = id; renderFarmPlots(); setSelectedFarmUI();
+});
+$('#farm-plot-save').addEventListener('click', async () => {
+  try { await api('PUT','/api/admin/farm-plots',{ items: farmPlots }); toast('格子布局已保存（预览账号 2.5s 同步）'); }
+  catch(err){ toast(err.message); }
+});
+$('#farm-plot-clear').addEventListener('click', () => { if(confirm('清空所有格子？')){ farmPlots=[]; farmSelectedId=null; renderFarmPlots(); $('#farm-plot-props').classList.add('hidden'); } });
+$('#farm-canvas').addEventListener('pointerdown', e => { if (e.target === $('#farm-land-bg')) { farmSelectedId=null; setSelectedFarmUI(); } });
+
+// ---- 品种模态框（含阶段图上传） ----
+let _fcEditingKey = null;
+let _fcStages = [];   // [{image,name}]
+$('#farm-crop-add').addEventListener('click', () => openFarmCropModal(null));
+async function openFarmCropModal(key) {
+  _fcEditingKey = key || null;
+  $('#fc-modal-title').textContent = key ? '编辑品种' : '新增品种';
+  if (key) {
+    const crops = await api('GET','/api/admin/farm-crops');
+    const c = crops.find(x=>x.key===key) || {};
+    $('#fc-key').value = c.key||''; $('#fc-key').disabled = true;
+    $('#fc-name').value = c.name||'';
+    $('#fc-emoji').value = c.emoji||'';
+    $('#fc-mps').value = c.minutesPerStage||600;
+    _fcStages = (c.stages||[]).map(s=>({image:s.image||'',name:s.name||''}));
+  } else {
+    $('#fc-key').value=''; $('#fc-key').disabled=false;
+    $('#fc-name').value=''; $('#fc-emoji').value=''; $('#fc-mps').value=600;
+    _fcStages = [{image:'',name:'破土'},{image:'',name:'成熟'}];
+  }
+  renderFcStages();
+  $('#farm-crop-modal').classList.remove('hidden');
+}
+function renderFcStages() {
+  $('#fc-stages').innerHTML = _fcStages.map((s,i)=>`
+    <div class="fc-stage" data-i="${i}" style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+      <input class="fc-stage-name" type="text" value="${esc(s.name)}" placeholder="阶段名" style="width:90px;" />
+      <button type="button" class="mini" data-up="${i}">选图</button>
+      <span class="fc-stage-img" style="width:40px;height:28px;background:url('${iconUrl(s.image)}') center/contain no-repeat;border:1px solid #ccc;display:inline-block;"></span>
+      <button type="button" class="mini del" data-rm="${i}">✕</button>
+    </div>`).join('');
+  $$('#fc-stages .fc-stage-name').forEach(i => i.oninput = e => _fcStages[+i.dataset.i].name = e.target.value);
+  $$('#fc-stages [data-up]').forEach(b => b.onclick = () => pickFcStageImage(+b.dataset.up));
+  $$('#fc-stages [data-rm]').forEach(b => b.onclick = () => { _fcStages.splice(+b.dataset.rm,1); renderFcStages(); });
+}
+$('#fc-add-stage').addEventListener('click', () => { _fcStages.push({image:'',name:''}); renderFcStages(); });
+function pickFcStageImage(i) {
+  const inp = $('#fc-upload-input');
+  inp.onchange = async () => {
+    const file = inp.files[0]; if(!file) return;
+    try {
+      const fd = new FormData(); fd.append('file', file);
+      fd.append('forceName', 'farm-' + Date.now().toString(36) + '-' + i);
+      const r = await api('POST','/api/admin/farm-crops/with-image', fd);
+      _fcStages[i].image = r.path; renderFcStages();
+    } catch(err){ toast(err.message); }
+    inp.value='';
+  };
+  inp.click();
+}
+$('#fc-close').addEventListener('click', () => $('#farm-crop-modal').classList.add('hidden'));
+$('#fc-cancel').addEventListener('click', () => $('#farm-crop-modal').classList.add('hidden'));
+$('#fc-submit').addEventListener('click', async () => {
+  const key = $('#fc-key').value.trim(); const name = $('#fc-name').value.trim();
+  if (!key || !name) return toast('key 与名称必填');
+  const body = {
+    key, name, emoji: $('#fc-emoji').value, minutesPerStage: +$('#fc-mps').value||600,
+    stages: _fcStages, sortOrder: 0,
+  };
+  try {
+    if (_fcEditingKey) await api('PUT', `/api/admin/farm-crops/${encodeURIComponent(_fcEditingKey)}`, body);
+    else await api('POST','/api/admin/farm-crops', body);
+    $('#farm-crop-modal').classList.add('hidden');
+    const crops = await api('GET','/api/admin/farm-crops'); renderFarmCrops(crops);
+    toast('已保存');
+  } catch(err){ toast(err.message); }
+});
