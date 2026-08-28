@@ -55,6 +55,12 @@
 .room-furniture {
   position: absolute;
   inset: 0 0 var(--care-h, 124px) 0;
+  /* ===== 中层强制独立堆叠上下文：不被背景层 filter / 混合模式穿透 ===== */
+  isolation: isolate !important;
+  mix-blend-mode: normal !important;
+  opacity: 1 !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* 前景层（小我小人）同样只占据气泡条之上区域 */
@@ -72,6 +78,14 @@
   touch-action: none;
   transition: filter 0.2s ease;
   opacity: 1 !important;
+  /* ===== 强制不透明：不与背景混合 + 独立合成层 ===== */
+  mix-blend-mode: normal !important;
+  isolation: isolate !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: opacity, transform;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 视觉层：承载缩放/翻转/倾斜/3D 转向变换。
@@ -92,6 +106,8 @@
   backface-visibility: hidden;  /* 超出 ±90° 不显示镜像背面 */
   transition: transform 0.15s ease;
   opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  isolation: isolate !important;
 }
 
 .room-item .ri-sprite {
@@ -104,6 +120,7 @@
   transition: transform 0.15s ease;
   opacity: 1 !important;
   isolation: isolate;
+  mix-blend-mode: normal !important;
 }
 .room-item .ri-sprite img {
   max-width: 100%;
@@ -113,6 +130,13 @@
   object-fit: contain;
   image-rendering: pixelated;
   opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  /* 强制独立合成层：彻底防止背景穿透 / alpha 预乘问题 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background-blend-mode: normal !important;
 }
 
 .room-item .ri-shadow {

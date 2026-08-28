@@ -298,10 +298,14 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* 每层强制独立堆叠上下文 + 不透明 + 不混合，避免层间穿透互相染色 */
+  isolation: isolate;
+  mix-blend-mode: normal;
+  opacity: 1;
 }
 .scene-layer.layer-back   { z-index: 0; }
 .scene-layer.layer-far    { z-index: 1; }
-.scene-layer.layer-mid    { z-index: 2; }
+.scene-layer.layer-mid    { z-index: 2; isolation: isolate !important; mix-blend-mode: normal !important; opacity: 1 !important; }
 .scene-layer.layer-front  { z-index: 3; }
 
 /* 场景内的可交互组件需要恢复点击 */
