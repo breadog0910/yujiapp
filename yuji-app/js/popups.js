@@ -335,121 +335,141 @@ const Popups = (() => {
       `;
     },
 
-    // ============ 种子选择 ============
-    seedSelect(data) {
-      const idx = data.idx;
-      const cat = State.seedCatalog;
+    // ============ 农场：种下技能 ============
+    farmPlant(data) {
+      const plotId = data.plotId;
+      const crops = State.farmCropCatalog;
       return `
         <div class="popup-head">
-          <div class="popup-title">🌱 选择想培养的种子</div>
+          <div class="popup-title">🌱 种下一个想学的技能</div>
           <button class="popup-close" aria-label="关闭">✕</button>
         </div>
         <div class="popup-body">
-          <div class="hint">种下一颗想培养的种子。<br>你的每一次自我照顾、每一次记录，都是它的养料，<br>每 ${State.FEED_PER_STAGE} 次养料长一阶，长满 ${cat[0].stages.length} 阶就能收获。</div>
-          <div class="seed-list" style="margin-top:14px;" id="seedList">
-            ${cat.map(s => `
-              <div class="seed-item" data-seed="${s.key}">
-                <div class="seed-emoji">${s.emoji}</div>
+          <input class="popup-input" id="fp-name" type="text" placeholder="技能名，如：学吉他" maxlength="20" />
+          <div class="hint" style="margin-top:10px;">选一种作物代表它（每 ${'<span id="fp-mps"></span>'} 分钟长一阶）：</div>
+          <div class="seed-list" id="fp-crops" style="margin-top:6px;">
+            ${crops.map(c => `
+              <div class="seed-item" data-crop="${c.key}">
+                <div class="seed-emoji">${c.emoji}</div>
                 <div class="seed-info">
-                  <div class="seed-name">${s.name} <span style="font-size:10px;color:#9a8a70;font-weight:normal;">· ${s.dir}</span></div>
-                  <div class="seed-desc">${s.desc}</div>
+                  <div class="seed-name">${c.name}</div>
+                  <div class="seed-desc">${c.stages.length} 阶生长 · 每阶 ${c.minutesPerStage} 分钟</div>
                 </div>
               </div>
             `).join('')}
           </div>
+          <div class="hint" style="margin-top:12px;">可选：设一个阶段性小目标（完成后 +积分 推进生长）</div>
+          <div class="popup-row" style="margin-top:6px;">
+            <input class="popup-input" id="fp-goal-label" type="text" placeholder="目标名，如：能弹一首歌" maxlength="24" style="flex:2;" />
+            <input class="popup-input" id="fp-goal-pts" type="number" placeholder="积分" min="0" style="flex:1;" />
+          </div>
         </div>
         <div class="popup-foot">
           <button class="popup-btn" data-act="cancel">再想想</button>
-          <button class="popup-btn primary" data-act="plantSeed" data-idx="${idx}">种下</button>
+          <button class="popup-btn primary" data-act="plant" data-plotid="${plotId}">种下</button>
         </div>
       `;
     },
 
-    // ============ 收获 ============
-    harvest(data) {
-      const idx = data.idx;
-      const plant = State.state.plots[idx];
-      const seed = plant ? State.getSeed(plant.seedKey) : null;
-      if (!seed) return `<div class="popup-body">这颗植物不见了…</div>`;
-      const y = seed.yield;
-      const bonusTxt = [
-        y.bonus.happiness ? `开心 +${y.bonus.happiness}` : '',
-        y.bonus.health ? `健康 +${y.bonus.health}` : '',
-      ].filter(Boolean).join(' · ');
+    // ============ 农场：记录学习 / 管理目标 / 收获 ============
+    farmLog(data) {
+      const p = State.getFarmPlotByPlotId(data.plotId);
+      if (!p) return `<div class="popup-body">这块地还没种东西…</div>`;
+      const crop = State.getFarmCrop(p.cropKey);
+      if (!crop) return `<div class="popup-body">作物配置丢失…</div>`;
+      const stage = State.farmStageOf(p);
+      const stageName = crop.stages[Math.min(stage, crop.stages.length-1)].name || '';
+      const next = stage < crop.stages.length - 1 ? crop.minutesPerStage * (stage + 1) : null;
+      const remain = next ? Math.max(0, next - p.progress) : 0;
       return `
         <div class="popup-head">
-          <div class="popup-title">🎁 成熟待收获</div>
+          <div class="popup-title">${crop.emoji} ${p.skillName}</div>
           <button class="popup-close" aria-label="关闭">✕</button>
         </div>
         <div class="popup-body">
-          <div style="text-align:center; font-size:48px; margin:10px 0;">${y.emoji}</div>
-          <div style="text-align:center; font-size:14px; color:#5a3a20;">${seed.emoji}「${seed.name}」结出了「${y.name}」</div>
-          ${bonusTxt ? `<div style="text-align:center; font-size:11px; color:#9a8a70; margin-top:4px;">摆放后：${bonusTxt}</div>` : ''}
-          <div class="hint" style="margin-top:14px;">收获后可以放进田地仓库，也可以直接搬到首页房间摆放。</div>
-        </div>
-        <div class="popup-foot" style="flex-direction:column;">
-          <button class="popup-btn" data-act="harvestWarehouse" data-idx="${idx}">存入田地仓库</button>
-          <button class="popup-btn primary" data-act="harvestHome" data-idx="${idx}">搬到首页置物架</button>
+          <div style="text-align:center;">
+            <img src="${crop.stages[Math.min(stage,crop.stages.length-1)].image}" alt="${stageName}" style="width:64px;height:48px;object-fit:contain;image-rendering:pixelated;" />
+          </div>
+          <div style="text-align:center;font-size:13px;color:#5a3a20;margin-top:4px;">${stageName}阶（${stage+1}/${crop.stages.length}）· 累计 ${p.progress} 分钟</div>
+          ${next ? `<div class="hint" style="text-align:center;">距下一阶还差 ${remain}（分钟/积分）</div>` : `<div class="hint" style="text-align:center;color:#c7742a;">✨ 已成熟，可收获纪念</div>`}
+
+          <div class="chapter-title" style="margin-top:14px;">⏱️ 记录今天的学习</div>
+          <div class="popup-row" style="margin-top:6px;">
+            <input class="popup-input" id="fl-min" type="number" placeholder="分钟" min="0" style="flex:1;" />
+            <input class="popup-input" id="fl-note" type="text" placeholder="学了什么" maxlength="60" style="flex:2;" />
+          </div>
+          <button class="popup-btn primary" data-act="log" data-plotid="${p.plotId}" style="width:100%;margin-top:6px;">记一笔</button>
+
+          <div class="chapter-title" style="margin-top:14px;">🎯 阶段性小目标</div>
+          <div class="seed-list" style="margin-top:6px;">
+            ${p.goals.length === 0 ? `<div class="hint" style="padding:6px 0;">还没设小目标。</div>` : p.goals.map(g => `
+              <div class="seed-item" data-goal="${g.id}" style="cursor:pointer;">
+                <div class="seed-emoji">${g.completed ? '✅' : '⬜'}</div>
+                <div class="seed-info">
+                  <div class="seed-name">${g.label}</div>
+                  <div class="seed-desc">+${g.points} 积分 · 点击切换完成</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="popup-row" style="margin-top:6px;">
+            <input class="popup-input" id="fl-goal-label" type="text" placeholder="新目标名" maxlength="24" style="flex:2;" />
+            <input class="popup-input" id="fl-goal-pts" type="number" placeholder="积分" min="0" style="flex:1;" />
+            <button class="popup-btn" data-act="addgoal" data-plotid="${p.plotId}">＋</button>
+          </div>
+
+          <div style="margin-top:14px;">
+            <button class="popup-btn ghost" data-act="remove" data-plotid="${p.plotId}" style="width:100%;">移除这块作物（不收获）</button>
+            ${p.matured || stage >= crop.stages.length-1 ? `<button class="popup-btn primary" data-act="harvest" data-plotid="${p.plotId}" style="width:100%;margin-top:6px;">🎁 收获纪念</button>` : ''}
+          </div>
         </div>
       `;
     },
 
-    // ============ 田地日志（成长目标与仓库） ============
+    // ============ 农场日志（成长目标 + 仓库） ============
     cottage() {
       const s = State.state;
-      const STAGE_NAMES = ['破土', '生长', '繁茂', '成熟'];
-      const activePlants = [];
-      s.plots.forEach(p => { if (p) activePlants.push(p); });
+      const active = s.farmPlots;
       return `
         <div class="popup-head">
-          <div class="popup-title">📔 田地日志</div>
+          <div class="popup-title">📔 农场日志</div>
           <button class="popup-close" aria-label="关闭">✕</button>
         </div>
         <div class="popup-body">
-          <div class="hint">这里整理你的成长目标、作物进度、仓库。</div>
-          <div style="margin-top:12px;">
-            <div class="chapter-title">🌱 我的成长目标（${activePlants.length}/${s.plots.length}）</div>
-            ${activePlants.length === 0 ? `
-              <div class="hint" style="padding:8px 0;">去田地空地种一颗种子吧。</div>
-            ` : `
-              <div class="seed-list" style="margin-top:6px;">
-                ${activePlants.map(p => {
-                  const seed = State.getSeed(p.seedKey);
-                  if (!seed) return '';
-                  const maxStage = seed.stages.length - 1;
-                  const mature = p.stage >= maxStage;
-                  const stageName = STAGE_NAMES[Math.min(p.stage, 3)];
-                  return `
-                    <div class="seed-item" style="cursor:default;">
-                      <div class="seed-emoji">${seed.emoji}</div>
-                      <div class="seed-info">
-                        <div class="seed-name">${seed.name}</div>
-                        <div class="seed-desc">${mature ? '✨ 已成熟，去田地点击收获' : `${stageName}阶 · 再 ${State.FEED_PER_STAGE - p.feed} 次养料进入下一阶`}</div>
-                      </div>
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            `}
-          </div>
-          <div style="margin-top:14px;">
-            <div class="chapter-title">📦 田地仓库（${s.gardenWarehouse.length}）</div>
-            ${s.gardenWarehouse.length === 0 ? `
-              <div class="hint" style="padding:8px 0;">空空的。</div>
-            ` : `
-              <div class="seed-list" style="margin-top:6px;">
-                ${s.gardenWarehouse.map(p => `
-                  <div class="seed-item" data-id="${p.id}" data-act="warehouseToHome" style="cursor:pointer;">
-                    <div class="seed-emoji">${p.emoji}</div>
+          <div class="chapter-title">🌱 我的技能（${active.length}/${State.farmPlotLayout.length}）</div>
+          ${active.length === 0 ? `<div class="hint" style="padding:8px 0;">去田地点空格子种一个想学的技能吧。</div>` : `
+            <div class="seed-list" style="margin-top:6px;">
+              ${active.map(p => {
+                const crop = State.getFarmCrop(p.cropKey); if (!crop) return '';
+                const stage = State.farmStageOf(p);
+                const mature = p.matured || stage >= crop.stages.length - 1;
+                const name = crop.stages[Math.min(stage,crop.stages.length-1)].name || '';
+                return `
+                  <div class="seed-item" data-act="openPlot" data-plotid="${p.plotId}" style="cursor:pointer;">
+                    <div class="seed-emoji">${crop.emoji}</div>
                     <div class="seed-info">
-                      <div class="seed-name">${p.name}</div>
-                      <div class="seed-desc">来源：${p.source} · 点击摆到置物架</div>
+                      <div class="seed-name">${p.skillName}</div>
+                      <div class="seed-desc">${mature ? '✨ 已成熟' : `${name}阶 · 累计 ${p.progress}/${crop.minutesPerStage*(stage+1)}`}</div>
                     </div>
                   </div>
-                `).join('')}
-              </div>
-            `}
-          </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+          <div class="chapter-title" style="margin-top:14px;">📦 收获纪念（${s.farmWarehouse.length}）</div>
+          ${s.farmWarehouse.length === 0 ? `<div class="hint" style="padding:8px 0;">空空的。</div>` : `
+            <div class="seed-list" style="margin-top:6px;">
+              ${s.farmWarehouse.map(w => `
+                <div class="seed-item" style="cursor:default;">
+                  <div class="seed-emoji">${w.emoji}</div>
+                  <div class="seed-info">
+                    <div class="seed-name">${w.name}</div>
+                    <div class="seed-desc">${w.source} · 累计 ${w.progress} 分钟</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
         </div>
       `;
     },
@@ -708,7 +728,9 @@ const Popups = (() => {
       letter: '小我的信',
       emotion: '情绪记录',
       discovery: '自我发现',
-      harvest: '田地收获',
+      farmPlant: '种下技能',
+      farmLog: '技能记录',
+      cottage: '农场日志',
       manual: '手动记录',
       spirit: '精神体验',
       care: '自我照顾',
@@ -1077,64 +1099,59 @@ const Popups = (() => {
 
     book() {},
 
-    seedSelect(data) {
+    farmPlant(data) {
       let chosen = null;
-      root().querySelectorAll('.seed-item').forEach(el => {
-        el.addEventListener('click', () => {
-          root().querySelectorAll('.seed-item').forEach(x => x.classList.remove('selected'));
-          el.classList.add('selected');
-          chosen = el.dataset.seed;
-        });
-      });
-      bindAct('plantSeed', () => {
-        if (!chosen) {
-          Utils.toast('选一颗想种的');
-          return;
-        }
-        const idx = +root().querySelector('[data-act="plantSeed"]').dataset.idx;
-        if (Tab3.plantSeed(idx, chosen)) {
-          Utils.toast('种子已种下');
-          close();
-        }
-      });
-      bindAct('cancel', close);
-    },
-
-    harvest(data) {
-      const idx = +data.idx;
-      bindAct('harvestWarehouse', () => {
-        const item = Tab3.harvestPlot(idx, false);
-        if (item) {
-          Utils.toast(`已存入田地仓库 · ${item.emoji}${item.name}`);
-          close();
-        }
-      });
-      bindAct('harvestHome', () => {
-        const item = Tab3.harvestPlot(idx, true);
-        if (item) {
-          Utils.toast(`已搬到首页置物架 · ${item.emoji}${item.name}`);
-          close();
-        }
+      const updateMps = () => {
+        const c = State.farmCropCatalog.find(x => x.key === chosen);
+        $('#fp-mps') && ($('#fp-mps').textContent = c ? c.minutesPerStage : '');
+      };
+      $$('#fp-crops .seed-item').forEach(el => el.addEventListener('click', () => {
+        $$('#fp-crops .seed-item').forEach(x => x.classList.remove('selected'));
+        el.classList.add('selected'); chosen = el.dataset.crop; updateMps();
+      }));
+      bindAct('plant', () => {
+        const name = $('#fp-name').value.trim();
+        if (!name) return toast('请填技能名');
+        if (!chosen) return toast('请选一种作物');
+        const gLabel = $('#fp-goal-label').value.trim();
+        const gPts = +$('#fp-goal-pts').value || 0;
+        const goals = gLabel ? [{ label: gLabel, points: gPts }] : [];
+        if (State.plantSkill(data.plotId, name, chosen, goals)) {
+          Tab3.refresh(); close();
+        } else toast('种下失败（格子已占？）');
       });
     },
-
+    farmLog(data) {
+      bindAct('log', () => {
+        const min = +$('#fl-min').value || 0;
+        const note = $('#fl-note').value.trim();
+        if (min <= 0 && !note) return toast('填点分钟或笔记吧');
+        State.logSession(data.plotId, min, note);
+        Tab3.refresh(); open('farmLog', { plotId: data.plotId });  // 刷新弹窗
+      });
+      root().querySelectorAll('[data-goal]').forEach(el => el.addEventListener('click', () => {
+        State.toggleGoal(data.plotId, el.dataset.goal);
+        Tab3.refresh(); open('farmLog', { plotId: data.plotId });
+      }));
+      bindAct('addgoal', () => {
+        const label = $('#fl-goal-label').value.trim();
+        const pts = +$('#fl-goal-pts').value || 0;
+        if (!label) return toast('填目标名');
+        State.addGoal(data.plotId, label, pts);
+        open('farmLog', { plotId: data.plotId });
+      });
+      bindAct('remove', () => {
+        if (!confirm('移除这块作物？已记录的进度会丢失。')) return;
+        State.removeSkill(data.plotId); Tab3.refresh(); close();
+      });
+      bindAct('harvest', () => {
+        State.harvestSkill(data.plotId); Tab3.refresh(); close();
+      });
+    },
     cottage() {
-      bindAct('warehouseToHome', e => {
-        const id = e.currentTarget.dataset.id;
-        const s = State.state;
-        const idx = s.gardenWarehouse.findIndex(x => x.id === id);
-        if (idx >= 0) {
-          const item = s.gardenWarehouse[idx];
-          s.gardenWarehouse.splice(idx, 1);
-          s.placements.push(item);
-          State.addHappiness(item.bonus?.happiness || 0);
-          State.addHealth(item.bonus?.health || 0);
-          Utils.recalcComfort();
-          State.save();
-          Utils.toast('已摆到置物架');
-          open('cottage');
-        }
-      });
+      root().querySelectorAll('[data-act="openPlot"]').forEach(el => el.addEventListener('click', () => {
+        close(); open('farmLog', { plotId: el.dataset.plotid });
+      }));
     },
 
     timeline() {
