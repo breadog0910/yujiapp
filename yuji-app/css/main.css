@@ -47,6 +47,8 @@
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   font-family: var(--font-body);
   color: var(--c-text);
   background: #e6d8c0;
@@ -58,14 +60,14 @@ html, body {
   user-select: none;
   -webkit-user-select: none;
   overscroll-behavior: none;
+  -webkit-overflow-scrolling: none;
+  position: fixed;
 }
 
-/* 应用容器：全屏自适应 */
+/* 应用容器：全屏自适应，fixed 锁定视口 */
 .app-container {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  position: fixed;
+  inset: 0;
   background: var(--c-bg);
   overflow: hidden;
   display: flex;
@@ -79,9 +81,12 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: static;
+    overflow: auto;
   }
 
   .app-container {
+    position: relative;
     width: 100vw;
     max-width: 430px;
     height: min(100vh, 900px);
