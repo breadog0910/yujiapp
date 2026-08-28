@@ -230,6 +230,7 @@ async function tryAutoLogin() {
     const mapFarmLand = (r) => ({
       id: r.id, image: r.image, x: r.x, y: r.y, z: r.z, scale: r.scale,
       widthPct: r.width_pct, heightPct: r.height_pct,
+      bgThreshold: r.bg_threshold != null ? r.bg_threshold : 30,
     });
 
     return {

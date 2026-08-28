@@ -1392,47 +1392,45 @@ async function loadLogs() {
   } catch (e) { showLogin(); }
 })();
 
-/* ===================== 技能农场 ===================== */
-let farmPlots = [];               // 空格子
+/* ===================== 技能农场（单地块版）===================== */
 let farmLand = null;              // 土地图层单例
 const FARM_LAND_ID = '__land__';  // 虚拟选择 id（不进入数据库）
-let farmSelectedId = null;        // '__land__' 或 plotId
+let farmSelectedId = null;        // '__land__'
 
 const FARM_LAND_DEFAULTS = {
   id: 'main', image: '/assets/farm/land.png',
-  x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65,
+  x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
 };
 
 async function loadFarm() {
-  const [crops, plots, tabbg, landRows] = await Promise.all([
+  const [crops, tabbg, landRows] = await Promise.all([
     api('GET', '/api/admin/farm-crops'),
-    api('GET', '/api/admin/farm-plots'),
     api('GET', '/api/admin/tab-backgrounds'),
     api('GET', '/api/admin/farm-land'),
   ]).catch(async (err) => {
     // 未执行迁移时 farm-land 端点不存在 → 静默兜底
-    return Promise.resolve([[], [], [], []]);
+    return Promise.resolve([[], [], []]);
   });
   const t3 = tabbg.find(t => t.tabKey === 'tab3');
   $('#farm-tab3-bg').src = t3 && t3.bgPath ? iconUrl(t3.bgPath) : '/assets/farm/tab3-bg.png';
   // 土地图层：数组第一条，或兜底
   farmLand = (landRows && landRows[0]) ? landRows[0] : { ...FARM_LAND_DEFAULTS };
-  // 前端宽度/高度字段 API 可能下划线风格，做映射
+  // 字段映射（兼容下划线字段）
   farmLand.widthPct = farmLand.widthPct || farmLand.width_pct || FARM_LAND_DEFAULTS.widthPct;
   farmLand.heightPct = farmLand.heightPct || farmLand.height_pct || FARM_LAND_DEFAULTS.heightPct;
-  farmPlots = (plots || []).map(p => ({ ...p }));
-  farmSelectedId = null;
+  farmLand.bgThreshold = farmLand.bgThreshold != null ? farmLand.bgThreshold
+                       : (farmLand.bg_threshold != null ? farmLand.bg_threshold : FARM_LAND_DEFAULTS.bgThreshold);
+  farmSelectedId = FARM_LAND_ID;  // 默认选中土地（唯一元素）
   renderFarmCrops(crops);
   renderFarmStage();
   setSelectedFarmUI();
 }
 
-// ---- 舞台：土地图层 + 格子（一个 stage 统一管理）----
+// ---- 舞台：土地图层（单地块）----
 function renderFarmStage() {
   const stage = $('#farm-stage');
   // 清空
   while (stage.firstChild) stage.removeChild(stage.firstChild);
-  // 1) 土地图层（先绘制，格子在上）
   if (farmLand) {
     const el = document.createElement('div');
     el.className = 'room-item farm-land-item' + (farmSelectedId === FARM_LAND_ID ? ' selected' : '');
@@ -1447,26 +1445,11 @@ function renderFarmStage() {
     el.style.setProperty('--ri-h', '100%');
     el.style.setProperty('--ri-scale', s);
     el.innerHTML = `<span class="ri-visual" style="position:absolute;inset:0;">
-      <img src="${esc(farmLand.image||'/assets/farm/land.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;" alt="土地" />
+      <img src="${esc(farmLand.image||'/assets/farm/land.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;filter:url(#alpha-hard-edge);" alt="土地" />
     </span>`;
     stage.appendChild(el);
     bindFarmLandEvents(el);
   }
-  // 2) 格子
-  [...farmPlots].sort((a,b)=>a.z-b.z).forEach(p => {
-    const el = document.createElement('div');
-    el.className = 'room-item farm-plot-item' + (p.id === farmSelectedId ? ' selected' : '');
-    el.dataset.id = p.id;
-    el.style.left = p.x + '%';
-    el.style.top = (100 - p.y) + '%';
-    el.style.zIndex = 10 + p.z;
-    el.style.setProperty('--ri-w', '48px');
-    el.style.setProperty('--ri-h', '32px');
-    el.style.setProperty('--ri-scale', p.scale || 1);
-    el.innerHTML = `<span class="ri-visual"><span class="ri-sprite" style="background:rgba(120,80,40,.35);border:2px dashed #6b4a22;border-radius:6px;display:block;width:100%;height:100%;"></span><span class="ri-badge del" data-badge="del" title="删除">✕</span></span>`;
-    stage.appendChild(el);
-    bindFarmPlotEvents(el, p);
-  });
 }
 
 function renderFarmCrops(crops) {
@@ -1517,98 +1500,48 @@ function bindFarmLandEvents(el) {
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   });
 }
-// ---- 格子拖拽 ----
-function bindFarmPlotEvents(el, p) {
-  el.querySelector('.ri-badge.del').addEventListener('click', e => {
-    e.stopPropagation();
-    farmPlots = farmPlots.filter(x => x.id !== p.id);
-    if (farmSelectedId === p.id) { farmSelectedId = null; }
-    renderFarmStage(); setSelectedFarmUI();
-  });
-  el.style.transform = 'translate(-50%, -50%)';
-  el.addEventListener('pointerdown', e => {
-    if (e.target.dataset.badge) return;
-    e.preventDefault(); e.stopPropagation();
-    farmSelectedId = p.id; setSelectedFarmUI();
-    const stage = $('#farm-stage');
-    const rect = stage.getBoundingClientRect();
-    const anchorX = rect.left + (p.x/100)*rect.width;
-    const anchorY = rect.top + (100-p.y)/100*rect.height;
-    const offX = e.clientX - anchorX, offY = e.clientY - anchorY;
-    el.classList.add('dragging');
-    const move = ev => {
-      const nx = (ev.clientX-rect.left-offX)/rect.width*100;
-      const nyTop = (ev.clientY-rect.top-offY)/rect.height*100;
-      const ny = 100 - nyTop;
-      p.x = Math.max(2, Math.min(98, nx));
-      p.y = Math.max(2, Math.min(98, ny));
-      el.style.left = p.x+'%';
-      el.style.top = (100-p.y)+'%';
-    };
-    const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
-  });
-}
+
 function setSelectedFarmUI() {
   $('#farm-empty-tip')?.classList.toggle('hidden', !!farmSelectedId);
   // 更新选中类
   $$('#farm-stage .room-item').forEach(n => n.classList.toggle('selected', n.dataset.id === farmSelectedId));
-  const landBox = $('#farm-land-props'); const plotBox = $('#farm-plot-props');
+  const landBox = $('#farm-land-props');
   landBox.classList.toggle('hidden', farmSelectedId !== FARM_LAND_ID);
-  plotBox.classList.toggle('hidden', !farmSelectedId || farmSelectedId === FARM_LAND_ID);
   if (farmSelectedId === FARM_LAND_ID && farmLand) {
     $('#flp-image').value = farmLand.image || '';
     $('#flp-z').value = farmLand.z; $('#flp-z-v').textContent = farmLand.z;
     $('#flp-scale').value = farmLand.scale; $('#flp-scale-v').textContent = (+farmLand.scale).toFixed(2)+'×';
     $('#flp-w').value = farmLand.widthPct; $('#flp-w-v').textContent = farmLand.widthPct+'%';
     $('#flp-h').value = farmLand.heightPct; $('#flp-h-v').textContent = farmLand.heightPct+'%';
+    const bgTh = farmLand.bgThreshold != null ? +farmLand.bgThreshold : 30;
+    $('#flp-bg-threshold').value = bgTh; $('#flp-bg-threshold-v').textContent = bgTh;
     $('#flp-image').onchange = () => {
       farmLand.image = $('#flp-image').value.trim() || FARM_LAND_DEFAULTS.image;
-      // 重新渲染舞台
       renderFarmStage();
     };
     const updateLive = () => {
       farmLand.z = +$('#flp-z').value; $('#flp-z-v').textContent = farmLand.z;
-      farmLand.scale = +$('#flp-scale').value; $('#flp-scale-v').textContent = farmLand.scale.toFixed(2)+'×';
+      farmLand.scale = +$('#flp-scale').value; $('#flp-scale-v').textContent = (+farmLand.scale).toFixed(2)+'×';
       farmLand.widthPct = +$('#flp-w').value; $('#flp-w-v').textContent = farmLand.widthPct+'%';
       farmLand.heightPct = +$('#flp-h').value; $('#flp-h-v').textContent = farmLand.heightPct+'%';
+      farmLand.bgThreshold = +$('#flp-bg-threshold').value;
+      $('#flp-bg-threshold-v').textContent = farmLand.bgThreshold;
       renderFarmStage();
     };
     $('#flp-z').oninput = updateLive;
     $('#flp-scale').oninput = updateLive;
     $('#flp-w').oninput = updateLive;
     $('#flp-h').oninput = updateLive;
+    $('#flp-bg-threshold').oninput = updateLive;
     $('#flp-reset').onclick = () => {
-      farmLand.scale = 1; farmLand.widthPct = 80; farmLand.heightPct = 65;
+      farmLand.scale = 1; farmLand.widthPct = 80; farmLand.heightPct = 65; farmLand.bgThreshold = 30;
       setSelectedFarmUI(); renderFarmStage();
-    };
-  } else if (farmSelectedId && farmSelectedId !== FARM_LAND_ID) {
-    const p = farmPlots.find(x=>x.id===farmSelectedId); if(!p) return;
-    $('#fpp-z').value = p.z; $('#fpp-z-v').textContent = p.z;
-    $('#fpp-scale').value = p.scale; $('#fpp-scale-v').textContent = (+p.scale).toFixed(1)+'×';
-    $('#fpp-z').oninput = () => {
-      p.z = +$('#fpp-z').value; $('#fpp-z-v').textContent = p.z;
-      renderFarmStage();
-    };
-    $('#fpp-scale').oninput = () => {
-      p.scale = +$('#fpp-scale').value; $('#fpp-scale-v').textContent = p.scale.toFixed(1)+'×';
-      renderFarmStage();
-    };
-    $('#fpp-del').onclick = () => {
-      farmPlots = farmPlots.filter(x=>x.id!==p.id); farmSelectedId=null;
-      renderFarmStage(); setSelectedFarmUI();
     };
   }
 }
 
-$('#farm-plot-add').addEventListener('click', () => {
-  const id = 'fp-' + Date.now().toString(36);
-  farmPlots.push({ id, x:50, y:45, z:3, scale:1, sortOrder: farmPlots.length });
-  farmSelectedId = id; renderFarmStage(); setSelectedFarmUI();
-});
 $('#farm-save').addEventListener('click', async () => {
   try {
-    await api('PUT','/api/admin/farm-plots',{ items: farmPlots });
     // 存土地图层（单例 upsert）
     if (farmLand) {
       const row = {
@@ -1618,20 +1551,17 @@ $('#farm-save').addEventListener('click', async () => {
         scale: farmLand.scale,
         width_pct: farmLand.widthPct,
         height_pct: farmLand.heightPct,
+        bg_threshold: farmLand.bgThreshold != null ? +farmLand.bgThreshold : 30,
       };
       await api('PUT','/api/admin/farm-land', row).catch(e => {
-        console.warn('[admin] farm-land 端点不可用，跳过（已执行 004 迁移后才会生效）', e.message);
+        console.warn('[admin] farm-land 端点不可用，跳过（已执行 004+006 迁移后才会生效）', e.message);
       });
     }
-    toast('✅ 土地图层 + 格子布局已保存（预览账号 2.5s 同步）');
+    toast('✅ 土地图层已保存（预览账号 2.5s 同步）');
   } catch(err){ toast(err.message); }
 });
 $('#farm-canvas').addEventListener('pointerdown', e => {
-  // 点击背景或舞台本身（非子元素）→ 取消选中
-  if (e.target.id === 'farm-stage' || e.target.id === 'farm-canvas' || e.target.id === 'farm-tab3-bg'
-      || e.target.classList?.contains('room-furniture')) {
-    farmSelectedId = null; setSelectedFarmUI();
-  }
+  // 单地块模式下唯一元素 = 土地，无需取消选中；保持该空事件避免报错
 });
 
 // ---- 品种模态框（含阶段图上传） ----

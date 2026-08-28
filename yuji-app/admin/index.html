@@ -141,12 +141,11 @@
       </div>
       <div id="farm-crop-table" class="table-wrap"></div>
 
-      <h3 style="margin-top:22px;">② 画布：土地图层 + 空格子（均拖拽布置）</h3>
+      <h3 style="margin-top:22px;">② 画布：单地块土地图层（整块地=1 个种植按钮，拖拽布置）</h3>
       <div class="panel-head" style="margin-top:6px;">
-        <span class="hint" style="margin:0;">画布底 = tab3 背景（1412…png）。<b>黄框土地层</b>覆盖在背景上；<b>紫框空格子</b>叠在最上层。</span>
+        <span class="hint" style="margin:0;">画布底 = tab3 背景（1412…png）。<b>黄框土地层</b>为唯一交互地块，已资源级白底抠图；整块土地即种植按钮。</span>
         <div class="panel-actions">
-          <button id="farm-plot-add" class="primary">+ 添加格子</button>
-          <button id="farm-save" class="primary">💾 保存土地 + 格子</button>
+          <button id="farm-save" class="primary">💾 保存土地图层</button>
         </div>
       </div>
       <div class="layout-wrap">
@@ -154,30 +153,24 @@
           <!-- 画布底：tab3 背景（草地 / 天空），只读 -->
           <img class="room-bg" id="farm-tab3-bg" src="/assets/farm/tab3-bg.png" alt="tab3 背景" draggable="false" />
           <div id="farm-stage" class="room-furniture">
-            <!-- JS 注入：#farm-land-layer + 各 #farm-plot-<id> -->
+            <!-- JS 注入：farm-land-item -->
           </div>
         </div>
         <div class="palette">
           <div class="palette-title">属性面板（点击画布元素）</div>
 
           <div id="farm-land-props" class="piece-props hidden">
-            <div class="prop-title">🟨 土地图层</div>
+            <div class="prop-title">🟨 土地图层（整块地=1 个种植按钮）</div>
             <label>图片 URL <input id="flp-image" type="text" placeholder="assets/farm/land.png" /></label>
             <label>层级 z <input id="flp-z" type="range" min="1" max="6" step="1" /><span id="flp-z-v"></span></label>
             <label>缩放 scale <input id="flp-scale" type="range" min="0.3" max="2" step="0.05" /><span id="flp-scale-v"></span></label>
             <label>宽度 % <input id="flp-w" type="range" min="20" max="100" step="1" /><span id="flp-w-v"></span></label>
             <label>高度 % <input id="flp-h" type="range" min="20" max="100" step="1" /><span id="flp-h-v"></span></label>
+            <label>抠图阈值（越高去白底越狠）<input id="flp-bg-threshold" type="range" min="0" max="120" step="1" /><span id="flp-bg-threshold-v"></span></label>
             <button id="flp-reset" class="ghost">恢复默认尺寸</button>
           </div>
 
-          <div id="farm-plot-props" class="piece-props hidden">
-            <div class="prop-title">🟪 空格子</div>
-            <label>层级 z <input id="fpp-z" type="range" min="1" max="6" step="1" /><span id="fpp-z-v"></span></label>
-            <label>缩放 <input id="fpp-scale" type="range" min="0.5" max="3" step="0.1" /><span id="fpp-scale-v"></span></label>
-            <button id="fpp-del" class="danger">删除该格子</button>
-          </div>
-
-          <div id="farm-empty-tip" class="hint" style="margin-top:8px;">未选中元素。点击画布上的土地层或空格子编辑属性。</div>
+          <div id="farm-empty-tip" class="hint" style="margin-top:8px;">未选中元素。点击画布上的土地层编辑属性。</div>
         </div>
       </div>
     </section>
@@ -418,7 +411,19 @@
 <!-- 隐藏的通用 file input：给 4 个 Tab 背景上传复用（tabKey 作为 data-tabkey） -->
 <input id="tabbg-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
 
-<script src="/admin/admin.js?v=5"></script>
+<!-- 全局 SVG filter：家具 / 土地 alpha 硬边二值化（A<128→透明, A≥128→实心），
+     用于浏览器端兜底去除半透明，避免透背景 -->
+<svg width="0" height="0" style="position:absolute;left:-9999px;pointer-events:none" aria-hidden="true">
+  <defs>
+    <filter id="alpha-hard-edge" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0 1 1"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
+
+<script src="/admin/admin.js?v=6"></script>
 
 </body>
 </html>

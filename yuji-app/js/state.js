@@ -136,7 +136,7 @@ const State = (() => {
   let farmPlotLayout = DEFAULT_FARM_PLOT_LAYOUT;
   const DEFAULT_FARM_LAND_CONFIG = {
     id: 'main', image: 'assets/farm/land.png',
-    x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65,
+    x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
   };
   let farmLandConfig = DEFAULT_FARM_LAND_CONFIG;
   let meta = { appName: '予己' };
@@ -247,8 +247,11 @@ const State = (() => {
       roomBg: 'day',
       emotionRecords: [],
       gardenWarehouse: [],   // 商店购买未摆放的物品（货架 inventory，非农场）
-      farmPlots: [],          // 技能农场：每个已占格子一条 {plotId,skillName,cropKey,progress,sessions,goals,createdAt,matured}
-      farmWarehouse: [],     // 成熟收获纪念
+      // 技能农场：单地块（整块土地=1 个种植位，一整块地代表一块地）
+      // { skillName, cropKey, progress, sessions:[{date,minutes,note,points}],
+      //   goals:[{id,text,points,done,dateDone}], createdAt, matured, stage }
+      farmMainPlot: null,
+      farmWarehouse: [],     // 成熟收获纪念（{cropKey,skillName,harvestedAt,finalStage,totalMinutes}）
       shopItems: {
         physical: [
           { id: 'teddy',  emoji: '🧸', name: '小熊玩偶', price: 15, bonus: { happiness: 2, health: 1 }, owned: false },
@@ -292,16 +295,29 @@ const State = (() => {
   }
   function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
+  // 给 state 对象动态挂载「farmPlots」兼容 getter：单地块映射为长度 0 或 1 的数组
+  // （popups/tab4 等旧代码仍访问 State.state.farmPlots.length）
+  function attachFarmCompat(obj) {
+    if (!obj || Object.prototype.hasOwnProperty.call(obj, 'farmPlots')) return obj;
+    try {
+      Object.defineProperty(obj, 'farmPlots', {
+        configurable: true, enumerable: false,
+        get() { return this.farmMainPlot ? [this.farmMainPlot] : []; },
+      });
+    } catch (_) { /* ignore */ }
+    return obj;
+  }
+
   // 加载（仅本地缓存，用于离线/未登录兜底）
   function load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return buildDefaultState();
+      if (!raw) return attachFarmCompat(buildDefaultState());
       const saved = JSON.parse(raw);
-      return deepMerge(buildDefaultState(), saved);
+      return attachFarmCompat(deepMerge(buildDefaultState(), saved));
     } catch (e) {
       console.warn('[State] load failed', e);
-      return buildDefaultState();
+      return attachFarmCompat(buildDefaultState());
     }
   }
 
@@ -321,7 +337,7 @@ const State = (() => {
     // 2) 预览账号：永远按当前默认房间初始化，不写后端，启动轮询实时同步后台改动
     if (Api.isPreview()) {
       console.log('[State] 预览账号检测到，启动实时同步轮询');
-      state = buildDefaultState();
+      state = attachFarmCompat(buildDefaultState());
       startPreviewPolling();
       ensureDaily();
       initialized = true;
@@ -332,9 +348,9 @@ const State = (() => {
       try {
         const r = await Api.getState();
         if (r && r.data) {
-          state = deepMerge(buildDefaultState(), r.data);
+          state = attachFarmCompat(deepMerge(buildDefaultState(), r.data));
         } else {
-          state = buildDefaultState();
+          state = attachFarmCompat(buildDefaultState());
           // 新账号：先落一份初始状态到后端
           scheduleSync(true);
         }
@@ -387,7 +403,8 @@ const State = (() => {
         console.log('[State] 预览轮询：检测到后台配置变更，刷新房间');
         // 后端配置变更：重建房间为最新默认布局，重置照顾选项，通知 Tab1 重渲染
         state.roomItems = buildDefaultRoomItems();
-        state.farmPlots = [];   // 预览账号：后台格子变更后重置农场为空（始终反映最新格子布局）
+        // 预览账号：后台配置变更时重置当前正在种的技能（清空单地块）
+        if (state.farmMainPlot) state.farmMainPlot = null;
         // 仅在预览账号重置照顾选项（避免普通用户轮询时自己的选项被冲掉）
         if (typeof Api !== 'undefined' && Api.isPreview && Api.isPreview()) {
           const rebuilt = buildDefaultState();
@@ -455,7 +472,7 @@ const State = (() => {
   }
 
   function reset() {
-    state = buildDefaultState();
+    state = attachFarmCompat(buildDefaultState());
     save();
   }
 
@@ -476,77 +493,83 @@ const State = (() => {
     return state.letters[state.letters.length - 1];
   }
 
-  // 技能农场
+  // 技能农场（单地块：整块土地 = 1 个种植位；__main__ 单例 plotId）
+  const MAIN_PLOT_ID = '__main__';
   function getFarmCrop(key) { return farmCropCatalog.find(c => c.key === key) || null; }
-  function getFarmPlotByPlotId(plotId) { return state.farmPlots.find(p => p.plotId === plotId) || null; }
+  function getFarmMainPlot() { return state.farmMainPlot || null; }
 
   function farmStageOf(p) {
+    if (!p) return 0;
     const crop = getFarmCrop(p.cropKey);
     if (!crop || !crop.stages.length) return 0;
     return Math.min(Math.floor(p.progress / Math.max(1, crop.minutesPerStage)), crop.stages.length - 1);
   }
 
-  function plantSkill(plotId, skillName, cropKey, goals = []) {
-    if (!plotId || !skillName || !getFarmCrop(cropKey)) return false;
-    if (getFarmPlotByPlotId(plotId)) return false;           // 格子已占
-    state.farmPlots.push({
-      plotId, skillName, cropKey, progress: 0,
+  function plantSkill(_ignoredPlotId, skillName, cropKey, goals = []) {
+    if (!skillName || !getFarmCrop(cropKey)) return false;
+    if (state.farmMainPlot) return false;            // 整块地已在种
+    state.farmMainPlot = {
+      plotId: MAIN_PLOT_ID, skillName, cropKey, progress: 0,
       sessions: [], goals: goals.map(g => ({ id: Utils.uid(), label: g.label, points: +g.points || 0, completed: false })),
       createdAt: new Date().toISOString(), matured: false,
-    });
+    };
     save();
     return true;
   }
 
-  function logSession(plotId, minutes, note) {
-    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+  function logSession(_ignoredPlotId, minutes, note) {
+    const p = state.farmMainPlot; if (!p) return null;
     const m = Math.max(0, +minutes || 0);
     p.sessions.push({ id: Utils.uid(), date: new Date().toISOString(), minutes: m, note: String(note || '') });
     p.progress += m;
     const stage = farmStageOf(p);
     p.matured = stage >= (getFarmCrop(p.cropKey)?.stages.length || 0) - 1;
+    p.stage = stage;
     save();
     return { progress: p.progress, stage, matured: p.matured };
   }
 
-  function toggleGoal(plotId, goalId) {
-    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+  function toggleGoal(_ignoredPlotId, goalId) {
+    const p = state.farmMainPlot; if (!p) return null;
     const g = p.goals.find(x => x.id === goalId); if (!g) return null;
     g.completed = !g.completed;
     p.progress += g.completed ? g.points : -g.points;
     const stage = farmStageOf(p);
     p.matured = stage >= (getFarmCrop(p.cropKey)?.stages.length || 0) - 1;
+    p.stage = stage;
     save();
     return { progress: p.progress, stage, matured: p.matured };
   }
 
-  function addGoal(plotId, label, points) {
-    const p = getFarmPlotByPlotId(plotId); if (!p) return null;
+  function addGoal(_ignoredPlotId, label, points) {
+    const p = state.farmMainPlot; if (!p) return null;
     const g = { id: Utils.uid(), label: String(label || ''), points: Math.max(0, +points || 0), completed: false };
     p.goals.push(g);
     save();
     return g;
   }
 
-  function harvestSkill(plotId) {
-    const p = getFarmPlotByPlotId(plotId); if (!p || !p.matured) return null;
+  function harvestSkill(_ignoredPlotId) {
+    const p = state.farmMainPlot; if (!p || !p.matured) return null;
     const crop = getFarmCrop(p.cropKey);
+    const totalMinutes = p.sessions.reduce((a,b)=>a+(+b.minutes||0),0);
     const item = {
       id: 'fw-' + Utils.uid(), skillName: p.skillName, cropKey: p.cropKey,
       emoji: crop?.emoji || '🌱', name: p.skillName, source: '技能农场',
       progress: p.progress, createdAt: p.createdAt, harvestedAt: new Date().toISOString(),
+      finalStage: farmStageOf(p), totalMinutes,
     };
     state.farmWarehouse.push(item);
-    state.farmPlots = state.farmPlots.filter(x => x.plotId !== plotId);
+    state.farmMainPlot = null;
     save();
     return item;
   }
 
-  function removeSkill(plotId) {
-    const before = state.farmPlots.length;
-    state.farmPlots = state.farmPlots.filter(x => x.plotId !== plotId);
-    if (state.farmPlots.length !== before) { save(); return true; }
-    return false;
+  function removeSkill(_ignoredPlotId) {
+    if (!state.farmMainPlot) return false;
+    state.farmMainPlot = null;
+    save();
+    return true;
   }
 
   // AI 是否启用
@@ -601,6 +624,9 @@ const State = (() => {
     get farmCropCatalog() { return farmCropCatalog; },
     get farmPlotLayout() { return farmPlotLayout; },
     get farmLandConfig() { return farmLandConfig; },
+    // 兼容旧多格子代码调用（单地块映射为长度 0 或 1 的数组）
+    get farmPlots() { return state.farmMainPlot ? [state.farmMainPlot] : []; },
+    get farmMainPlot() { return state.farmMainPlot || null; },
     get defaultRoomItemIds() { return defaultRoomItems.map(i => i.id); },
 
     isAuthed: () => (typeof Api !== 'undefined' && Api.isAuthed()),
@@ -610,6 +636,7 @@ const State = (() => {
 
     getCatalog, getSeed,
     plantSkill, logSession, toggleGoal, addGoal, harvestSkill, removeSkill,
-    getFarmCrop, getFarmPlotByPlotId, farmStageOf,
+    getFarmCrop, getFarmMainPlot, getFarmPlotByPlotId, farmStageOf,
+    MAIN_PLOT_ID,
   };
 })();

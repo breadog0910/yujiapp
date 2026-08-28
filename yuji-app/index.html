@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/main.css?v=41" />
   <link rel="stylesheet" href="css/tab1-home.css?v=56" />
   <link rel="stylesheet" href="css/tab2-forest.css?v=40" />
-  <link rel="stylesheet" href="css/tab3-garden.css?v=41" />
+  <link rel="stylesheet" href="css/tab3-garden.css?v=42" />
   <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
   <link rel="stylesheet" href="css/popups.css?v=39" />
 </head>
@@ -165,10 +165,10 @@
               <img class="tab3-bg" src="assets/farm/tab3-bg.png" alt="技能农场背景" />
             </div>
 
-            <!-- 中-远景层：土地覆盖图层（管理员可拖拽位置/大小） -->
-            <div class="scene-layer" style="position:absolute;inset:0;pointer-events:none;z-index:2;">
+            <!-- 中-远景层：土地覆盖图层（整块地=单按钮，管理员可拖拽位置/大小/抠图阈值） -->
+            <div class="scene-layer layer-mid" style="position:absolute;inset:0;pointer-events:none;z-index:5;">
               <img id="farmLandLayer" src="assets/farm/land.png" alt="土地"
-                   style="position:absolute;display:none;pointer-events:none;user-select:none;object-fit:contain;image-rendering:pixelated;" />
+                   style="position:absolute;display:none;pointer-events:none;user-select:none;object-fit:contain;image-rendering:pixelated;filter:url(#alpha-hard-edge);" />
             </div>
 
             <!-- 农场日志按钮（右上角，已种技能 + 收获纪念） -->
@@ -177,10 +177,9 @@
               <span class="gj-label">农场日志</span>
             </button>
 
-            <!-- 中层：格子槽位（admin 后台配置位置，百分比绝对定位） -->
+            <!-- 中层：引导提示（已移除 9 格子，整块土地为单一按钮） -->
             <div class="scene-layer layer-mid">
-              <div class="garden-plots" id="gardenPlots"></div>
-              <div class="garden-hint hidden" id="gardenHint">点击空格子，种下一个想学的技能</div>
+              <div class="garden-hint hidden" id="gardenHint">点击这块土地，种下一个想学的技能🌱</div>
             </div>
 
             <!-- 前景层：像素农夫小我 + 萤火 + 麦田光点 -->
@@ -277,12 +276,12 @@
       console.error('[Supabase] CDN 加载失败，请检查网络或尝试刷新页面');
     }
   </script>
-  <script src="js/api.js?v=40"></script>
-  <script src="js/state.js?v=41"></script>
+  <script src="js/api.js?v=41"></script>
+  <script src="js/state.js?v=43"></script>
   <script src="js/utils.js?v=37"></script>
   <script src="js/tab1.js?v=53"></script>
   <script src="js/tab2.js?v=38"></script>
-  <script src="js/tab3.js?v=40"></script>
+  <script src="js/tab3.js?v=42"></script>
   <script src="js/tab4.js?v=40"></script>
   <script src="js/popups.js?v=41"></script>
   <script src="js/account.js?v=38"></script>
