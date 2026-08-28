@@ -204,8 +204,8 @@ body.room-editing .room-item .ri-label { opacity: 1; }
 /* ---------- 布置工具 ---------- */
 .room-edit-btn {
   position: absolute;
-  top: 76px; /* 避开右上角齿轮按钮（top:32, 高36，底部约68） */
-  right: 10px;
+  top: 28px; /* 与右上角齿轮按钮（top:32, 高36）垂直居中对齐 */
+  right: 56px; /* 布置在齿轮左侧：齿轮 right:14 + 宽36 + 间距6 */
   z-index: 20;
   min-width: 40px;
   height: 36px;
