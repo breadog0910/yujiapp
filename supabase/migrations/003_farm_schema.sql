@@ -25,13 +25,17 @@ CREATE TABLE IF NOT EXISTS farm_plot_layout (
   sort_order  INTEGER DEFAULT 0
 );
 
--- 3. RLS
+-- 3. RLS（幂等：重复执行同一迁移不会因 policy 已存在报 42710）
 ALTER TABLE farm_crop_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE farm_plot_layout  ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "fcc_read_all" ON farm_crop_catalog;
 CREATE POLICY "fcc_read_all" ON farm_crop_catalog FOR SELECT USING (true);
+DROP POLICY IF EXISTS "fcc_admin_wr" ON farm_crop_catalog;
 CREATE POLICY "fcc_admin_wr" ON farm_crop_catalog FOR ALL
   USING (public.is_admin()) WITH CHECK (public.is_admin());
+DROP POLICY IF EXISTS "fpl_read_all" ON farm_plot_layout;
 CREATE POLICY "fpl_read_all" ON farm_plot_layout FOR SELECT USING (true);
+DROP POLICY IF EXISTS "fpl_admin_wr" ON farm_plot_layout;
 CREATE POLICY "fpl_admin_wr" ON farm_plot_layout FOR ALL
   USING (public.is_admin()) WITH CHECK (public.is_admin());
 
