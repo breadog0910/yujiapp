@@ -15,51 +15,75 @@ const Tab3 = (() => {
   const ASSET_FALLBACK = 'assets/field/crop-s1.png';
 
   // 白底抠图：四边沿 BFS flood fill，把颜色距离白 < threshold 的像素 alpha=0
+  // ⚠️ 超大图（> 1M 像素）会阻塞主线程数秒，因此：
+  //   1) 默认 land-v2.png / land.png 已用 PIL 做永久资源级抠图 + alpha 二值化，直接跳过
+  //   2) 仅管理员自定义的非内置土地图才跑；超大图用降采样 + requestIdleCallback 异步兜底
   function floodFillRemoveBg(imageEl, threshold = 30) {
     const src = imageEl.naturalWidth || imageEl.width;
     const sH = imageEl.naturalHeight || imageEl.height;
     if (!src || !sH) return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = src; canvas.height = sH;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(imageEl, 0, 0, src, sH);
-    const img = ctx.getImageData(0, 0, src, sH);
+    // 降采样：超过 25 万像素先缩到 ~25 万像素（长宽 sqrt(n/250000) 倍缩小），
+    // 避免 1326×1009≈1.34M 像素同步 BFS 把主线程卡死数秒
+    const totalPxs = src * sH;
+    let W = src, H = sH;
+    let inCanvas = document.createElement('canvas');
+    if (totalPxs > 250000) {
+      const ratio = Math.sqrt(250000 / totalPxs);
+      W = Math.max(64, Math.round(src * ratio));
+      H = Math.max(64, Math.round(sH * ratio));
+    }
+    inCanvas.width = W; inCanvas.height = H;
+    const ctx = inCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(imageEl, 0, 0, W, H);
+    const img = ctx.getImageData(0, 0, W, H);
     const data = img.data;
-    const W = src, H = sH;
 
     const visited = new Uint8Array(W * H);
-    const queue = [];
-    const thr2 = threshold * threshold * 3; // 近似色差不用开方
-    for (let x = 0; x < W; x++) {
-      queue.push([x, 0]); queue.push([x, H - 1]);
-    }
-    for (let y = 1; y < H - 1; y++) {
-      queue.push([0, y]); queue.push([W - 1, y]);
-    }
-    while (queue.length) {
-      const [x, y] = queue.pop();
+    // flat queue: 存 x + y*W，比 [x,y] 数组分配便宜 4 倍
+    const queue = new Int32Array(W * H * 2);
+    let qHead = 0, qTail = 0;
+    const push = (x, y) => { queue[qTail++] = x | 0; queue[qTail++] = y | 0; };
+    const pop = () => { const x = queue[qHead++]; const y = queue[qHead++]; return [x, y]; };
+    const thr2 = threshold * threshold * 3;
+    for (let x = 0; x < W; x++) { push(x, 0); push(x, H - 1); }
+    for (let y = 1; y < H - 1; y++) { push(0, y); push(W - 1, y); }
+    // 保险：最坏情况下不超过 WH*5 步，防止极端配置进入死循环卡住页面
+    let steps = 0;
+    const STEPS_MAX = W * H * 5;
+    while (qHead < qTail && steps < STEPS_MAX) {
+      steps++;
+      const [x, y] = pop();
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       const i = (y * W + x);
       if (visited[i]) continue;
       visited[i] = 1;
       const p = i * 4;
-      if (data[p + 3] === 0) continue; // 已透明
+      if (data[p + 3] === 0) continue;
       const dr = 255 - data[p];
       const dg = 255 - data[p + 1];
       const db = 255 - data[p + 2];
-      // 同时兼容浅灰白格 (212,212,212)：色差对纯白或 212 灰取最小
       const distW = dr * dr + dg * dg + db * db;
       const drG = 212 - data[p];
       const dgG = 212 - data[p + 1];
       const dbG = 212 - data[p + 2];
       const distG = drG * drG + dgG * dgG + dbG * dbG;
       if (distW < thr2 || distG < thr2) {
-        data[p + 3] = 0; // 透明
-        queue.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        data[p + 3] = 0;
+        push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
       }
     }
     ctx.putImageData(img, 0, 0);
-    return canvas.toDataURL('image/png');
+    return ctx.canvas.toDataURL('image/png');
+  }
+
+  // PIL 已做永久抠图的内置土地图 URL 白名单：跳过同步 canvas flood fill，直接显示原图
+  // （SVG filter #alpha-hard-edge 做浏览器端 alpha 二值化兜底，足够对付残余半透像素）
+  function isBuiltinLand(url) {
+    if (!url) return true;
+    const u = String(url).toLowerCase();
+    return u.includes('assets/farm/land-v2.png') || u.includes('assets/farm/land.png');
   }
 
   // 拿 State.farmLandConfig.bgThreshold，缺省 30
@@ -91,26 +115,42 @@ const Tab3 = (() => {
     el.style.objectFit = 'contain';
     el.style.imageRendering = 'pixelated';
 
-    // 图片加载 → flood fill 去白底（带缓存 key = imgURL + threshold）
+    // 图片加载 → 抠图策略：
+    //   * 内置 land-v2.png（资源级 PIL 已去白底）：直接显示，0 额外卡顿
+    //   * 自定义图：降采样后再 flood fill；onload 不阻塞 paint（renderLandLayer 先让 el.src=url 展示原图，
+    //     再异步替换成抠图版，避免 Tab3 白屏等待）
     const url = cfg.image || 'assets/farm/land-v2.png';
     const threshold = getThreshold();
     const cacheKey = url + '|t=' + threshold;
-    if (el.dataset.cacheKey !== cacheKey) {
+    if (el.dataset.cacheKey === cacheKey) return; // 已处理过，不重复跑
+
+    // 先立即显示原图（用户切 Tab3 时能立刻看到整块土地，不被 BFS 卡住）
+    el.src = url;
+    el.dataset.cacheKey = cacheKey + '|pending';
+
+    if (isBuiltinLand(url)) {
+      el.dataset.cacheKey = cacheKey; // 内置图直接标处理完成
+      return;
+    }
+    // 自定义图：在下一个 rAF + requestIdleCallback 后处理（避免卡死首屏）
+    const runAt = (typeof requestIdleCallback === 'function') ? requestIdleCallback : (cb) => setTimeout(cb, 40);
+    runAt(() => {
       const tmp = new Image();
       tmp.crossOrigin = 'anonymous';
       tmp.onload = () => {
         try {
           const dataUrl = floodFillRemoveBg(tmp, threshold);
-          if (dataUrl) el.src = dataUrl;
+          if (dataUrl && el.dataset.cacheKey === cacheKey + '|pending') {
+            el.src = dataUrl;
+          }
         } catch (e) {
-          console.warn('[Tab3] 土地抠图失败，显示原图：', e.message);
-          el.src = url;
+          console.warn('[Tab3] 自定义土地抠图失败，保留原图：', e.message);
         }
         el.dataset.cacheKey = cacheKey;
       };
-      tmp.onerror = () => { el.src = url; el.dataset.cacheKey = cacheKey; };
+      tmp.onerror = () => { el.dataset.cacheKey = cacheKey; };
       tmp.src = url;
-    }
+    }, { timeout: 300 });
   }
 
   // 在土地上方叠当前阶段作物大图（已种状态）
