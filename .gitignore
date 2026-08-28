@@ -18,6 +18,10 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Git worktrees (project-local isolated workspaces — never commit contents)
+.worktrees/
+worktrees/
+
 # Debug / temp files
 tools/_debug_frames/
 tools/_debug_frames_v2/
