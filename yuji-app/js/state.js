@@ -200,6 +200,10 @@ const State = (() => {
         ],
       },
       starPoints: [],
+      generatedStarsMeta: {
+        generated: {},       // { sourceId: true } — 前端模板星 dedup 标记
+        lastAiRunAt: '',     // 上一次 star-miner 成功调用的 ISO ts
+      },
       letterRead: [],
       letters: [],
       selfManual: { chapter1: '还在认识中…', chapter2: '还在认识中…', chapter3: '还在认识中…', chapter4: '还在认识中…', chapter5: '还在认识中…', updatedAt: '' },
@@ -480,6 +484,33 @@ const State = (() => {
   // AI 是否启用
   function aiEnabled(key) { return aiConfig.some(a => a.key === key && a.enabled); }
 
+  // ===== starPoints type → 星座 key 映射 =====
+  // 老类型 + 新 mined_* + ai_* 全部归到 6 星座
+  const TYPE_TO_CONS = {
+    // 前端新挖掘
+    mined_emotion:   'emotion',
+    mined_dialogue:  'dialogue',
+    mined_milestone: 'milestone',
+    mined_selfcare:  'selfcare',
+    mined_garden:    'garden',
+    // AI 大星
+    ai_deep:         'mirror',
+    ai_breakthrough: 'mirror',
+    ai_pattern:      'mirror',
+    // 老类型
+    emotion:         'emotion',
+    letter:          'dialogue',
+    milestone:       'milestone',
+    spirit:          'milestone',
+    care:            'selfcare',
+    harvest:         'garden',
+    manual:          'mirror',
+    discovery:       'mirror',
+  };
+  function pickCategoryByType(type) {
+    return TYPE_TO_CONS[type] || 'milestone';
+  }
+
   return {
     get state() { return state; },
     get initialized() { return initialized; },
@@ -505,6 +536,7 @@ const State = (() => {
     isAuthed: () => (typeof Api !== 'undefined' && Api.isAuthed()),
     isPreview: () => (typeof Api !== 'undefined' && Api.isPreview()),
     aiEnabled,
+    pickCategoryByType,
 
     getCatalog, getSeed,
     plantSkill, logSession, toggleGoal, addGoal, harvestSkill, removeSkill,
