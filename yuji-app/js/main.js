@@ -103,6 +103,11 @@
     function switchTab(target) {
       tabBtns.forEach(b => b.classList.toggle('active', b.dataset.target === target));
       tabPanels.forEach(p => p.classList.toggle('active', p.id === target));
+      // 账号菜单按钮（右上角齿轮）只在 tab1 显示
+      const acctFab = document.getElementById('yujiAcctFab');
+      const acctMenu = document.getElementById('yujiAcctMenu');
+      if (acctFab) acctFab.style.display = (target === 'tab1') ? '' : 'none';
+      if (target !== 'tab1' && acctMenu) acctMenu.style.display = 'none';
       // 触发各 Tab 的 refresh
       if (target === 'tab1') Tab1.refresh();
       if (target === 'tab2') Tab2.renderEntry();

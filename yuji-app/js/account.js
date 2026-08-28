@@ -188,6 +188,12 @@ const Account = (() => {
     }
     root.appendChild(fab);
 
+    // 账号菜单按钮只在 tab1 显示：创建后按当前 active tab 初始化
+    const activeTabOnRender = document.querySelector('.tab-panel.active')?.id;
+    if (activeTabOnRender && activeTabOnRender !== 'tab1') {
+      fab.style.display = 'none';
+    }
+
     const menu = document.createElement('div');
     menu.id = 'yujiAcctMenu';
     menu.className = 'yuji-acct-menu';
