@@ -453,7 +453,7 @@ const Popups = (() => {
           <div class="stat-row"><span class="stat-label">🌸 开心值</span><span class="stat-value">${s.happinessValue}</span></div>
           <div class="stat-row"><span class="stat-label">🛋️ 舒适值</span><span class="stat-value">${s.comfortValue}</span></div>
           <div class="stat-row"><span class="stat-label">✉️ 收到的信</span><span class="stat-value">${s.letters.length}</span></div>
-          <div class="stat-row"><span class="stat-label">🌱 成长目标</span><span class="stat-value">${s.plots.filter(Boolean).length}</span></div>
+          <div class="stat-row"><span class="stat-label">🌱 成长目标</span><span class="stat-value">${s.farmPlots.length}</span></div>
           <div class="stat-row"><span class="stat-label">⭐ 星点数</span><span class="stat-value">${s.starPoints.length}</span></div>
           <div class="stat-row"><span class="stat-label">📅 陪伴天数</span><span class="stat-value">${s.visitDates.length}</span></div>
         </div>
@@ -1320,11 +1320,12 @@ const Popups = (() => {
             (s.customCareOptions || []).forEach(c => {
               if (c.done) cares.push(`完成了自定义任务「${c.label}」`);
             });
-            const garden = (s.plots || []).map(p => {
-              if (!p) return null;
-              const seed = State.getSeed(p.seedKey);
-              const names = ['破土', '生长', '繁茂', '成熟'];
-              return seed ? `田地里「${seed.name}」长到${names[Math.min(p.stage,3)]}阶（养分${p.feed}/${State.FEED_PER_STAGE}）` : null;
+            const garden = (s.farmPlots || []).map(p => {
+              const crop = State.getFarmCrop(p.cropKey);
+              if (!crop) return null;
+              const stage = State.farmStageOf(p);
+              const stageName = crop.stages[Math.min(stage, crop.stages.length - 1)]?.name || '';
+              return `技能农场「${p.skillName}」(${crop.name}) 长到${stageName}阶（累计 ${p.progress} 分钟）`;
             }).filter(Boolean);
             const ctx = [];
             if (emo.length) ctx.push('用户最近的情绪记录（近 5 条）：\n' + emo.join('\n'));

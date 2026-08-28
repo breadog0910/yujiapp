@@ -210,6 +210,7 @@ const State = (() => {
       selectedForPlace: [],
       roomBg: 'day',
       emotionRecords: [],
+      gardenWarehouse: [],   // 商店购买未摆放的物品（货架 inventory，非农场）
       farmPlots: [],          // 技能农场：每个已占格子一条 {plotId,skillName,cropKey,progress,sessions,goals,createdAt,matured}
       farmWarehouse: [],     // 成熟收获纪念
       shopItems: {
