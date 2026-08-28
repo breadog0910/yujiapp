@@ -134,6 +134,11 @@ const State = (() => {
   ];
   let farmCropCatalog = DEFAULT_FARM_CROP_CATALOG;
   let farmPlotLayout = DEFAULT_FARM_PLOT_LAYOUT;
+  const DEFAULT_FARM_LAND_CONFIG = {
+    id: 'main', image: 'assets/farm/land.png',
+    x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65,
+  };
+  let farmLandConfig = DEFAULT_FARM_LAND_CONFIG;
   let meta = { appName: '予己' };
 
   // 新用户初始「每日自我照顾」选项（applyConfig 用后端值填充；缺省回退内置默认 6 项）
@@ -204,6 +209,8 @@ const State = (() => {
       farmCropCatalog = cfg.farmCropCatalog;
     if (Array.isArray(cfg.farmPlotLayout) && cfg.farmPlotLayout.length)
       farmPlotLayout = cfg.farmPlotLayout;
+    // farmLandConfig：数据库返回非 null 才覆盖（单例对象，非数组）
+    if (cfg.farmLandConfig) farmLandConfig = cfg.farmLandConfig;
   }
 
   // ============================================================
@@ -361,7 +368,7 @@ const State = (() => {
       k: roomCatalog.map(f => f.type).join(','),
       b: tabBackgrounds,
       d: defaultCareOptions,
-      f: farmCropCatalog, p: farmPlotLayout,
+      f: farmCropCatalog, p: farmPlotLayout, L: farmLandConfig,
     });
   }
   let previewTimer = null;
@@ -387,6 +394,7 @@ const State = (() => {
           state.careOptions = rebuilt.careOptions;
         }
         if (typeof Tab1 !== 'undefined' && Tab1.refresh) Tab1.refresh();
+        if (typeof Tab3 !== 'undefined' && Tab3.refresh) Tab3.refresh();
       }
     } catch (e) {
       console.warn('[State] 预览轮询失败:', e.message);
@@ -592,6 +600,7 @@ const State = (() => {
     get tab2Entry() { return tab2Entry; },
     get farmCropCatalog() { return farmCropCatalog; },
     get farmPlotLayout() { return farmPlotLayout; },
+    get farmLandConfig() { return farmLandConfig; },
     get defaultRoomItemIds() { return defaultRoomItems.map(i => i.id); },
 
     isAuthed: () => (typeof Api !== 'undefined' && Api.isAuthed()),

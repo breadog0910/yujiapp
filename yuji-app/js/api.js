@@ -163,6 +163,7 @@ async function tryAutoLogin() {
       { data: aiRows, error: e8 },
       { data: farmCrops, error: e9 },
       { data: farmPlots, error: e10 },
+      { data: farmLandRows, error: e11 },
     ] = await Promise.all([
       client.from('furniture_catalog').select('*').order('category').order('type'),
       client.from('default_room_layout').select('*').order('sort_order'),
@@ -174,12 +175,14 @@ async function tryAutoLogin() {
       client.from('ai_config').select('key, name, provider, model, enabled').order('key'),
       client.from('farm_crop_catalog').select('*').order('sort_order'),
       client.from('farm_plot_layout').select('*').order('sort_order'),
+      client.from('farm_land_config').select('*').limit(1),
     ]);
 
     if (e1) console.warn('[Api] furniture_catalog 查询失败', e1.message);
     if (e2) console.warn('[Api] default_room_layout 查询失败', e2.message);
     if (e9) console.warn('[Api] farm_crop_catalog 查询失败', e9.message);
     if (e10) console.warn('[Api] farm_plot_layout 查询失败', e10.message);
+    if (e11) console.warn('[Api] farm_land_config 查询失败', e11.message);
 
     const settings = {};
     (settingsRows || []).forEach((s) => { settings[s.key] = s.value; });
@@ -224,6 +227,10 @@ async function tryAutoLogin() {
     const mapFarmPlot = (r) => ({
       id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sortOrder: r.sort_order,
     });
+    const mapFarmLand = (r) => ({
+      id: r.id, image: r.image, x: r.x, y: r.y, z: r.z, scale: r.scale,
+      widthPct: r.width_pct, heightPct: r.height_pct,
+    });
 
     return {
       appName: settings.appName || '予己',
@@ -234,6 +241,7 @@ async function tryAutoLogin() {
       seedCatalog: (seeds || []).map(mapSeed),
       farmCropCatalog: (farmCrops || []).map(mapFarmCrop),
       farmPlotLayout: (farmPlots || []).map(mapFarmPlot),
+      farmLandConfig: (farmLandRows || []).map(mapFarmLand)[0] || null,
       aiConfig: (aiRows || []).map((a) => ({ key: a.key, name: a.name, provider: a.provider, model: a.model, enabled: !!a.enabled })),
       tabBackgrounds,
       defaultCareOptions: (careRows || []).map((r) => ({

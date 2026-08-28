@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="css/main.css?v=40" />
   <link rel="stylesheet" href="css/tab1-home.css?v=54" />
   <link rel="stylesheet" href="css/tab2-forest.css?v=39" />
-  <link rel="stylesheet" href="css/tab3-garden.css?v=40" />
+  <link rel="stylesheet" href="css/tab3-garden.css?v=41" />
   <link rel="stylesheet" href="css/tab4-stars.css?v=42" />
   <link rel="stylesheet" href="css/popups.css?v=39" />
 </head>
@@ -160,9 +160,15 @@
         <!-- ============ Tab3 生长·技能农场 ============ -->
         <section id="tab3" class="tab-panel" data-tab="tab3">
           <div class="tab3-garden">
-            <!-- 远景层：像素草地背景 -->
+            <!-- 远景层：tab3 背景（草地 / 天空等） -->
             <div class="scene-layer layer-back">
-              <img class="tab3-bg" src="assets/tab3-garden-bg.jpg" alt="像素草地" />
+              <img class="tab3-bg" src="assets/farm/tab3-bg.png" alt="技能农场背景" />
+            </div>
+
+            <!-- 中-远景层：土地覆盖图层（管理员可拖拽位置/大小） -->
+            <div class="scene-layer" style="position:absolute;inset:0;pointer-events:none;z-index:2;">
+              <img id="farmLandLayer" src="assets/farm/land.png" alt="土地"
+                   style="position:absolute;display:none;pointer-events:none;user-select:none;object-fit:contain;image-rendering:pixelated;" />
             </div>
 
             <!-- 农场日志按钮（右上角，已种技能 + 收获纪念） -->
@@ -252,15 +258,15 @@
       console.error('[Supabase] CDN 加载失败，请检查网络或尝试刷新页面');
     }
   </script>
-  <script src="js/api.js?v=39"></script>
-  <script src="js/state.js?v=40"></script>
+  <script src="js/api.js?v=40"></script>
+  <script src="js/state.js?v=41"></script>
   <script src="js/utils.js?v=37"></script>
   <script src="js/tab1.js?v=53"></script>
   <script src="js/tab2.js?v=38"></script>
-  <script src="js/tab3.js?v=39"></script>
+  <script src="js/tab3.js?v=40"></script>
   <script src="js/tab4.js?v=40"></script>
-  <script src="js/popups.js?v=40"></script>
+  <script src="js/popups.js?v=41"></script>
   <script src="js/account.js?v=38"></script>
-  <script src="js/main.js?v=40"></script>
+  <script src="js/main.js?v=41"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>予己 · 管理后台</title>
-<link rel="stylesheet" href="/admin/admin.css?v=2" />
+<link rel="stylesheet" href="/admin/admin.css?v=3" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <script>
   window.YUJI_SUPABASE_URL = window.YUJI_SUPABASE_URL || 'https://saxpmirsqlhokzuoiray.supabase.co';
@@ -132,7 +132,7 @@
     <!-- 技能农场 -->
     <section data-panel="farm" class="panel hidden">
       <div class="panel-head"><h2>🌾 技能农场</h2></div>
-      <p class="hint">配置 <b>土地格子位置</b>（拖拽）与 <b>作物品种库</b>（含各生长阶段图）。前端用户创建技能时从品种库选作物、从空格子选位置种下；记录学习时间/完成小目标推进生长。土地底图在「Tab 页面背景」tab3 项上传。保存后预览账号 2.5s 自动同步。</p>
+      <p class="hint">分层布置：<b>① Tab3 背景</b>（草地/天空）→ <b>② 土地图层</b>（可拖拽位置/大小，可换图）→ <b>③ 作物空格子</b>（拖到土地上即可）。+「作物品种库」（含各生长阶段图）。保存后预览账号 2.5s 自动同步前端。</p>
 
       <h3 style="margin-top:18px;">① 作物品种库</h3>
       <div class="panel-head" style="margin-top:6px;">
@@ -141,28 +141,43 @@
       </div>
       <div id="farm-crop-table" class="table-wrap"></div>
 
-      <h3 style="margin-top:22px;">② 土地格子布置（拖拽）</h3>
+      <h3 style="margin-top:22px;">② 画布：土地图层 + 空格子（均拖拽布置）</h3>
       <div class="panel-head" style="margin-top:6px;">
-        <span class="hint" style="margin:0;">把空格子拖到土地图上，用户在此处种技能。</span>
+        <span class="hint" style="margin:0;">画布底 = tab3 背景（1412…png）。<b>黄框土地层</b>覆盖在背景上；<b>紫框空格子</b>叠在最上层。</span>
         <div class="panel-actions">
           <button id="farm-plot-add" class="primary">+ 添加格子</button>
-          <button id="farm-plot-save" class="primary">保存格子布局</button>
-          <button id="farm-plot-clear">清空</button>
+          <button id="farm-save" class="primary">💾 保存土地 + 格子</button>
         </div>
       </div>
       <div class="layout-wrap">
         <div id="farm-canvas" class="room-canvas">
-          <img class="room-bg" id="farm-land-bg" src="/assets/farm/land.png" alt="土地底图" draggable="false" />
-          <div id="farm-plots-stage" class="room-furniture"></div>
+          <!-- 画布底：tab3 背景（草地 / 天空），只读 -->
+          <img class="room-bg" id="farm-tab3-bg" src="/assets/farm/tab3-bg.png" alt="tab3 背景" draggable="false" />
+          <div id="farm-stage" class="room-furniture">
+            <!-- JS 注入：#farm-land-layer + 各 #farm-plot-<id> -->
+          </div>
         </div>
         <div class="palette">
-          <div class="palette-title">格子属性</div>
+          <div class="palette-title">属性面板（点击画布元素）</div>
+
+          <div id="farm-land-props" class="piece-props hidden">
+            <div class="prop-title">🟨 土地图层</div>
+            <label>图片 URL <input id="flp-image" type="text" placeholder="assets/farm/land.png" /></label>
+            <label>层级 z <input id="flp-z" type="range" min="1" max="6" step="1" /><span id="flp-z-v"></span></label>
+            <label>缩放 scale <input id="flp-scale" type="range" min="0.3" max="2" step="0.05" /><span id="flp-scale-v"></span></label>
+            <label>宽度 % <input id="flp-w" type="range" min="20" max="100" step="1" /><span id="flp-w-v"></span></label>
+            <label>高度 % <input id="flp-h" type="range" min="20" max="100" step="1" /><span id="flp-h-v"></span></label>
+            <button id="flp-reset" class="ghost">恢复默认尺寸</button>
+          </div>
+
           <div id="farm-plot-props" class="piece-props hidden">
+            <div class="prop-title">🟪 空格子</div>
             <label>层级 z <input id="fpp-z" type="range" min="1" max="6" step="1" /><span id="fpp-z-v"></span></label>
             <label>缩放 <input id="fpp-scale" type="range" min="0.5" max="3" step="0.1" /><span id="fpp-scale-v"></span></label>
             <button id="fpp-del" class="danger">删除该格子</button>
           </div>
-          <div class="hint" style="margin-top:8px;">土地底图请到「Tab 页面背景 → tab3」上传。</div>
+
+          <div id="farm-empty-tip" class="hint" style="margin-top:8px;">未选中元素。点击画布上的土地层或空格子编辑属性。</div>
         </div>
       </div>
     </section>
@@ -403,7 +418,7 @@
 <!-- 隐藏的通用 file input：给 4 个 Tab 背景上传复用（tabKey 作为 data-tabkey） -->
 <input id="tabbg-upload-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden />
 
-<script src="/admin/admin.js?v=2"></script>
+<script src="/admin/admin.js?v=3"></script>
 
 </body>
 </html>

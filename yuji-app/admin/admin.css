@@ -471,3 +471,8 @@ button.ghost:hover { background: #faf8f2; }
 .fc-stage-img { background-color: #f6f1e6; }
 .farm-plot-item .ri-sprite { border-radius: 6px; }
 #farm-canvas { background: #d9c9a8; }
+.prop-title { font-weight: 600; color: #8c6b3f; margin-bottom: 8px; font-size: 14px; border-left: 3px solid #8c6b3f; padding-left: 6px; }
+#farm-stage { background-color: rgba(0,0,0,0.02); }
+.farm-land-item .ri-visual { background: rgba(255, 230, 120, 0.08); }
+.farm-land-item.selected .ri-visual { outline: 3px dashed #d4a017 !important; outline-offset: 4px; border-radius: 10px; box-shadow: 0 0 0 1px rgba(212,160,23,0.3); }
+.farm-plot-item.selected .ri-visual .ri-sprite { border-color: #8a3bb5 !important; outline: 2px dashed #8a3bb5; outline-offset: 2px; background: rgba(138,59,181,.12); }

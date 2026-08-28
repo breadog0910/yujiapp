@@ -12,7 +12,26 @@ const Tab3 = (() => {
   const ASSET_FALLBACK = 'assets/field/crop-s1.png';
   let lastStages = {};
 
+  function renderLandLayer() {
+    const el = document.getElementById('farmLandLayer');
+    if (!el) return;
+    const cfg = State.farmLandConfig;
+    if (!cfg) return;
+    el.src = cfg.image;
+    el.style.display = 'block';
+    // 用中心百分比定位 + 宽高百分比 + scale，和 admin 画布拖拽一致
+    el.style.width = (cfg.widthPct || 80) + '%';
+    el.style.height = (cfg.heightPct || 65) + '%';
+    el.style.left = (cfg.x || 50) + '%';
+    el.style.top = (cfg.y || 50) + '%';
+    el.style.zIndex = cfg.z || 2;
+    const s = cfg.scale || 1;
+    // 用 translate(-50%,-50%) 实现"中心锚点"，再加 scale
+    el.style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+
   function init() {
+    renderLandLayer();
     renderPlots();
     bindEvents();
     Utils.spawnParticles(document.getElementById('gardenButterflies'), {
@@ -89,8 +108,8 @@ const Tab3 = (() => {
     if (hint) hint.classList.toggle('hidden', plantedCount > 0);
   }
 
-  // 供 popups 调用：种下/记录/收获后刷新
-  function refresh() { renderPlots(); }
+  // 供 popups 调用：种下/记录/收获后刷新；预览后台同步时调用 renderLandLayer
+  function refresh() { renderLandLayer(); renderPlots(); }
 
-  return { init, renderPlots, refresh };
+  return { init, renderPlots, renderLandLayer, refresh };
 })();
