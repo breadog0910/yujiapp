@@ -3,7 +3,7 @@
    - 认证：Supabase Auth（username 映射为 email）
    - 配置数据：直接读写 PostgreSQL（RLS 保护，admin 可写）
    - 用户管理：调用 admin-api Edge Function（需 service_role）
-   - 文件上传：Supabase Storage（不再提供 rembg 抠图）
+   - 文件上传：Supabase Storage（客户端 @imgly/background-removal 抠图）
    ============================================================ */
 
 // ---------- Supabase 配置 ----------
@@ -51,6 +51,44 @@ function fmtSize(n) {
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.add('hidden'), 2200);
+}
+
+// ---------- 客户端抠图（@imgly/background-removal，ONNX + WASM，替代原 rembg） ----------
+// 首次勾选抠图时才动态从 CDN 加载模块（~80MB 模型首次下载，浏览器缓存后复用），
+// 避免每次进后台都拉取模型；模型与推理均在浏览器内完成，无需后端。
+let _imglyModulePromise = null;
+function loadMattingModule() {
+  if (!_imglyModulePromise) {
+    _imglyModulePromise = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm')
+      .then(mod => mod.default || mod.removeBackground || mod)
+      .catch(err => { _imglyModulePromise = null; throw err; });
+  }
+  return _imglyModulePromise;
+}
+
+// 对 File 执行客户端抠图，返回透明背景 PNG File。失败时抛出错误由调用方降级。
+async function removeBackgroundClientSide(file, opts = {}) {
+  const removeBackground = await loadMattingModule();
+  let lastToast = 0;
+  const blob = await removeBackground(file, {
+    // medium 模型（~80MB）质量与原 rembg U2Net 相当；small（~40MB）更快但边缘略糙
+    model: opts.model || 'medium',
+    progress: (key, current, total) => {
+      // 节流：进度回调非常密集，最多每 400ms 刷一次 toast
+      const now = Date.now();
+      if (now - lastToast < 400 && !(current === 1 && total === 1)) return;
+      lastToast = now;
+      if (typeof current === 'number' && typeof total === 'number' && total > 0 && current < total) {
+        const pct = Math.max(0, Math.min(100, Math.round((current / total) * 100)));
+        toast(`下载抠图模型… ${pct}%（首次较慢，已缓存后下次秒过）`);
+      } else if (key === 'compute:inference') {
+        toast('正在抠图推理…');
+      }
+    },
+  });
+  // 转回 File，保留原文件名主体，强制 .png（透明背景）
+  const baseName = (file.name || 'image').replace(/\.[^.]+$/, '');
+  return new File([blob], baseName + '.png', { type: 'image/png' });
 }
 function showLogin() { $('#login-view').classList.remove('hidden'); $('#app-view').classList.add('hidden'); }
 function showApp() { $('#login-view').classList.add('hidden'); $('#app-view').classList.remove('hidden'); }
@@ -352,8 +390,23 @@ async function api(method, path, body) {
 // ---------- Storage 上传处理 ----------
 async function handleUpload(method, path, fd) {
   const client = getClient();
-  const file = fd.get('file');
+  let file = fd.get('file');
   if (!file) throw new Error('未选择文件');
+
+  // 客户端抠图（浏览器内 ONNX 模型，替代原 rembg）：勾选时先把原图抠除背景，
+  // 得到透明 PNG 再上传到 Storage。失败则降级用原图继续上传，不阻断流程。
+  const wantMatting = (fd.get('matting') === '1' || fd.get('matting') === 'true' || fd.get('matting') === true);
+  if (wantMatting) {
+    try {
+      toast('开始抠图（首次需下载模型，请稍候）…');
+      file = await removeBackgroundClientSide(file, {
+        model: fd.get('mattingModel') || 'medium',
+      });
+    } catch (err) {
+      toast('抠图失败，改用原图上传：' + (err && err.message ? err.message : err));
+      file = fd.get('file'); // 回退到原始文件
+    }
+  }
 
   // 家具上传（行内 / 新增）
   if (path.includes('/furniture')) {
@@ -691,6 +744,7 @@ async function loadUnlock() {
 
 /* ===================== 家具库 ===================== */
 let _pendingUploadType = null;
+let _pendingUploadMatting = false;
 
 async function loadFurniture() {
   const furn = await api('GET', '/api/admin/furniture');
@@ -705,7 +759,7 @@ async function loadFurniture() {
           <img class="ic-thumb" src="${iconUrl(f.icon)}" alt="" onerror="this.style.opacity=0"/>
           <input data-f="icon" value="${esc(f.icon)}" placeholder="assets/pixel/xxx.png"/>
           <div class="upload-stack">
-            <label class="matting-toggle" title="勾选后上传会自动抠除白底/实景背景（rembg，首次下载模型稍慢）">
+            <label class="matting-toggle" title="勾选后上传会在浏览器内自动抠除白底/实景背景（@imgly 模型，首次需下载模型稍慢，之后缓存复用）">
               <input type="checkbox" class="row-matting" data-type="${esc(f.type)}" checked />
               <span>抠图</span>
             </label>
@@ -728,6 +782,10 @@ function bindFurnUpload() {
   $$('#furn-table button[data-act=upload]').forEach(btn => {
     btn.addEventListener('click', () => {
       _pendingUploadType = btn.dataset.type;
+      // 读取该行「抠图」勾选状态，作为本次上传是否抠图的依据
+      const tr = btn.closest('tr');
+      const cb = tr && tr.querySelector('.row-matting');
+      _pendingUploadMatting = cb ? cb.checked : false;
       const inp = $('#furn-upload-input');
       inp.value = '';
       inp.click();
@@ -737,11 +795,16 @@ function bindFurnUpload() {
 $('#furn-upload-input').addEventListener('change', async (e) => {
   const file = e.target.files && e.target.files[0];
   const type = _pendingUploadType;
+  const matting = _pendingUploadMatting;
   _pendingUploadType = null;
+  _pendingUploadMatting = false;
   if (!file || !type) return;
   try {
     toast('上传中…');
-    const r = await uploadImage('/api/admin/furniture/upload', file, { forceName: type });
+    const r = await uploadImage('/api/admin/furniture/upload', file, {
+      forceName: type,
+      matting: matting ? '1' : '0',
+    });
     const tr = document.querySelector('#furn-table tbody tr[data-type="' + type + '"]');
     if (tr) {
       const iconInput = tr.querySelector('[data-f=icon]');
@@ -765,7 +828,6 @@ function openAddFurnModal() {
   $('#fa-w').value = 56; $('#fa-h').value = 56; $('#fa-price').value = 0;
   $('#fa-floor').checked = false; $('#fa-unlocked').checked = true;
   $('#fa-matting').checked = true;
-  $('#fa-alpha').checked = false;
   $('#fa-submit').disabled = false;
   _addFurnSelectedFile = null;
   $('#fa-file').value = '';
@@ -818,6 +880,8 @@ $('#fa-submit').addEventListener('click', async () => {
   fd.append('action', $('#fa-action').value.trim());
   fd.append('unlockedByDefault', $('#fa-unlocked').checked ? 'true' : 'false');
   fd.append('price', $('#fa-price').value);
+  // 抠图开关：默认勾选；传入后 handleUpload 会在浏览器内抠除背景再上传
+  fd.append('matting', $('#fa-matting').checked ? '1' : '0');
   try {
     toast('创建中…');
     const r = await api('POST', '/api/admin/furniture/with-image', fd);
@@ -939,6 +1003,8 @@ $('#sa-submit').addEventListener('click', async () => {
   fd.append('bonus', $('#sa-bonus').value.trim() || '{}');
   fd.append('desc', $('#sa-desc').value.trim());
   fd.append('unlocked', $('#sa-unlocked').checked ? '1' : '0');
+  // 抠图开关：默认勾选；传入后 handleUpload 会在浏览器内抠除背景再上传
+  fd.append('matting', $('#sa-matting').checked ? '1' : '0');
   try {
     toast('创建中…');
     const r = await api('POST', '/api/admin/shop/with-image', fd);

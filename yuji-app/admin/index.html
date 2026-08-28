@@ -271,12 +271,9 @@
       <div class="row two-col">
         <label class="chk">
           <input id="fa-matting" type="checkbox" checked />
-          <span>自动抠图（rembg 抠除白底/实景背景）</span>
+          <span>自动抠图（浏览器内 @imgly 模型抠除白底/实景背景，首次下载模型较慢）</span>
         </label>
-        <label class="chk">
-          <input id="fa-alpha" type="checkbox" />
-          <span>精修边缘（Alpha Matting，慢但更干净）</span>
-        </label>
+        <span class="hint" style="align-self:center;">提示：上传白底或实景图均可，抠图后得到透明 PNG</span>
       </div>
       <div class="row file-row">
         <label>家具图片 *</label>
@@ -344,7 +341,7 @@
         </label>
         <label class="chk">
           <input id="sa-matting" type="checkbox" checked />
-          <span>自动抠图（rembg 抠除白底/实景背景）</span>
+          <span>自动抠图（浏览器内 @imgly 模型抠除背景）</span>
         </label>
       </div>
       <div class="row file-row">
