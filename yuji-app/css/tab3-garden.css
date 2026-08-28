@@ -69,41 +69,16 @@
    ============================================================ */
 .garden-plots {
   position: absolute;
-  left: 50%;
-  top: 63%;                          /* ← 用户要求再往下移（原 52%） */
-  transform: translate(-50%, 0);     /* 只水平居中，top 已精确控制垂直位置 */
+  inset: 0;
   z-index: 5;
-
-  /* 九宫格底图尺寸：用户自定义图片按比例缩放为 331x290px */
-  width: 331px;
-  height: 290px;
-
-  /* 2.5D 九宫格土壤田底图（已抠白底 PNG 透明通道） */
-  background-image: url('../assets/field/field-base-9grid.png');
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-  background-position: center center;
-
-  pointer-events: none;
+  pointer-events: none;   /* 子格子单独开 pointer-events:auto */
 }
-
-/* 阴影移到外层（避免与 mix-blend-mode 冲突） */
-.garden-plots::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(40, 20, 5, 0.35);
-  pointer-events: none;
-  z-index: -1;
-}
+.garden-plots::after { display: none; }   /* 旧阴影取消 */
 
 /* ---------- 单块田（绝对定位叠加在大田底图上） ---------- */
 .plot {
   position: absolute;
   /* 每个格子的尺寸和位置由 JS 内联 style 设置 */
-  width: 62px;
-  height: 46px;
   pointer-events: auto;
   cursor: pointer;
   overflow: visible;
