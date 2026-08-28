@@ -245,6 +245,7 @@ const State = (() => {
     }
     // 2) 预览账号：永远按当前默认房间初始化，不写后端，启动轮询实时同步后台改动
     if (Api.isPreview()) {
+      console.log('[State] 预览账号检测到，启动实时同步轮询');
       state = buildDefaultState();
       startPreviewPolling();
       ensureDaily();
@@ -297,6 +298,7 @@ const State = (() => {
   let previewTimer = null;
   function startPreviewPolling() {
     if (previewTimer) return;
+    console.log('[State] 预览轮询已启动（2.5s 间隔）');
     previewTimer = setInterval(pollPreviewConfig, 2500);
   }
   async function pollPreviewConfig() {
@@ -306,6 +308,7 @@ const State = (() => {
       applyConfig(cfg);
       const after = currentConfigFingerprint();
       if (after !== before) {
+        console.log('[State] 预览轮询：检测到后台配置变更，刷新房间');
         // 后端配置变更：重建房间为最新默认布局，重置照顾选项，通知 Tab1 重渲染
         state.roomItems = buildDefaultRoomItems();
         // 仅在预览账号重置照顾选项（避免普通用户轮询时自己的选项被冲掉）
@@ -315,7 +318,9 @@ const State = (() => {
         }
         if (typeof Tab1 !== 'undefined' && Tab1.refresh) Tab1.refresh();
       }
-    } catch (e) { /* 轮询失败忽略 */ }
+    } catch (e) {
+      console.warn('[State] 预览轮询失败:', e.message);
+    }
   }
 
   // 保存：本地缓存 + 防抖同步后端（仅登录态；预览账号不同步后端）

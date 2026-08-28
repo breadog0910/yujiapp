@@ -60,7 +60,25 @@
   }
 
   Account.renderChip();
+
+  // 预览模式：显示持久标识 + 提示
+  if (Api.isPreview()) {
+    showPreviewBadge();
+    setTimeout(() => Utils.toast('🔄 预览模式 · 后台改布置会自动同步到此页面'), 600);
+  }
+
   bootApp();
+
+  function showPreviewBadge() {
+    const badge = document.createElement('div');
+    badge.id = 'yujiPreviewBadge';
+    badge.textContent = '🔄 预览';
+    badge.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:9990;'
+      + 'background:rgba(95,160,120,.92);color:#fff;font-size:12px;font-family:system-ui,sans-serif;'
+      + 'padding:3px 14px;border-radius:0 0 10px 10px;box-shadow:0 2px 8px rgba(0,0,0,.18);'
+      + 'pointer-events:none;letter-spacing:1px;font-weight:600;';
+    document.body.appendChild(badge);
+  }
 
   function bootApp() {
     // Tab 切换

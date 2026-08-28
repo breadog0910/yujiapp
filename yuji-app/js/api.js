@@ -130,6 +130,7 @@ async function tryAutoLogin() {
       must_change_pw: profile?.must_change_pw || false,
       is_preview: profile?.is_preview || false,
     });
+    console.log('[Api] 用户信息:', { username: _user.username, role: _user.role, is_preview: _user.is_preview });
   }
 
   async function init() {
