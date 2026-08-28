@@ -110,8 +110,8 @@
       }
     });
 
-    // 调试用：双击底部 logo 区域可重置数据
-    document.querySelector('.status-bar')?.addEventListener('dblclick', () => {
+    // 调试用：双击底部 tab-bar 区域可重置数据
+    document.querySelector('.tab-bar')?.addEventListener('dblclick', () => {
       if (confirm('确定要重置所有数据吗？')) {
         State.reset();
         location.reload();
