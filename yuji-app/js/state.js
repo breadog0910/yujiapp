@@ -62,7 +62,7 @@ const State = (() => {
     { type: 'tea',      icon: 'assets/pixel/tea.png',      w: 32, h: 36, name: '茶杯',     category: '陪伴', price: 8,  unlockedByDefault: 0 },
     { type: 'letter',   icon: 'assets/pixel/letter.png',   w: 40, h: 32, name: '小我的信', category: '陪伴', action: 'letter', price: 12, unlockedByDefault: 1 },
     { type: 'piggy',    icon: 'assets/pixel/piggy.png',    w: 40, h: 44, name: '存钱罐',   category: '功能', action: 'shop', price: 28, unlockedByDefault: 1 },
-    { type: 'mirror',   icon: 'assets/pixel/mirror.png',   w: 56, h: 72, name: '镜子',     category: '功能', action: 'mirror', price: 0,  unlockedByDefault: 1 },
+    { type: 'mirror',   icon: 'assets/pixel/mirror.png',   w: 50, h: 84, name: '镜子',     category: '功能', action: 'mirror', price: 0,  unlockedByDefault: 1 },
   ];
 
   const FALLBACK_SEED_CATALOG = [
