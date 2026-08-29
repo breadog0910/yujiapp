@@ -359,7 +359,7 @@ body.room-editing .room-edit-btn {
   --xd-loops: 2;
   --xc-loops: 2;
   --frame-count: 6;
-  --xc-frame-count: 5;    /* 庆祝为 5 帧动画（源头 546px = 5 个角色块） */
+  --xc-frame-count: 6;    /* 庆祝为 6 帧动画（v16: 复制最后一帧凑 6 帧，与喝水一致） */
 }
 
 /* ============== 喝水层（默认显示）：单帧显示 90×148，帧步 90px ============== */
@@ -379,17 +379,13 @@ body.room-editing .room-edit-btn {
 .xiaowo.is-celebrating .xiaowo-drinking { opacity: 0; }   /* 切庆祝时喝水层淡出（非 crossfade） */
 
 /* ============== 庆祝层（默认隐藏）：1:1 完全复制喝水层结构 ==============
-   ★ 关键修复（解决"看起来没变"的旧缓存问题）：庆祝 sprite 文件名改为全新名
-     xiaowo-celebrate-match-water.png（= xiaowo-celebrate.png 930×254 的硬拷贝）
-     —— 浏览器对 background-image 经常无视 ?v=xx 查询串，直接按文件名命中强缓存，
-     所以必须改物理文件名才能强制重新下载，避免用户永远看到 678×254 旧版本。
-   v14: 最近邻缩放到 450×148（5 帧 × 90×148），与喝水显示尺寸完全一致，
-   浏览器无需再缩放，像素 1:1 渲染，彻底杜绝缩放带来的灰色杂色伪影。 */
+   v16: 将 v13 角色放大 1.33 倍后居中裁剪回 155×254，再复制最后一帧凑成 6 帧，
+   最终 sprite 尺寸 930×254（与喝水完全一致），角色大小与喝水匹配。 */
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v14.png?v=3');
-  background-size: 450px 100%;       /* 450×148 原图，5 帧每帧 90×148 */
+  background-image: url('../assets/pixel/xiaowo-celebrate-v16.png?v=4');
+  background-size: 540px 100%;       /* 90×6 = 540（与喝水完全同尺寸） */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
   image-rendering: pixelated;
@@ -417,19 +413,19 @@ body.room-editing .room-edit-btn {
 }
 
 /* ---------- 庆祝动作：.xiaowo.is-celebrating 时触发 ----------
-   与喝水动作显示尺寸完全一致：单帧 90×148，帧步 -90px。
-   庆祝为 5 帧，故 keyframes 分 5 段（0/20/40/60/80/100）。 */
+   与喝水动作 1:1 同节奏：单帧 90×148，帧步 -90px，6 段硬切。 */
 .xiaowo.is-celebrating .xiaowo-celebrate {
   animation: xc-play calc(var(--xc-frame-dur) * var(--xc-frame-count)) var(--xc-loops);
   animation-timing-function: step-end; /* 强制硬切，禁止帧间插值 */
 }
 
 @keyframes xc-play {
-  0%,           20%      { background-position:    0     0; }   /* 帧 0 */
-  20.001%,      40%      { background-position:  -90px   0; }   /* 帧 1 */
-  40.001%,      60%      { background-position: -180px   0; }   /* 帧 2 */
-  60.001%,      80%      { background-position: -270px   0; }   /* 帧 3 */
-  80.001%,      100%     { background-position: -360px   0; }   /* 帧 4 */
+  0%,          16.666%  { background-position:    0     0; }   /* 帧 0 */
+  16.667%,     33.333%  { background-position:  -90px   0; }   /* 帧 1 */
+  33.334%,     50%      { background-position: -180px   0; }   /* 帧 2 */
+  50.001%,     66.666%  { background-position: -270px   0; }   /* 帧 3 */
+  66.667%,     83.333%  { background-position: -360px   0; }   /* 帧 4 */
+  83.334%,     100%     { background-position: -450px   0; }   /* 帧 5 */
 }
 
 /* 暂停动画（编辑/弹窗压栈时定住） */
