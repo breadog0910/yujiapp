@@ -8,7 +8,7 @@
 # ============================================================
 
 # ---------- 配置区（必填） ----------
-$PROJECT_REF = "你的-project-ref"   # 从 Supabase Dashboard → Settings → General → Reference ID 复制
+$PROJECT_REF = "saxpmirsqlhokzuoiray"   # 从 Supabase Dashboard → Settings → General → Reference ID 复制
 
 # ---------- 颜色输出 ----------
 function Write-Info($msg) { Write-Host "[INFO] $msg" -ForegroundColor Cyan }
