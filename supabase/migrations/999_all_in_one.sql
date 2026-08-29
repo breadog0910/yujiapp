@@ -238,7 +238,10 @@ BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.users
     WHERE id = auth.uid() AND role = 'admin'
-  );
+  )
+  -- 服务端 Pool 连接（postgres / pooler 角色）没有 auth.uid，
+  -- 但 RLS 策略需要放行后端写入；前端 anon 用户 current_user 不是 postgres，仍受上面规则限制。
+  OR current_user LIKE 'postgres%';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
