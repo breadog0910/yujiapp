@@ -5,7 +5,9 @@
 /* tab1：背景铺满全屏，气泡浮在底部覆盖层（不再分两块）。
    保留 .tab-panel 的 position:absolute; inset:0，不要改成 relative，否则高度会塌陷 */
 #tab1.tab-panel.active {
-  --care-h: 124px;   /* 气泡条高度，JS 会按实际测量值覆盖 */
+  --care-h: 124px;   /* 气泡条避让高度：固定 124px，与后台画布 390×844 的家具层 bottom:14.69%（=124/844）对齐。
+                        切勿改成按 carePanel 实测高度动态赋值——家具是 px 尺寸 + 百分比定位，
+                        家具层高度一变，前后台摆放就会对不上（tab1.js 已改为显式写 124px）。 */
 }
 
 .tab1-room {
