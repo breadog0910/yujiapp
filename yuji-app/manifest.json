@@ -18,5 +18,14 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "cover.jpg",
+      "sizes": "1289x1280",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "予己 · 好好爱自己"
+    }
   ]
 }
