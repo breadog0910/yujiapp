@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
       chain: chainName,
       steps: stepResults,
       final: stepResults[stepResults.length - 1]?.text || '',
+      // 直带已落库的说明书，前端一次拿到，免去二次拉取与登录态依赖
+      manual: (data && data.selfManual) ? data.selfManual : null,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('[ai-chain] error', e.message);

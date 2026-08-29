@@ -2005,9 +2005,11 @@ ${ctx.join('\n\n')}`;
             const result = await Api.callChain('insight_manual', []);
             localStorage.setItem(THROTTLE_KEY, String(Date.now()));
 
-            // 尝试从后端响应的 self_manual step.text 中解析 JSON
-            let newManual = null;
-            if (result && typeof result === 'object' && Array.isArray(result.steps)) {
+            // 1) 优先用后端在响应里直接带回的说明书（最可靠，无需二次拉取/登录态）
+            let newManual = (result && result.manual && typeof result.manual === 'object') ? result.manual : null;
+
+            // 2) 否则尝试从最后一步文本里解析 JSON
+            if (!newManual && result && typeof result === 'object' && Array.isArray(result.steps)) {
               const lastStep = result.steps[result.steps.length - 1];
               if (lastStep && typeof lastStep.text === 'string') {
                 const match = lastStep.text.match(/\{[\s\S]*?"chapter1"[\s\S]*?\}/);
@@ -2016,13 +2018,17 @@ ${ctx.join('\n\n')}`;
                 }
               }
             }
-            // 如果响应里没有解析出 JSON，拉远端 user_state 取最新
-            if (!newManual && typeof Api.getState === 'function' && Api.isAuthed()) {
-              try {
-                const remote = await Api.getState();
-                const remoteData = remote && remote.data ? remote.data : (remote && typeof remote === 'object' ? remote : null);
-                if (remoteData && remoteData.selfManual) newManual = remoteData.selfManual;
-              } catch (_) { /* 忽略远端拉取错误 */ }
+
+            // 3) 再不行，从后端 user_state 拉最新（带重试，容忍写库延迟）；不再强制要求登录态
+            if (!newManual && typeof Api.getState === 'function') {
+              for (let attempt = 0; attempt < 3 && !newManual; attempt++) {
+                try {
+                  const remote = await Api.getState();
+                  const remoteData = remote && remote.data ? remote.data : (remote && typeof remote === 'object' ? remote : null);
+                  if (remoteData && remoteData.selfManual) { newManual = remoteData.selfManual; break; }
+                } catch (_) { /* 忽略，进入重试 */ }
+                if (!newManual && attempt < 2) await new Promise(r => setTimeout(r, 1000));
+              }
             }
 
             if (newManual && typeof newManual === 'object') {
@@ -2032,9 +2038,10 @@ ${ctx.join('\n\n')}`;
               );
               State.state.selfManual = merged;
               State.save();
+              Utils.toast('说明书已更新，正在为你打开～');
             } else {
-              Utils.toast('说明书已在后端生成，3 秒后自动刷新～');
-              await new Promise(res => setTimeout(res, 3000));
+              // 真实失败：后端没存下说明书（常见于 AI 配置不通/未登录），如实告知，不再谎称"已在后端生成"
+              Utils.toast('小我这次没能把说明书保存下来，请检查 AI 配置或网络后重试');
             }
 
             close();

@@ -137,6 +137,8 @@ router.post('/chain', optionalAuth, async (req, res) => {
       chain: chainName,
       steps: stepResults,
       final: stepResults[stepResults.length - 1]?.text || '',
+      // 直带已落库的说明书，前端一次拿到，免去二次拉取与登录态依赖
+      manual: (data && data.selfManual) ? data.selfManual : null,
     });
   } catch (e) {
     console.error('[chain] 编排失败', e.message);
