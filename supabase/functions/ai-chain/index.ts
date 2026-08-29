@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     }
 
     const chain = CHAINS[chainName];
-    const { context, data } = await getContext(getServiceClient(), user.id, chain.steps[0].agent);
+    const { context, data } = await getContext(getServiceClient(), user.id, chain.steps[0].agent, body.sources);
 
     let prevResult = '';
     const stepResults: any[] = [];

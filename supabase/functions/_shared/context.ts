@@ -7,14 +7,16 @@ const AGENT_CONTEXT_KEYS: Record<string, string[]> = {
   whisper: ['careOptions', 'customCareOptions', 'emotionRecords', 'starPoints', 'selfManual', 'careValue', 'happinessValue', 'healthValue', 'comfortValue'],
 };
 
-function buildContext(data: any, agentKey: string): string {
+function buildContext(data: any, agentKey: string, allowedSources?: string[]): string {
   if (!data) return '';
   const keys = AGENT_CONTEXT_KEYS[agentKey] || Object.keys(data);
   const parts: string[] = [];
+  // 隐私过滤：allowedSources 不为空时，只输出被用户授权（单独打开）的数据源
+  const ok = (id: string) => !allowedSources || allowedSources.includes(id);
 
   const vals = ['careValue', 'healthValue', 'happinessValue', 'comfortValue'];
   const hasVal = vals.some(k => keys.includes(k) && data[k] != null);
-  if (hasVal) {
+  if (hasVal && ok('values')) {
     const v: string[] = [];
     if (keys.includes('careValue') && data.careValue != null) v.push(`幸福值 ${data.careValue}`);
     if (keys.includes('happinessValue') && data.happinessValue != null) v.push(`开心值 ${data.happinessValue}`);
@@ -23,7 +25,7 @@ function buildContext(data: any, agentKey: string): string {
     if (v.length) parts.push('用户当前数值：' + v.join('、'));
   }
 
-  if (keys.includes('emotionRecords') && Array.isArray(data.emotionRecords) && data.emotionRecords.length) {
+  if (keys.includes('emotionRecords') && Array.isArray(data.emotionRecords) && data.emotionRecords.length && ok('emotion')) {
     const recent = data.emotionRecords.slice(-5).map((r: any) => {
       const tags = (r.tags || []).join('/');
       return tags + (r.text ? '：' + r.text : '');
@@ -31,7 +33,7 @@ function buildContext(data: any, agentKey: string): string {
     if (recent) parts.push('用户最近的情绪记录（近 5 条）：\n' + recent);
   }
 
-  if (keys.includes('starPoints') && Array.isArray(data.starPoints) && data.starPoints.length) {
+  if (keys.includes('starPoints') && Array.isArray(data.starPoints) && data.starPoints.length && ok('stars')) {
     const stars = data.starPoints.slice(-8).map((s: any) => {
       const tag = s.tag || '';
       return tag + (s.text ? '：' + s.text : '');
@@ -39,7 +41,7 @@ function buildContext(data: any, agentKey: string): string {
     if (stars) parts.push('用户的成长星点（近 8 条）：\n' + stars);
   }
 
-  if ((keys.includes('careOptions') || keys.includes('customCareOptions')) && Array.isArray(data.careOptions)) {
+  if ((keys.includes('careOptions') || keys.includes('customCareOptions')) && Array.isArray(data.careOptions) && ok('care')) {
     const done = data.careOptions.filter((c: any) => c.done).map((c: any) => `「${c.label}」`);
     if (Array.isArray(data.customCareOptions)) {
       data.customCareOptions.filter((c: any) => c.done).forEach((c: any) => done.push(`自定义任务「${c.label}」`));
@@ -47,7 +49,7 @@ function buildContext(data: any, agentKey: string): string {
     if (done.length) parts.push('今天已完成的自我照顾：' + done.join('；'));
   }
 
-  if (keys.includes('plots') && Array.isArray(data.plots)) {
+  if (keys.includes('plots') && Array.isArray(data.plots) && ok('farm')) {
     const garden = data.plots.map((p: any, i: number) => {
       if (!p) return null;
       const names = ['破土', '生长', '繁茂', '成熟'];
@@ -56,14 +58,14 @@ function buildContext(data: any, agentKey: string): string {
     if (garden.length) parts.push('田地状态：' + garden.join('；'));
   }
 
-  if (keys.includes('letters') && Array.isArray(data.roomItems)) {
+  if (keys.includes('letters') && Array.isArray(data.roomItems) && ok('furniture')) {
     const stories = data.roomItems.filter((r: any) => r.story && r.story !== '').slice(-5);
     if (stories.length) {
       parts.push('已记录的家具经历（近 5 件）：\n' + stories.map((r: any) => `「${r.type}」：${r.story.slice(0, 60)}`).join('\n'));
     }
   }
 
-  if (keys.includes('selfManual') && data.selfManual) {
+  if (keys.includes('selfManual') && data.selfManual && ok('manual')) {
     const sm = data.selfManual;
     const chapters: string[] = [];
     if (sm.chapter1 && sm.chapter1 !== '还在认识中…') chapters.push(`第一章（我是怎样的人）：${sm.chapter1.slice(0, 80)}`);
@@ -93,7 +95,7 @@ export function getSelfManual(data: any) {
   };
 }
 
-export async function getContext(supabase: any, userId: string, agentKey: string) {
+export async function getContext(supabase: any, userId: string, agentKey: string, allowedSources?: string[]) {
   const { data: row, error } = await supabase
     .from('user_state')
     .select('data')
@@ -102,7 +104,7 @@ export async function getContext(supabase: any, userId: string, agentKey: string
 
   if (error || !row) return { context: '', data: null };
   const data = sanitize(JSON.parse(row.data));
-  const context = buildContext(data, agentKey);
+  const context = buildContext(data, agentKey, allowedSources);
   return { context, data };
 }
 

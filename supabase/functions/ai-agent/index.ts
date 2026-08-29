@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
 
     const user = await requireAuth(req);
     const body = await req.json().catch(() => ({}));
-    const { messages = [], temperature } = body;
+    const { messages = [], temperature, sources } = body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: 'messages 必填' }), {
@@ -39,8 +39,8 @@ Deno.serve(async (req) => {
     const supabase = getServiceClient();
     const cfg = await getAgentConfig(supabase, key);
 
-    // 注入上下文
-    const { context } = await getContext(supabase, user.id, key);
+    // 注入上下文（sources 为空数组 → 不含任何用户个人数据，仅用 messages 本身）
+    const { context } = await getContext(supabase, user.id, key, sources);
     if (context) {
       const hasContext = messages.some((m: any) => m.role === 'user' && typeof m.content === 'string' && m.content.includes('用户当前数值'));
       if (!hasContext) {
