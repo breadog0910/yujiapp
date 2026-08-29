@@ -672,7 +672,7 @@ const Popups = (() => {
 
     // ============ 数据隐私（独立设置入口）============
     privacy() {
-      const p = (typeof State !== 'undefined' && State.getPrivacy) ? State.getPrivacy() : { localOnly: true, allowAiRead: false, allowAnalytics: true };
+      const p = (typeof State !== 'undefined' && State.getPrivacy) ? State.getPrivacy() : { localOnly: true, allowAiRead: false };
       const sw = (on) => `      <div class="privacy-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}">
         <span class="ps-knob"></span>
       </div>`;
@@ -692,7 +692,6 @@ const Popups = (() => {
             <li><b>存在哪里：</b>默认只存在你这台设备（本机），<b>不自动上传</b>。</li>
             <li><b>谁能看：</b>只有你本人。开发方无法读取你的原文。</li>
             <li><b>AI 怎么用：</b>只有你授权后，AI 才基于你的记录生成小我内容；关闭时原文绝不出本机。</li>
-            <li><b>统计：</b>即便开启统计，也只记录行为（如完成了哪个任务），<b>绝不采集</b>你的文字内容。</li>
           </ul>
 
           <div class="privacy-sec-title">🎚 我的选择</div>
@@ -711,14 +710,6 @@ const Popups = (() => {
               <div class="pr-desc">开启后，AI 才能生成小我信件 / 自我说明书 / 家具故事。关闭时这些功能不可用，原文只在本机。</div>
             </div>
             ${sw(p.allowAiRead)}
-          </div>
-
-          <div class="privacy-row">
-            <div class="pr-label">
-              <div class="pr-title">📊 允许匿名使用统计</div>
-              <div class="pr-desc">只统计行为（如完成任务），不采集任何文字内容。</div>
-            </div>
-            ${sw(p.allowAnalytics)}
           </div>
 
           <div class="privacy-actions">
@@ -2042,7 +2033,7 @@ ${ctx.join('\n\n')}`;
           sw.classList.toggle('on', on);
           sw.setAttribute('aria-checked', String(on));
           const titleTxt = sw.closest('.privacy-row').querySelector('.pr-title').textContent || '';
-          const map = { '本地存储优先': 'localOnly', '允许 AI 读取': 'allowAiRead', '允许匿名使用统计': 'allowAnalytics' };
+          const map = { '本地存储优先': 'localOnly', '允许 AI 读取': 'allowAiRead' };
           let field = null;
           for (const k in map) { if (titleTxt.indexOf(k) !== -1) { field = map[k]; break; } }
           if (!field) return;

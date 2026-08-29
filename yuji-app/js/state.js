@@ -17,17 +17,13 @@ const State = (() => {
   //      本机（localStorage），不自动上传云端。
   //   2) 只有用户显式开启「允许 AI 读取」时，AI 才能基于这些记录生成内容；
   //      否则相关 AI 功能从入口就被禁用，原文绝不出本机。
-  //   3) 即便开启统计，也只记录「行为」（如完成哪个任务），绝不采集任何
-  //      用户输入的文字内容（情绪文本 / 日记原文）。
   // 开关项（默认值偏向隐私）：
   //   localOnly      true  → 本地存储优先，登录也不自动同步到云端
   //   allowAiRead    false → 默认不允许 AI 读取用户记录
-  //   allowAnalytics true  → 默认允许匿名行为统计（不采集文本）
   // ============================================================
   const PRIVACY_DEFAULTS = {
     localOnly: true,        // 本地存储优先：true=只存本机，不上传云端
     allowAiRead: false,     // 是否允许 AI 基于用户记录生成内容
-    allowAnalytics: true,   // 是否允许匿名行为统计（仅行为，不采集文本）
   };
 
   // ============================================================
@@ -639,11 +635,6 @@ const State = (() => {
     const p = state.privacy || PRIVACY_DEFAULTS;
     return !!p.allowAiRead;
   }
-  // 是否允许匿名行为统计（仅行为，不采集文本）
-  function analyticsAllowed() {
-    const p = state.privacy || PRIVACY_DEFAULTS;
-    return !!p.allowAnalytics;
-  }
   // 读取隐私开关（返回对象副本，避免外部误改）
   function getPrivacy() {
     return Object.assign({}, PRIVACY_DEFAULTS, state.privacy || {});
@@ -660,19 +651,6 @@ const State = (() => {
     }
     return getPrivacy();
   }
-  // 匿名埋点（隐私安全：被 allowAnalytics 关闭时直接丢弃，绝不采集文本）
-  function track(name, payload) {
-    const p = state.privacy || PRIVACY_DEFAULTS;
-    if (!p.allowAnalytics) return; // 用户关闭统计 → 不记录任何事件
-    // 仅行为类事件；payload 中若出现 text/content/desc 等字段一律剔除，确保不采集用户输入
-    const safe = {};
-    for (const k in (payload || {})) {
-      if (/^(text|content|desc|note|title|message)$/i.test(k)) continue; // 坚决不采集文字内容
-      safe[k] = payload[k];
-    }
-    console.log('[analytics]', name, safe);
-  }
-
   // ===== starPoints type → 星座 key 映射 =====
   // 老类型 + 新 mined_* + ai_* 全部归到 6 星座
   const TYPE_TO_CONS = {
@@ -734,11 +712,9 @@ const State = (() => {
     isPreview: () => (typeof Api !== 'undefined' && Api.isPreview()),
     aiEnabled,
     aiReadAllowed,
-    analyticsAllowed,
     getPrivacy,
     setPrivacy,
     shouldSyncToCloud,
-    track,
     pickCategoryByType,
 
     getCatalog, getSeed,
