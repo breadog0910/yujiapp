@@ -4,6 +4,10 @@
 
 const Popups = (() => {
 
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const toast = (text) => { if (typeof Utils !== 'undefined' && Utils.toast) Utils.toast(text); };
+
   const root = () => document.getElementById('popupRoot');
 
   // 弹窗打开计数（防止滚动穿透）
