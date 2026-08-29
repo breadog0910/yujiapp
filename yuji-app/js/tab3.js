@@ -122,7 +122,7 @@ const Tab3 = (() => {
     lands.forEach(land => {
       if (!land) return;
       const el = document.createElement('div');
-      const hasCropPlanted = !!(userPlot && land.cropKey && userPlot.cropKey === land.cropKey);
+      const hasCropPlanted = !!userPlot;
       // 未种植时添加 empty-land 类，显示呼吸光晕提示
       el.className = 'farm-land clickable' + (!hasCropPlanted ? ' empty-land' : '');
       el.style.position = 'absolute';
@@ -147,8 +147,8 @@ const Tab3 = (() => {
       el.appendChild(landImg);
       applyLandImage(landImg, land.image, land.bgThreshold);
 
-      // 作物叠图：后台「该土地的作物」设置；与用户已种技能一致则显示生长阶段
-      const cropKey = land.cropKey || null;
+      // 作物叠图：优先显示用户已种作物；未种植则显示土地默认作物（破土阶段）
+      const cropKey = (userPlot && userPlot.cropKey) || land.cropKey || null;
       const crop = cropKey ? State.getFarmCrop(cropKey) : null;
       if (crop && crop.stages && crop.stages.length) {
         let stageIdx = 0;

@@ -147,6 +147,7 @@ const State = (() => {
   const DEFAULT_FARM_LAND_CONFIG = {
     id: 'main', image: 'assets/farm/land-v2.png',
     x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
+    cropKey: 'wheat',
   };
   let farmLandConfig = DEFAULT_FARM_LAND_CONFIG;
   let farmLandList = [DEFAULT_FARM_LAND_CONFIG];
