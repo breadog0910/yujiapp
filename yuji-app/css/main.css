@@ -180,11 +180,11 @@ body {
    此规则不依赖 display-mode，确保普通手机浏览器端必定生效。
    ============================================================ */
 @media (max-width: 767px) {
-  /* 主内容区改为可纵向滚动的容器 */
-  .app-main {
-    /* 关键：flex 子项默认 min-height:auto 不会收缩到比内容矮，
-       会导致本元素被房间(844px)撑高、溢出 .app-container(overflow:hidden) 被裁掉，
-       内部 overflow-y:auto 永不触发 → 无法滚动。置 0 解除该约束，让其按分配高度滚动。 */
+  /* 主内容区改为可纵向滚动的容器。
+     必须用 .app-container > .app-main 提高特异性(1,1,0)：
+     否则下方 main.css 第 258 行同名 .app-main{overflow:hidden}（同特异性、源码更晚）会覆盖本规则，
+     使 overflow 仍是 hidden、内部 overflow-y:auto 永不生效 → 永远无法滚动。 */
+  .app-container > .app-main {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
@@ -192,7 +192,8 @@ body {
     overscroll-behavior: auto;
   }
 
-  /* 仅房间 Tab 改为相对定位、自适应高度，撑开滚动区域；其它 Tab 仍铺满，不受影响 */
+  /* 仅房间 Tab 改为相对定位、自适应高度，撑开滚动区域；其它 Tab 仍铺满，不受影响。
+     #tab1.tab-panel.active 带 id，特异性(1,2,0) 高于基础 .tab-panel.active(0,2,0)，稳定生效。 */
   #tab1.tab-panel.active {
     position: relative;
     height: auto;
@@ -200,8 +201,10 @@ body {
     overflow: visible;
   }
 
-  /* 房间：锁定 390:844 比例，宽度铺满，高度按比推导；超视口则滚动查看 */
-  .tab1-room {
+  /* 房间：锁定 390:844 比例（与后台画布一致），宽度铺满、高度按比推导；超视口则滚动查看。
+     必须用 #tab1 .tab1-room 提高特异性(1,1,0)：否则 tab1-home.css 第 20 行同名
+     .tab1-room{position:absolute;inset:0}（同特异性、文件加载更晚）会覆盖，房间不会变高、没有可滚内容。 */
+  #tab1 .tab1-room {
     position: relative;
     inset: auto;
     width: 100%;
@@ -210,13 +213,13 @@ body {
   }
 
   /* 舞台与后台画布同比例 → cover 即精确贴合，绝不裁切背景 */
-  .tab1-bg {
+  #tab1 .tab1-bg {
     object-fit: cover;
   }
 
   /* 气泡条固定在房间底部（=舞台底部 14.69% 留白区），随房间一起滚动，
      且不遮挡任何家具（家具仅在底部 14.69% 之上分布） */
-  .tab1-care {
+  #tab1 .tab1-care {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -231,8 +234,12 @@ body {
    min-width:768px 的手机壳规则处理，不在此范围内。
    ============================================================ */
 @media (max-width: 767px) and (display-mode: standalone) {
-  .app-main {
+  /* 手机端 PWA：保持原铺满全屏逻辑不变。
+     特异性与上方浏览器块一致(.app-container > .app-main / #tab1 .tab1-room / #tab1.tab-panel.active)，
+     且本块在源码中更靠后 → 在 standalone 模式下胜出，撤销可滑动规则。 */
+  .app-container > .app-main {
     overflow: hidden;
+    min-height: auto;
   }
   #tab1.tab-panel.active {
     position: absolute;
@@ -241,7 +248,7 @@ body {
     min-height: auto;
     overflow: hidden;
   }
-  .tab1-room {
+  #tab1 .tab1-room {
     position: absolute;
     inset: 0;
     width: auto;
