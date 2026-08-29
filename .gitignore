@@ -22,6 +22,10 @@ Thumbs.db
 .worktrees/
 worktrees/
 
+# Python
+__pycache__/
+*.pyc
+
 # Debug / temp files
 tools/_debug_frames/
 tools/_debug_frames_v2/

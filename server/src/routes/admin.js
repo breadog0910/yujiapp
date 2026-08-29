@@ -60,6 +60,7 @@ const MATTING_SCRIPT = path.join(__dirname, '..', 'matting_worker.py');
 
 function runMatting(inputPath, outputPath, opts = {}) {
   const alphaMatting = !!opts.alphaMatting;
+  const fillHoles = opts.fillHoles !== false; // 默认开启：填充家具内部破洞
   const timeoutMs = opts.timeoutMs || 90000;
   return new Promise((resolve) => {
     if (!fs.existsSync(MATTING_SCRIPT)) {
@@ -68,6 +69,7 @@ function runMatting(inputPath, outputPath, opts = {}) {
     }
     const args = [MATTING_SCRIPT, inputPath, outputPath];
     if (alphaMatting) args.push('--alpha-matting');
+    if (!fillHoles) args.push('--no-fill-holes');
     let child;
     try {
       child = spawn('python', args, { windowsHide: true });
@@ -118,7 +120,8 @@ async function maybeRunMattingOnUploaded(req) {
   try {
     out.wasMattled = true;
     const alphaMatting = (req.body && (req.body.alphaMatting === '1' || req.body.alphaMatting === 'true'));
-    const r = await runMatting(req.file.path, tmpOut, { alphaMatting });
+    const fillHoles = !(req.body && (req.body.fillHoles === '0' || req.body.fillHoles === false || req.body.fillHoles === 'false'));
+    const r = await runMatting(req.file.path, tmpOut, { alphaMatting, fillHoles });
     if (r.ok) {
       fs.copyFileSync(tmpOut, req.file.path);
       const stat = fs.statSync(req.file.path);
