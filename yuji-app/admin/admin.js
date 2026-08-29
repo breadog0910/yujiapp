@@ -1483,7 +1483,7 @@ function renderFarmStage() {
     el.className = 'room-item farm-land-item' + (l.id === farmSelectedId ? ' selected' : '');
     el.dataset.id = l.id;
     el.style.left = l.x + '%';
-    el.style.top = (100 - l.y) + '%';   // bottom→top 坐标映射
+    el.style.top = l.y + '%';   // y = CSS top（与前台 tab3.js 一致，禁止 bottom→top 翻转）
     el.style.zIndex = 10 + (l.z || 2);
     el.style.width = (l.widthPct || 55) + '%';
     el.style.height = (l.heightPct || 45) + '%';
@@ -1548,17 +1548,16 @@ function bindFarmLandEvents(el, l) {
     const stage = $('#farm-stage');
     const rect = stage.getBoundingClientRect();
     const anchorX = rect.left + (l.x/100)*rect.width;
-    const anchorY = rect.top + (100-l.y)/100*rect.height;  // top mapping
+    const anchorY = rect.top + (l.y/100)*rect.height;  // y = top 语义，与前台一致
     const offX = e.clientX - anchorX, offY = e.clientY - anchorY;
     el.classList.add('dragging');
     const move = ev => {
       const nx = (ev.clientX-rect.left-offX)/rect.width*100;
-      const nyTop = (ev.clientY-rect.top-offY)/rect.height*100;
-      const ny = 100 - nyTop;
+      const ny = (ev.clientY-rect.top-offY)/rect.height*100;  // y = top 语义，直接取舞台内纵向百分比
       l.x = Math.max(3, Math.min(97, nx));
       l.y = Math.max(3, Math.min(97, ny));
       el.style.left = l.x+'%';
-      el.style.top = (100-l.y)+'%';
+      el.style.top = l.y+'%';
     };
     const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
