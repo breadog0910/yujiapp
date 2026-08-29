@@ -80,13 +80,11 @@ body {
   z-index: 2;
 }
 
-/* 桌面浏览器 或 PWA 独立窗口（standalone / window-controls-overlay，即打包后的桌面 app）
-   一律使用 390:844 手机壳比例布局：
+/* 桌面浏览器 或 桌面 PWA 独立窗口（standalone + 宽屏 / window-controls-overlay）使用 390:844 手机壳比例布局：
    保证房间舞台比例恒等于后台画布(390×844)，家具百分比坐标在任何环境下都对应背景同一位置，
    从而杜绝「浏览器里布置好 → 打包成 PWA 桌面 app 后家具位移」的问题。
-   若希望手机端 PWA 仍铺满全屏（不留黑边），可把下面两行 standalone 条件改为
-   (display-mode: standalone) and (min-width: 768px) 之类，仅桌面 PWA 套壳。 */
-@media (min-width: 768px), (display-mode: standalone), (display-mode: window-controls-overlay) {
+   手机端 PWA（standalone 且 <768px）刻意排除在外，沿用原铺满全屏、不套外壳的表现。 */
+@media (min-width: 768px), (display-mode: standalone) and (min-width: 768px), (display-mode: window-controls-overlay) {
   html {
     background: #e8dcc8;
   }
