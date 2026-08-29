@@ -16,7 +16,7 @@ function buildContext(data: any, agentKey: string): string {
   const hasVal = vals.some(k => keys.includes(k) && data[k] != null);
   if (hasVal) {
     const v: string[] = [];
-    if (keys.includes('careValue') && data.careValue != null) v.push(`关爱值 ${data.careValue}`);
+    if (keys.includes('careValue') && data.careValue != null) v.push(`幸福值 ${data.careValue}`);
     if (keys.includes('happinessValue') && data.happinessValue != null) v.push(`开心值 ${data.happinessValue}`);
     if (keys.includes('healthValue') && data.healthValue != null) v.push(`健康值 ${data.healthValue}`);
     if (keys.includes('comfortValue') && data.comfortValue != null) v.push(`舒适值 ${data.comfortValue}`);

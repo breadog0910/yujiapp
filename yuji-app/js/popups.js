@@ -559,7 +559,7 @@ const Popups = (() => {
         </div>
         <div class="popup-body">
           <div class="hint">你走过的每一个足迹，都悄悄长成了现在的你。</div>
-          <div class="stat-row"><span class="stat-label">💗 关爱值</span><span class="stat-value">${s.careValue}</span></div>
+          <div class="stat-row"><span class="stat-label">💗 幸福值</span><span class="stat-value">${s.careValue}</span></div>
           <div class="stat-row"><span class="stat-label">🪙 予己金币</span><span class="stat-value">${s.coin}</span></div>
           <div class="stat-row"><span class="stat-label">💪 健康值</span><span class="stat-value">${s.healthValue}</span></div>
           <div class="stat-row"><span class="stat-label">🌸 开心值</span><span class="stat-value">${s.happinessValue}</span></div>
@@ -997,7 +997,7 @@ const Popups = (() => {
           const s = State.state;
           const ctx = [];
           if (s.careValue != null) {
-            ctx.push(`用户目前：关爱值 ${s.careValue}、开心值 ${s.happinessValue}、健康值 ${s.healthValue}。`);
+            ctx.push(`用户目前：幸福值 ${s.careValue}、开心值 ${s.happinessValue}、健康值 ${s.healthValue}。`);
           }
           const recent = (s.emotionRecords || []).slice(-3)
             .map(r => `${(r.tags || []).join('/')}${r.text ? '：' + r.text : ''}`).join('；');
@@ -1049,7 +1049,7 @@ const Popups = (() => {
         // 触发小我动画
         document.getElementById('xiaowo')?.classList.add('mood-happy');
         setTimeout(() => document.getElementById('xiaowo')?.classList.remove('mood-happy'), 1500);
-        // 达到关爱值门槛 → 自动生成信件
+        // 达到幸福值门槛 → 自动生成信件
         maybeGenerateLetter();
         // 添加星点
         s.starPoints.push({
@@ -1063,7 +1063,7 @@ const Popups = (() => {
         State.save();
         Tab1.refresh();
         Tab4.refresh();
-        let msg = `记下了 · +1 关爱值${got > 0 ? ` +${got} 金币` : ''}`;
+        let msg = `记下了 · +1 幸福值${got > 0 ? ` +${got} 金币` : ''}`;
         Utils.toast(msg);
         close();
       });
@@ -1523,7 +1523,7 @@ const Popups = (() => {
             importance: guided ? 2 : 1,
             source: '心灵树洞 · Tab2',
           });
-          Utils.toast(`✓ 已收进树洞 · +1 关爱值${got > 0 ? ` +${got} 金币` : ''}`);
+          Utils.toast(`✓ 已收进树洞 · +1 幸福值${got > 0 ? ` +${got} 金币` : ''}`);
         }
         State.save();
         Tab1.refresh && Tab1.refresh();
@@ -1761,7 +1761,7 @@ const Popups = (() => {
             if (stars.length) ctx.push('用户的成长星点（近 8 条）：\n' + stars.join('\n'));
             if (cares.length) ctx.push('今天已完成的自我照顾：' + cares.join('；'));
             if (garden.length) ctx.push('田地状态：' + garden.join('；'));
-            ctx.push(`用户当前数值：关爱值 ${s.careValue || 0}、开心值 ${s.happinessValue || 0}、健康值 ${s.healthValue || 0}、舒适值 ${s.comfortValue || 0}、金币 ${s.coin || 0}`);
+            ctx.push(`用户当前数值：幸福值 ${s.careValue || 0}、开心值 ${s.happinessValue || 0}、健康值 ${s.healthValue || 0}、舒适值 ${s.comfortValue || 0}、金币 ${s.coin || 0}`);
 
             const prompt = `请为房间里的一件家具——「${cat.name}」（分类：${cat.category || '家具'}，获得来源：${acq.source || '未记录'}，获得时间：${acq.obtainedAt ? Utils.formatDate(acq.obtainedAt) : '很久以前'}），根据下面的用户近况，写一段 80-160 字的小故事。
 口吻：你是用户房间里的像素“小我”，观察ta的日常，温柔不评判，不说教，不用“应该/必须”。不输出标题，不写列表，只输出一段中文正文。
@@ -2154,13 +2154,13 @@ ${ctx.join('\n\n')}`;
     return ` · 🌿 田地 ${fed.length} 株收到养料`;
   }
 
-  // 自动生成信件：关爱值跨过阈值 + 最近有情绪记录
+  // 自动生成信件：幸福值跨过阈值 + 最近有情绪记录
   function maybeGenerateLetter() {
     const s = State.state;
     const lastLetter = s.letters[s.letters.length - 1];
     const lastLetterDate = lastLetter ? lastLetter.date.slice(0, 10) : '';
     const today = Utils.today();
-    // 每天最多一封；关爱值>=3 且 今天没有过信
+    // 每天最多一封；幸福值>=3 且 今天没有过信
     if (s.careValue < 3) return;
     if (lastLetterDate === today) return;
     if (Math.random() > 0.5) {
