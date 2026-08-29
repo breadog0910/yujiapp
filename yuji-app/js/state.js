@@ -119,16 +119,16 @@ const State = (() => {
   // 技能农场：未执行 SQL 迁移时的前端兜底（3 品种 + 3x3 菱形 9 格）
   const DEFAULT_FARM_CROP_CATALOG = [
     { key:'wheat',  name:'小麦',   emoji:'🌾',
-      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
-             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+      stages:[{image:'assets/farm/crops/wheat-s1.png',name:'破土'},{image:'assets/farm/crops/wheat-s2.png',name:'生长'},
+             {image:'assets/farm/crops/wheat-s3.png',name:'繁茂'},{image:'assets/farm/crops/wheat-s4.png',name:'成熟'}],
       minutesPerStage: 600, sortOrder: 0 },
-    { key:'flower', name:'向日葵', emoji:'🌻',
-      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
-             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+    { key:'sunflower', name:'向日葵', emoji:'🌻',
+      stages:[{image:'assets/farm/crops/sunflower-s1.png',name:'破土'},{image:'assets/farm/crops/sunflower-s2.png',name:'生长'},
+             {image:'assets/farm/crops/sunflower-s3.png',name:'繁茂'},{image:'assets/farm/crops/sunflower-s4.png',name:'成熟'}],
       minutesPerStage: 900, sortOrder: 1 },
-    { key:'tree',   name:'果树',   emoji:'🌳',
-      stages:[{image:'assets/field/crop-s1.png',name:'破土'},{image:'assets/field/crop-s2.png',name:'生长'},
-             {image:'assets/field/crop-s3.png',name:'繁茂'},{image:'assets/field/crop-h1.png',name:'成熟'}],
+    { key:'mushroom',   name:'幻菇',   emoji:'🍄',
+      stages:[{image:'assets/farm/crops/mushroom-s1.png',name:'破土'},{image:'assets/farm/crops/mushroom-s2.png',name:'生长'},
+             {image:'assets/farm/crops/mushroom-s3.png',name:'繁茂'},{image:'assets/farm/crops/mushroom-s4.png',name:'成熟'}],
       minutesPerStage: 1200, sortOrder: 2 },
   ];
   const DEFAULT_FARM_PLOT_LAYOUT = [

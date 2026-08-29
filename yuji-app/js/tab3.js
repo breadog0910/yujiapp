@@ -11,7 +11,7 @@
  *   ============================================================ */
 
 const Tab3 = (() => {
-  const ASSET_FALLBACK = 'assets/field/crop-s1.png';
+  const ASSET_FALLBACK = 'assets/farm/crops/wheat-s1.png';
 
   // 白底抠图：四边沿 BFS flood fill，把颜色距离白 < threshold 的像素 alpha=0
   // ⚠️ 超大图（> 1M 像素）会阻塞主线程数秒，因此：
@@ -122,7 +122,9 @@ const Tab3 = (() => {
     lands.forEach(land => {
       if (!land) return;
       const el = document.createElement('div');
-      el.className = 'farm-land clickable';
+      const hasCropPlanted = !!(userPlot && land.cropKey && userPlot.cropKey === land.cropKey);
+      // 未种植时添加 empty-land 类，显示呼吸光晕提示
+      el.className = 'farm-land clickable' + (!hasCropPlanted ? ' empty-land' : '');
       el.style.position = 'absolute';
       el.style.left = (land.x != null ? land.x : 50) + '%';
       el.style.top = (land.y != null ? land.y : 50) + '%';
@@ -135,7 +137,7 @@ const Tab3 = (() => {
       el.style.userSelect = 'none';
       el.style.setProperty('--land-scale', land.scale || 1);
       el.alt = '土地';
-      el.title = '点击这块土地，种下一个想学的技能🌱';
+      el.title = hasCropPlanted ? '点击查看技能成长进度🌱' : '点击这块土地，种下一个想学的技能🌱';
 
       // 土地图（带白底抠图 filter）
       const landImg = document.createElement('img');
@@ -150,13 +152,19 @@ const Tab3 = (() => {
       const crop = cropKey ? State.getFarmCrop(cropKey) : null;
       if (crop && crop.stages && crop.stages.length) {
         let stageIdx = 0;
-        if (userPlot && userPlot.cropKey === cropKey) stageIdx = State.farmStageOf(userPlot);
+        let isMature = false;
+        if (userPlot && userPlot.cropKey === cropKey) {
+          stageIdx = State.farmStageOf(userPlot);
+          isMature = userPlot.matured || stageIdx >= crop.stages.length - 1;
+        }
         const stageObj = crop.stages[stageIdx] || crop.stages[crop.stages.length - 1];
         if (stageObj && stageObj.image) {
           const cropEl = document.createElement('img');
-          cropEl.className = 'farm-crop-overlay';
+          // 根据生长阶段添加不同动画类
+          const animClass = isMature ? 'crop-mature' : (hasCropPlanted ? 'crop-sway' : '');
+          cropEl.className = 'farm-crop-overlay' + (animClass ? ' ' + animClass : '');
           cropEl.src = stageObj.image;
-          cropEl.alt = '';
+          cropEl.alt = stageObj.name || '';
           cropEl.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-62%);width:62%;height:auto;object-fit:contain;image-rendering:pixelated;pointer-events:none;user-select:none;z-index:3;';
           el.appendChild(cropEl);
         }
@@ -198,6 +206,12 @@ const Tab3 = (() => {
     });
     Utils.spawnParticles(document.getElementById('gardenPollen'), {
       count: 10, cls: 'pollen', color: 'rgba(255, 230, 160, 0.55)', size: 5, rise: 90,
+    });
+    // 萤火虫（仅在晚上或暗色场景显示，白天微弱）
+    const hour = new Date().getHours();
+    const isDark = hour < 6 || hour >= 19;
+    Utils.spawnParticles(document.getElementById('gardenPollen'), {
+      count: isDark ? 6 : 2, cls: 'firefly', color: 'rgba(255, 240, 150, 0.9)', size: 4, rise: 120,
     });
   }
 

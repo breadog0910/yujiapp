@@ -1,8 +1,8 @@
 /* ============================================================
-   Tab3 生长·技能农场（单地块版）
+   Tab3 生长·技能农场（多地块版）
    - 底层：tab3-bg.png（草地 / 天空）
-   - 中层：土地（整块地=单按钮）已资源级白底抠图，叠当前阶段作物大图
-   - 已移除 9 格子模型，.garden-plots / .plot 旧 DOM 也不再存在
+   - 中层：多块土地（每块=1 个种植按钮）已资源级白底抠图，叠当前阶段作物大图
+   - 作物带生长动画、成熟光晕、风吹摇摆
    ============================================================ */
 
 .tab3-garden {
@@ -50,7 +50,11 @@
   box-shadow: 0 4px 10px var(--c-shadow);
   transition: all 0.2s ease;
 }
-.garden-journal-btn:active { transform: scale(0.9); }
+.garden-journal-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(40, 30, 10, 0.35);
+}
+.garden-journal-btn:active { transform: scale(0.92); }
 .gj-icon { font-size: 15px; line-height: 1; }
 .gj-label { letter-spacing: 0.5px; }
 
@@ -68,29 +72,79 @@
 .farm-land {
   isolation: isolate;
   mix-blend-mode: normal;
-  transition: transform 0.18s ease, filter 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
   will-change: transform;
 }
 .farm-land .fl-land {
-  filter: url(#alpha-hard-edge) drop-shadow(0 6px 10px rgba(40, 25, 10, 0.35));
+  filter: url(#alpha-hard-edge) drop-shadow(0 6px 12px rgba(40, 25, 10, 0.4));
+  transition: filter 0.25s ease;
 }
 .farm-land.clickable { cursor: pointer; }
 .farm-land.clickable:hover .fl-land {
-  filter: url(#alpha-hard-edge) drop-shadow(0 8px 16px rgba(40, 25, 10, 0.5)) drop-shadow(0 0 8px rgba(255, 220, 120, 0.45));
+  filter: url(#alpha-hard-edge) drop-shadow(0 10px 20px rgba(40, 25, 10, 0.55)) drop-shadow(0 0 12px rgba(255, 220, 120, 0.5));
 }
 .farm-land.clickable:hover {
-  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(1.03) !important;
+  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(1.04) !important;
 }
 .farm-land.clickable:active {
-  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(0.97) !important;
+  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(0.96) !important;
+}
+
+/* 土地空状态的微妙呼吸光晕 */
+.farm-land.clickable.empty-land::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40%;
+  height: 30%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, rgba(255, 220, 120, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: land-breathe 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes land-breathe {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
 }
 
 /* ---------- 土地上方叠加的作物阶段图 ---------- */
-#farmCropStage {
+.farm-crop-overlay {
   isolation: isolate;
   mix-blend-mode: normal;
-  filter: url(#alpha-hard-edge) drop-shadow(0 4px 6px rgba(40, 25, 10, 0.35));
+  filter: url(#alpha-hard-edge) drop-shadow(0 4px 8px rgba(40, 25, 10, 0.4));
   transform-origin: center bottom;
+  animation: crop-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* 作物入场动画 */
+@keyframes crop-pop-in {
+  from { opacity: 0; transform: translate(-50%, -62%) scale(0.3); }
+  to   { opacity: 1; transform: translate(-50%, -62%) scale(1); }
+}
+
+/* 作物风吹摇摆动画（自然摆动） */
+.farm-crop-overlay.crop-sway {
+  animation: crop-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             crop-sway 4s ease-in-out infinite 0.5s;
+}
+@keyframes crop-sway {
+  0%, 100% { transform: translate(-50%, -62%) rotate(-1deg); }
+  50% { transform: translate(-50%, -62%) rotate(1.5deg); }
+}
+
+/* 作物成熟光晕 */
+.farm-crop-overlay.crop-mature {
+  filter: url(#alpha-hard-edge) drop-shadow(0 4px 8px rgba(40, 25, 10, 0.4)) drop-shadow(0 0 16px rgba(255, 200, 80, 0.5));
+  animation: crop-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+             crop-glow 2.5s ease-in-out infinite 0.5s,
+             crop-sway 4s ease-in-out infinite 0.5s;
+}
+@keyframes crop-glow {
+  0%, 100% { filter: url(#alpha-hard-edge) drop-shadow(0 4px 8px rgba(40, 25, 10, 0.4)) drop-shadow(0 0 12px rgba(255, 200, 80, 0.35)); }
+  50% { filter: url(#alpha-hard-edge) drop-shadow(0 4px 8px rgba(40, 25, 10, 0.4)) drop-shadow(0 0 24px rgba(255, 210, 100, 0.7)); }
 }
 
 /* ---------- 引导提示 ---------- */
@@ -111,10 +165,16 @@
   white-space: nowrap;
   pointer-events: none;
   transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: hint-bob 2.5s ease-in-out infinite;
 }
 .garden-hint.hidden {
   opacity: 0;
   transform: translateX(-50%) translateY(10px);
+  animation: none;
+}
+@keyframes hint-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-4px); }
 }
 
 /* ---------- 田野氛围粒子 ---------- */
@@ -140,7 +200,7 @@
   75%  { transform: translate(28px, -28px) scale(1.06); }
   100% { transform: translate(0, 0) scale(1); }
 }
-.pollen {
+.poll {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
@@ -151,6 +211,24 @@
   15%  { opacity: 0.75; }
   85%  { opacity: 0.35; }
   100% { transform: translateY(-90px) translateX(18px); opacity: 0; }
+}
+
+/* 新增：萤火虫粒子 */
+.firefly {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 240, 150, 0.9);
+  box-shadow: 0 0 6px 2px rgba(255, 230, 120, 0.6);
+  pointer-events: none;
+  animation: firefly-drift 8s ease-in-out infinite;
+}
+@keyframes firefly-drift {
+  0%, 100% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.6; }
+  50% { transform: translate(40px, -50px); opacity: 1; }
 }
 
 /* 桌面预览框（手机壳）：右上角「田地日志」下移，避免被状态栏+动态岛盖住 */
