@@ -651,8 +651,8 @@ const State = (() => {
   // 修改隐私开关并保存；localOnly 变 false（放开云端）时立即触发一次同步
   function setPrivacy(partial) {
     const p = state.privacy || (state.privacy = Object.assign({}, PRIVACY_DEFAULTS));
+    const wasLocalOnly = p.localOnly; // 先记录旧值，再应用变更
     Object.assign(p, partial);
-    const wasLocalOnly = p.localOnly;
     save();
     if (typeof partial.localOnly === 'boolean' && !partial.localOnly && wasLocalOnly) {
       // 由「本地优先」切到「允许云端同步」：把本机数据上传一次
