@@ -30,6 +30,8 @@ __pycache__/
 tools/_debug_frames/
 tools/_debug_frames_v2/
 tools/_inspect/
+_frame_check/
+*.buggy_backup.png
 tools/__new_b64.txt
 tools/_celebrate_b64.txt
 yuji-app/assets/garden/raw/
