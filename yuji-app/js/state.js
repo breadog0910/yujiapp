@@ -29,15 +29,31 @@ const State = (() => {
   // 三条核心原则：
   //   1) 私密数据（情绪记录 / 心灵树洞日记 / 自我说明书 / 家具故事等）默认只存在
   //      本机（localStorage），不自动上传云端。
-  //   2) 只有用户显式开启「允许 AI 读取」时，AI 才能基于这些记录生成内容；
-  //      否则相关 AI 功能从入口就被禁用，原文绝不出本机。
+  //   2) 用户可对每个「数据源」单独授权 AI 读取。只有被开启的数据源，才会出现在
+  //      喂给 AI 的上下文里；其余数据源的原文绝不出本机。
+  //   3) 全部数据源默认关闭（偏向隐私）：要生成小我内容，需逐一打开想让 AI 参考的来源。
   // 开关项（默认值偏向隐私）：
-  //   localOnly      true  → 本地存储优先，登录也不自动同步到云端
-  //   allowAiRead    false → 默认不允许 AI 读取用户记录
+  //   localOnly  true  → 本地存储优先，登录也不自动同步到云端
+  //   aiRead     {}    → 各数据源是否允许 AI 读取（见 AI_READ_SOURCES）
   // ============================================================
+  // AI 可读取的个人数据源清单（与后端 buildContext 的实际 part 一一对应）
+  const AI_READ_SOURCES = [
+    { id: 'emotion',   label: '情绪记录',   desc: '此刻 / 心情记录里的情绪标签与文字。' },
+    { id: 'stars',     label: '成长星点',   desc: '星迹里的里程碑、自我发现与星点正文。' },
+    { id: 'care',      label: '自我照顾打卡', desc: '今日照顾气泡的完成记录。' },
+    { id: 'farm',      label: '花园耕作',   desc: '技能农场里种下的种子 / 成长阶段 / 收获纪念。' },
+    { id: 'values',    label: '状态数值',   desc: '幸福 / 开心 / 健康 / 舒适四项数值。' },
+    { id: 'furniture', label: '家具经历',   desc: '房间里家具被赋予的故事文字。' },
+    { id: 'manual',    label: '自我说明书', desc: '说明书已有的五章内容（生成时作为基础）。' },
+  ];
+  function buildDefaultAiRead() {
+    const o = {};
+    AI_READ_SOURCES.forEach(s => { o[s.id] = false; });
+    return o;
+  }
   const PRIVACY_DEFAULTS = {
     localOnly: true,        // 本地存储优先：true=只存本机，不上传云端
-    allowAiRead: false,     // 是否允许 AI 基于用户记录生成内容
+    aiRead: buildDefaultAiRead(), // 各数据源是否允许 AI 读取（默认全关）
   };
 
   // ============================================================
@@ -656,26 +672,43 @@ const State = (() => {
     return true;
   }
 
-  // AI 是否启用（受隐私开关约束：未授权「允许 AI 读取」时一律禁用）
+  // AI 是否启用（仅看后台智能体配置；隐私授权由 aiReadAny / aiReadAllowed 单独判断）
   function aiEnabled(key) {
-    const p = state.privacy || PRIVACY_DEFAULTS;
-    if (!p.allowAiRead) return false; // 隐私：未授权 AI 读取 → 从源头禁用，原文不出本机
     return aiConfig.some(a => a.key === key && a.enabled);
   }
-  // 用户是否授权 AI 读取其记录（供自我说明书 / 信件 / 树洞等入口统一判断）
-  function aiReadAllowed() {
+  // 某个数据源是否被授权给 AI 读取
+  function aiReadAllowed(source) {
     const p = state.privacy || PRIVACY_DEFAULTS;
-    return !!p.allowAiRead;
+    return !!(p.aiRead && p.aiRead[source]);
   }
-  // 读取隐私开关（返回对象副本，避免外部误改）
+  // 是否至少开启了一个数据源（用于「功能是否可用」的总开关判断）
+  function aiReadAny() {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    return !!(p.aiRead && Object.keys(p.aiRead).some(k => p.aiRead[k]));
+  }
+  // 返回当前已开启的数据源 id 列表（透传给后端，控制上下文里实际包含哪些数据）
+  function aiReadSources() {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    if (!p.aiRead) return [];
+    return Object.keys(p.aiRead).filter(k => p.aiRead[k]);
+  }
+  // 读取隐私开关（返回对象副本，避免外部误改；aiRead 深合并，兼容旧版 allowAiRead）
   function getPrivacy() {
-    return Object.assign({}, PRIVACY_DEFAULTS, state.privacy || {});
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    const merged = Object.assign({}, PRIVACY_DEFAULTS, p);
+    merged.aiRead = Object.assign({}, PRIVACY_DEFAULTS.aiRead, (p.aiRead || {}));
+    // 兼容旧版：曾全局授权（allowAiRead=true）但还没有细粒度 aiRead 的用户 → 默认全开
+    if (p.allowAiRead === true && !p.aiRead) {
+      AI_READ_SOURCES.forEach(s => { merged.aiRead[s.id] = true; });
+    }
+    return merged;
   }
   // 修改隐私开关并保存；localOnly 变 false（放开云端）时立即触发一次同步
+  // 支持嵌套（如 { aiRead: { emotion: true } } 只改 emotion，不影响其它数据源）
   function setPrivacy(partial) {
     const p = state.privacy || (state.privacy = Object.assign({}, PRIVACY_DEFAULTS));
     const wasLocalOnly = p.localOnly; // 先记录旧值，再应用变更
-    Object.assign(p, partial);
+    deepMerge(p, partial);
     save();
     if (typeof partial.localOnly === 'boolean' && !partial.localOnly && wasLocalOnly) {
       // 由「本地优先」切到「允许云端同步」：把本机数据上传一次
@@ -744,6 +777,9 @@ const State = (() => {
     isPreview: () => (typeof Api !== 'undefined' && Api.isPreview()),
     aiEnabled,
     aiReadAllowed,
+    aiReadAny,
+    aiReadSources,
+    AI_READ_SOURCES,
     getPrivacy,
     setPrivacy,
     shouldSyncToCloud,

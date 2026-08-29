@@ -672,8 +672,8 @@ const Popups = (() => {
 
     // ============ 数据隐私（独立设置入口）============
     privacy() {
-      const p = (typeof State !== 'undefined' && State.getPrivacy) ? State.getPrivacy() : { localOnly: true, allowAiRead: false };
-      const sw = (on) => `      <div class="privacy-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}">
+      const p = (typeof State !== 'undefined' && State.getPrivacy) ? State.getPrivacy() : { localOnly: true, aiRead: {} };
+      const sw = (on, priv) => `      <div class="privacy-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}" data-priv="${priv || ''}">
         <span class="ps-knob"></span>
       </div>`;
       return `
@@ -691,7 +691,7 @@ const Popups = (() => {
           <ul class="privacy-logic">
             <li><b>存在哪里：</b>默认只存在你这台设备（本机），<b>不自动上传</b>。</li>
             <li><b>谁能看：</b>只有你本人。开发方无法读取你的原文。</li>
-            <li><b>AI 怎么用：</b>只有你授权后，AI 才基于你的记录生成小我内容；关闭时原文绝不出本机。</li>
+            <li><b>AI 怎么用：</b>下面每一类数据都是独立开关。只有你打开的来源，才会出现在喂给 AI 的上下文里；其余来源的原文绝不出本机。</li>
           </ul>
 
           <div class="privacy-sec-title">🎚 我的选择</div>
@@ -701,16 +701,19 @@ const Popups = (() => {
               <div class="pr-title">📦 本地存储优先（不上传云端）</div>
               <div class="pr-desc">开启后，你的记录只留在本机。即便已登录，也不会自动同步到云端；关闭后才会加密备份到云端以便多设备继续。</div>
             </div>
-            ${sw(p.localOnly)}
+            ${sw(p.localOnly, 'localOnly')}
           </div>
 
-          <div class="privacy-row">
-            <div class="pr-label">
-              <div class="pr-title">🤖 允许 AI 读取我的记录</div>
-              <div class="pr-desc">开启后，AI 才能生成小我信件 / 自我说明书 / 家具故事。关闭时这些功能不可用，原文只在本机。</div>
-            </div>
-            ${sw(p.allowAiRead)}
-          </div>
+          <div class="privacy-sec-title">🤖 AI 可以读取我的哪些数据</div>
+          <div class="privacy-note sub">每一项独立开关（默认全关）。只有打开的来源，才会在生成小我内容时被 AI 参考；其它来源的原文只留在本机。</div>
+          ${(State.AI_READ_SOURCES || []).map(s => `
+            <div class="privacy-row">
+              <div class="pr-label">
+                <div class="pr-title">${s.label}</div>
+                <div class="pr-desc">${s.desc}</div>
+              </div>
+              ${sw(p.aiRead && p.aiRead[s.id], 'aiRead.' + s.id)}
+            </div>`).join('')}
 
           <div class="privacy-actions">
             <button class="popup-btn ghost" data-act="exportData">⬇️ 导出我的数据</button>
@@ -969,13 +972,14 @@ const Popups = (() => {
             </button>
             <div class="sources-detail hidden">
               <div class="hint" style="margin-top:8px;">
-                说明书内容综合来源于你记录并授权给小我的以下六类数据：<br>
+                小我生成说明书时，只会参考你在「设置 → 🛡 数据隐私」里<b>单独打开</b>的数据源；未打开的来源，原文不会离开本机。<br>
+                镜子当前实际会读取的来源：<br>
                 · 🌸 情绪记录（此刻 · 心情标签 + 文字）<br>
                 · 💧 自我照顾打卡（今日照顾气泡完成记录）<br>
                 · 🌌 成长星点（星迹 · 里程碑、自我发现、星点正文）<br>
                 · 🌻 花园耕作（生长 · 种下的种子 / 成长阶段 / 收获纪念）<br>
-                · 🌲 本心对语（遇见 · 与小我的对话历史）<br>
-                · ✉️ 小我信件（房间 · 小我的写给你的所有信）
+                · 📊 状态数值（幸福 / 开心 / 健康 / 舒适）<br>
+                此外「家具经历」「自我说明书」开关会影响其它小我功能（如本心对语）。每一项都能在设置里独立开关。
               </div>
             </div>
           </div>
@@ -985,7 +989,7 @@ const Popups = (() => {
             当前未配置 AI 智能体，请在后台开启「洞察」+「自我说明书」智能体后使用重新总结功能。
           </div>
           <div id="aiAuthHint" class="hint hidden" style="flex:1 1 100%;margin-bottom:8px;">
-            🔒 需要你先授权「允许 AI 读取我的记录」，小我才能据此生成说明书。<br>
+            🔒 需要你先在「数据隐私」里打开至少一项数据源，小我才能据此生成说明书。<br>
             <button class="popup-btn primary" data-act="grantAi" style="margin-top:8px;">🔓 授权 AI 读取我的记录</button>
             <span style="font-size:12px;color:#a98a63;">（也可在右上角 ⚙ 设置 → 🛡 数据隐私 中管理）</span>
           </div>
@@ -1063,7 +1067,7 @@ const Popups = (() => {
               + '语气轻柔，不要说教，点到即止。'
               + (ctx.length ? ('\n参考背景：' + ctx.join(' ')) : ''),
           }];
-          const r = await Api.callAI('letter', messages);
+          const r = await Api.callAI('letter', messages, undefined, State.aiReadSources ? State.aiReadSources() : null);
           State.addLetter(r.text, { ai: true });
           Utils.toast('小我写了一封信给你 ✉️');
           Popups.open('letter'); // 重新渲染，展示新信
@@ -1423,7 +1427,7 @@ const Popups = (() => {
           const r = await Api.callAI('diaryguide', [
             { role: 'system', content: sys },
             { role: 'user', content: user },
-          ]);
+          ], undefined, State.aiReadSources ? State.aiReadSources() : null);
           if (!r || !r.text) throw new Error('AI 没返回结果');
           // 解析 JSON：可能被 ```json 包裹
           let txt = r.text.trim();
@@ -1492,7 +1496,7 @@ const Popups = (() => {
           const r = await Api.callAI('diaryguide', [
             { role: 'system', content: sys },
             { role: 'user', content: lines.join('\n') },
-          ]);
+          ], undefined, State.aiReadSources ? State.aiReadSources() : null);
           if (!r || !r.text) throw new Error('AI 没返回内容');
           const textNode = root().querySelector('#thAIThoughtsText');
           if (textNode) textNode.innerHTML = escHtml(r.text).replace(/\n/g, '<br/>');
@@ -1825,7 +1829,7 @@ const Popups = (() => {
 用户近况：
 ${ctx.join('\n\n')}`;
 
-            const r = await Api.callAI('furniStory', [{ role: 'user', content: prompt }]);
+            const r = await Api.callAI('furniStory', [{ role: 'user', content: prompt }], undefined, State.aiReadSources ? State.aiReadSources() : null);
             const text = (r && r.text) ? String(r.text).trim() : '';
             if (!text) throw new Error('AI 返回为空');
             if (storyEl) { storyEl.value = text; storyEl.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -1945,7 +1949,7 @@ ${ctx.join('\n\n')}`;
 
       // 3. AI 可用判断：后台需开启 insight/self_manual 智能体，且用户需授权「允许 AI 读取」
       const aiReady = !!(State.aiEnabled && (State.aiEnabled('insight') || State.aiEnabled('self_manual')));
-      const authed = !(State.aiReadAllowed && !State.aiReadAllowed()); // aiReadAllowed 存在且返回 false → 未授权
+      const authed = !!(State.aiReadAny && State.aiReadAny()); // 至少开启一个数据源才算授权
       const regenBtn = r.querySelector('#aiRegenBtn');
       const hintEl = r.querySelector('#aiDisabledHint');
       const authEl = r.querySelector('#aiAuthHint');
@@ -1980,8 +1984,13 @@ ${ctx.join('\n\n')}`;
       const grantBtn = r.querySelector('[data-act="grantAi"]');
       if (grantBtn) {
         grantBtn.addEventListener('click', () => {
-          if (typeof State.setPrivacy === 'function') State.setPrivacy({ allowAiRead: true });
-          Utils.toast('已授权：小我可以读取你的记录来生成说明书 🔓');
+          // 一键授权：打开全部数据源（也可在设置→数据隐私里单独开关）
+          if (typeof State.setPrivacy === 'function') {
+            const all = {};
+            (State.AI_READ_SOURCES || []).forEach(s => { all[s.id] = true; });
+            State.setPrivacy({ aiRead: all });
+          }
+          Utils.toast('已授权：小我可以读取你开启的数据源来生成说明书 🔓');
           close();
           setTimeout(() => Popups.open('selfManual'), 120);
         });
@@ -2002,7 +2011,7 @@ ${ctx.join('\n\n')}`;
           const oldBtnText = regenBtn.textContent;
           regenBtn.textContent = '小我在总结你…（通常 1-3 分钟）';
           try {
-            const result = await Api.callChain('insight_manual', []);
+            const result = await Api.callChain('insight_manual', [], State.aiReadSources ? State.aiReadSources() : null);
             localStorage.setItem(THROTTLE_KEY, String(Date.now()));
 
             // 1) 优先用后端在响应里直接带回的说明书（最可靠，无需二次拉取/登录态）
@@ -2058,19 +2067,18 @@ ${ctx.join('\n\n')}`;
 
     // ============ 数据隐私弹窗 ============
     privacy() {
-      // 三个独立开关：点击切换 → 写回 State.setPrivacy
+      // 各独立开关：点击切换 → 写回 State.setPrivacy（支持嵌套 key，如 aiRead.emotion）
       root().querySelectorAll('.privacy-row .privacy-switch').forEach(sw => {
         sw.addEventListener('click', () => {
           const on = !sw.classList.contains('on');
           sw.classList.toggle('on', on);
           sw.setAttribute('aria-checked', String(on));
-          const titleTxt = sw.closest('.privacy-row').querySelector('.pr-title').textContent || '';
-          const map = { '本地存储优先': 'localOnly', '允许 AI 读取': 'allowAiRead' };
-          let field = null;
-          for (const k in map) { if (titleTxt.indexOf(k) !== -1) { field = map[k]; break; } }
-          if (!field) return;
+          const priv = sw.dataset.priv; // 形如 'localOnly' 或 'aiRead.emotion'
+          if (!priv) return;
+          const [obj, key] = priv.split('.');
           const partial = {};
-          partial[field] = on;
+          if (key) partial[obj] = { [key]: on }; // 嵌套：{ aiRead: { emotion: on } }
+          else partial[obj] = on;                // 扁平：{ localOnly: on }
           State.setPrivacy(partial);
           Utils.toast('已保存 · 数据隐私');
         });
@@ -2257,18 +2265,18 @@ ${ctx.join('\n\n')}`;
     waitingBubble.innerHTML = '<div class="dialogue-msg-avatar">🌿</div><div class="dialogue-msg-bubble"><div class="dialogue-msg-text" style="color:#999;">小我正伏在桌边给回信…</div></div>';
     thread?.appendChild(waitingBubble);
     thread?.scrollTo(0, thread.scrollHeight);
-    // 隐私：未授权「允许 AI 读取」→ 不把对话发给 AI，仅保留本地记录
-    if (typeof State !== 'undefined' && State.aiReadAllowed && !State.aiReadAllowed()) {
+    // 隐私：未开启任何数据源 → 不把对话发给 AI，仅保留本地记录
+    if (typeof State !== 'undefined' && State.aiReadAny && !State.aiReadAny()) {
       waitingBubble.remove();
       if (btn) { btn.disabled = false; btn.textContent = '寄出'; }
-      Utils.toast('小我 AI 回复已关闭：在「数据隐私」开启「允许 AI 读取我的记录」后用');
+      Utils.toast('小我 AI 回复已关闭：在「数据隐私」里打开至少一项数据源后用');
       return;
     }
     try {
       const r = await Api.callAI('whisper', [
         { role: 'system', content: '你是森林里那个温柔的小我，是用户内在的自己。用森林密信、说悄悄话的口吻回应。' },
         ...s.tab2Dialogue.filter(m => m.role !== 'system').slice(-10).map(m => ({ role: m.role, content: m.content })),
-      ]);
+      ], undefined, State.aiReadSources ? State.aiReadSources() : null);
       // 移除等待气泡
       waitingBubble.remove();
       if (r && r.text) {

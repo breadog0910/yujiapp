@@ -437,14 +437,17 @@ const Api = (() => {
   }
 
   // ---------- AI ----------
-  async function callAI(agent, messages, temperature) {
+  // sources: 允许 AI 读取的数据源 id 列表（前端隐私开关）。透传给后端 getContext 做过滤。
+  async function callAI(agent, messages, temperature, sources) {
     if (LOCAL_MODE) {
       const body = { messages };
       if (temperature !== undefined) body.temperature = temperature;
+      if (sources) body.sources = sources;
       return await localFetch('/ai/' + agent, { method: 'POST', body });
     }
     const body = { messages };
     if (temperature !== undefined) body.temperature = temperature;
+    if (sources) body.sources = sources;
     const { data, error } = await getClient().functions.invoke('ai-agent/' + agent, { body });
     if (error) throw new Error(error.message || 'AI 调用失败');
     return data;
@@ -462,15 +465,17 @@ const Api = (() => {
     };
   }
 
-  async function callChain(chainName, messages, temperature) {
+  async function callChain(chainName, messages, sources, temperature) {
     if (LOCAL_MODE) {
       const body = { chain: chainName };
       if (messages) body.messages = messages;
+      if (sources) body.sources = sources;
       if (temperature !== undefined) body.temperature = temperature;
       return await localFetch('/ai/chain', { method: 'POST', body });
     }
     const body = { chain: chainName };
     if (messages) body.messages = messages;
+    if (sources) body.sources = sources;
     if (temperature !== undefined) body.temperature = temperature;
     const { data, error } = await getClient().functions.invoke('ai-chain', { body });
     if (error) throw new Error(error.message || '编排链调用失败');
