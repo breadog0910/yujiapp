@@ -389,7 +389,7 @@ body.room-editing .room-edit-btn {
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v12.png?v=1');
+  background-image: url('../assets/pixel/xiaowo-celebrate-v13.png?v=2');
   background-size: 450px 100%;       /* 90×5 = 450（庆祝 5 帧，每帧 90px） */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
