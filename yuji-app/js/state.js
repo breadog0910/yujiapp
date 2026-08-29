@@ -9,6 +9,20 @@
 const State = (() => {
   const STORAGE_KEY = 'yuji_state_v5';
 
+  // 按账号隔离的本地存储 key：
+  //   - 已登录 → yuji_state_v5_<userId>
+  //   - 未登录（游客）→ 共享的 yuji_state_v5
+  // 这样同一台机器切换账号时，各账号的家具位置 / 进度不会互相串号。
+  function storageKey() {
+    try {
+      if (typeof Api !== 'undefined' && Api.isAuthed() && typeof Api.getUser === 'function') {
+        const u = Api.getUser();
+        if (u && u.id) return STORAGE_KEY + '_' + u.id;
+      }
+    } catch (_) { /* 取不到就回退游客 key */ }
+    return STORAGE_KEY;
+  }
+
   // ============================================================
   // 数据隐私逻辑（集中、写清楚，供 UI 与同步逻辑统一引用）
   // ------------------------------------------------------------
@@ -366,7 +380,7 @@ const State = (() => {
   // 加载（仅本地缓存，用于离线/未登录兜底）
   function load() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey());
       if (!raw) return attachFarmCompat(buildDefaultState());
       const saved = JSON.parse(raw);
       return attachFarmCompat(deepMerge(buildDefaultState(), saved));
@@ -374,6 +388,24 @@ const State = (() => {
       console.warn('[State] load failed', e);
       return attachFarmCompat(buildDefaultState());
     }
+  }
+
+  // 旧版本所有账号共用 yuji_state_v5（会串号）。升级后改为按账号隔离。
+  // 这里做一次迁移：登录账号首次加载时，若账号专属 key 为空而旧共享 key 有数据，
+  // 把旧数据搬到该账号专属 key，并删除旧 key（只迁移一次，避免之后再被重复复制）。
+  function migrateLegacyIfNeeded() {
+    try {
+      if (typeof Api === 'undefined' || !Api.isAuthed() || typeof Api.getUser !== 'function') return;
+      const u = Api.getUser();
+      if (!u || !u.id) return;
+      const accKey = STORAGE_KEY + '_' + u.id;
+      if (localStorage.getItem(accKey)) return;          // 已有账号数据，不覆盖
+      const legacy = localStorage.getItem(STORAGE_KEY);
+      if (!legacy) return;                                // 无旧数据可迁移
+      localStorage.setItem(accKey, legacy);
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('[State] 一次性迁移旧本地数据到账号', u.id);
+    } catch (_) { /* 迁移失败不影响启动 */ }
   }
 
   // 初始状态（先兜底，init() 再按配置/账号刷新）
@@ -398,12 +430,12 @@ const State = (() => {
       initialized = true;
       return;
     }
-    // 3) 普通账号：数据纯本地存储，不上传云端
+    // 3) 普通账号：数据纯本地存储，不上传云端（按账号隔离）
     if (Api.isAuthed()) {
-      // 只从本地读取，不从云端拉取
-      state = load();
+      migrateLegacyIfNeeded();   // 老用户：把旧共享 key 的数据迁到本账号专属 key
+      state = load();            // 读本账号专属 key（无则默认新房间）
     } else {
-      state = load();
+      state = load();            // 游客：读共享 key
     }
     ensureDaily();
     initialized = true;
@@ -465,7 +497,7 @@ const State = (() => {
 
   // 保存：只存本地 localStorage，不上传云端（保护隐私）
   function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch (e) {}
     // 数据纯本地，不调用 scheduleSync()
   }
   let syncTimer = null, syncing = false;
