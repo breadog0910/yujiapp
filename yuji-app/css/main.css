@@ -171,6 +171,55 @@ body {
   }
 }
 
+/* ============================================================
+   手机端浏览器（非 PWA，display-mode: browser）：可滑动等比舞台
+   把房间锁定为 390:844 比例（与后台画布一致），主内容区纵向滚动。
+   不再把房间强行塞进任意比例的视口——那会让 object-fit:cover 裁切背景、
+   家具百分比坐标相对「错误比例」的容器 → 错位。
+   等比舞台下 cover 精确贴合，家具 x%/y% 与背景 1:1 对应，彻底消除错位。
+   PWA（standalone / window-controls-overlay）逻辑保持原样，不在此改动范围内。
+   ============================================================ */
+@media (max-width: 767px) and (display-mode: browser) {
+  /* 主内容区改为可纵向滚动的容器 */
+  .app-main {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+  }
+
+  /* 仅房间 Tab 改为相对定位、自适应高度，撑开滚动区域；其它 Tab 仍铺满，不受影响 */
+  #tab1.tab-panel.active {
+    position: relative;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  /* 房间：锁定 390:844 比例，宽度铺满，高度按比推导；超视口则滚动查看 */
+  .tab1-room {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 390 / 844;
+  }
+
+  /* 舞台与后台画布同比例 → cover 即精确贴合，绝不裁切背景 */
+  .tab1-bg {
+    object-fit: cover;
+  }
+
+  /* 气泡条固定在房间底部（=舞台底部 14.69% 留白区），随房间一起滚动，
+     且不遮挡任何家具（家具仅在底部 14.69% 之上分布） */
+  .tab1-care {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
 /* 状态栏已移除：使用系统原生状态栏 */
 
 /* ============================================================
