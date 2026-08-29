@@ -83,8 +83,6 @@
     setTimeout(() => Utils.toast('🔄 预览模式 · 后台改布置会自动同步到此页面'), 600);
   }
 
-  bootApp();
-
   function showPreviewBadge() {
     const badge = document.createElement('div');
     badge.id = 'yujiPreviewBadge';
@@ -143,13 +141,6 @@
         } else {
           setTimeout(() => Utils.toast('你回来啦。不用急着做什么，先看看现在的自己就好。'), 400);
         }
-      } catch (_) {}
-
-      // 调试用：双击底部 tab-bar 区域可重置数据
-      try {
-        document.querySelector('.tab-bar')?.addEventListener('dblclick', () => {
-          if (confirm('确定要重置所有数据吗？')) { State.reset(); location.reload(); }
-        });
       } catch (_) {}
 
       // 控制台签名
