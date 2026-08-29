@@ -604,13 +604,14 @@ const Tab1 = (() => {
         container.style.height = (rowHeight + padTop + padBottom) + 'px';
         container.style.maxHeight = 'none';
       }
-      // 【前后台摆放对齐】--care-h 不再用 carePanel 实测高度覆盖，固定走 CSS 默认的 124px：
-      // 后台画布 390×844 的家具层 bottom = 14.69%（=124/844），前台家具层 = 屏高 - 124px，
-      // 在 390×844 设备上两者完全一致（家具为 px 固定尺寸 + 百分比定位，容器高度必须对齐）。
-      // 若恢复动态覆盖，家具层高度会随气泡条实测值变化，前后台摆放必然对不上。
+      // 【前后台摆放对齐】--care-h 必须与后台画布用同一比例（14.69% = 124/844），
+      // 不能用固定 px：前台手机框按 390/844 等比缩放，高度几乎不是 844px；
+      // 若前台写死 124px 而后台用 14.69%，只在房间恰好 844px 高时对齐，其余尺寸下
+      // 两端家具层高度不同 → 同一 x%/y% 绝对位置错位（前后台家具摆放不对应）。
+      // 统一走 14.69% 后，两端家具层高度都 = 舞台高度 × 85.31%，任意屏尺寸 WYSIWYG。
       const tab1 = document.getElementById('tab1');
       if (tab1) {
-        tab1.style.setProperty('--care-h', '124px');
+        tab1.style.setProperty('--care-h', '14.69%');
       }
     });
   }
@@ -734,7 +735,7 @@ const Tab1 = (() => {
 
     renderStats();
 
-    let msg = `+1 关爱值${got > 0 ? ` · +${got} 金币` : ''}`;
+    let msg = `+1 幸福值${got > 0 ? ` · +${got} 金币` : ''}`;
     Utils.toast(msg);
 
     State.save();

@@ -39,6 +39,9 @@ yuji-app/assets/field/_new/
 yuji-app/assets/field/*.jpg
 yuji-app/assets/tab-bg/*.jpg
 
+# Supabase CLI local cache (versions, linked project) — never commit
+supabase/.temp/
+
 # Preview / test files
 *_preview*.png
 *_test*.png

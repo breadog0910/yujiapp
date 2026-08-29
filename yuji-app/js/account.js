@@ -26,8 +26,6 @@ const Account = (() => {
       border-radius:10px;font-family:inherit;font-size:15px;background:#fffdf9;color:#5a3a20;}
     .yuji-auth-card input:focus{outline:none;border-color:#d4a574;}
     .yuji-auth-card .err{color:#c0492f;font-size:13px;min-height:18px;margin:-6px 0 10px;text-align:center;}
-    .yuji-remember-row{display:flex;align-items:center;gap:6px;margin:-6px 0 12px;cursor:pointer;font-size:13px;color:#7a5530;user-select:none;}
-    .yuji-remember-row input{width:16px;height:16px;margin:0;accent-color:#d4a574;cursor:pointer;}
     .yuji-auth-card button.primary{width:100%;padding:12px;border:none;border-radius:12px;background:#d4a574;color:#fff;
       font-family:inherit;font-size:16px;cursor:pointer;box-shadow:0 4px 0 #b9824e;}
     .yuji-auth-card button.primary:active{transform:translateY(2px);box-shadow:0 2px 0 #b9824e;}
@@ -102,10 +100,6 @@ const Account = (() => {
         </div>
         <input id="yujiUser" type="text" placeholder="用户名（≥2 字）" maxlength="20" autocomplete="username" />
         <input id="yujiPwd" type="password" placeholder="密码（≥6 位）" maxlength="40" autocomplete="current-password" />
-        <label class="yuji-remember-row">
-          <input type="checkbox" id="yujiRemember" checked />
-          <span>记住我（下次自动登录）</span>
-        </label>
         <div class="err" id="yujiErr"></div>
         <button class="primary" id="yujiSubmit">登 录</button>
         <div class="yuji-auth-hint">还没有账号？点上方「注册」即可创建</div>
@@ -132,13 +126,12 @@ const Account = (() => {
     async function doSubmit() {
       const username = userEl.value.trim();
       const password = pwdEl.value;
-      const remember = rememberEl.checked;
       errEl.textContent = '';
       if (username.length < 2) { errEl.textContent = '用户名至少 2 个字符'; return; }
       if (password.length < 6) { errEl.textContent = '密码至少 6 位'; return; }
       submitEl.disabled = true;
       try {
-        if (mode === 'login') await Api.login(username, password, remember);
+        if (mode === 'login') await Api.login(username, password);
         else await Api.register(username, password);
         mask.remove();
         if (typeof onSuccess === 'function') onSuccess();
@@ -208,8 +201,7 @@ const Account = (() => {
         </div>
         <button type="button" class="go" id="yujiGoLogout">退出登录</button>
         <div class="meta">
-          ${isPreview ? '预览账号：永远反映后台默认房间，<br>不保存个人进度。'
-                      : '当前账号的操作进度会同步到云端。'}
+          ${isPreview ? '预览账号：永远反映后台默认房间，<br>不保存个人进度。' : ''}
         </div>
       `;
       root.appendChild(menu);
