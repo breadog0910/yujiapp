@@ -22,9 +22,9 @@ const State = (() => {
   // tab1 单独走 BG_CATALOG[0].src（tab1.js renderBg 读它），tab2/3/4 走 DOM <img> 直接改 src
   let tabBackgrounds = {
     tab1: 'assets/tab1beijing.png',
-    tab2: 'assets/tab2-forest.png',
+    tab2: 'assets/tab-bg/tab2-1787835559183.jpg',
     tab3: 'assets/tab3-garden-bg.jpg',
-    tab4: 'assets/tab4-stars.png',
+    tab4: 'assets/dc4b2caadae673cdc65c3779dd78fd70.png',
   };
   const TAB_BG_DOM_SEL = {
     tab2: '.tab2-bg',

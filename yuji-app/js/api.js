@@ -189,9 +189,9 @@ async function tryAutoLogin() {
 
     const tabBackgrounds = {
       tab1: 'assets/tab1beijing.png',
-      tab2: 'assets/tab2-forest.png',
+      tab2: 'assets/tab-bg/tab2-1787835559183.jpg',
       tab3: 'assets/tab3-garden-bg.jpg',
-      tab4: 'assets/tab4-stars.png',
+      tab4: 'assets/dc4b2caadae673cdc65c3779dd78fd70.png',
     };
     (tabBgRows || []).forEach((r) => {
       if (tabBackgrounds[r.tab_key] !== undefined) {

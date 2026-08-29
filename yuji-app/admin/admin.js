@@ -765,7 +765,7 @@ $('#layout-clear').addEventListener('click', () => { if (confirm('确认清空�
 
 // 布局编辑背景切换（房间 / 森林）：编辑 Tab2「本心对语」入口木牌时用森林背景预览
 const layoutBgToggle = $('#layout-bg-toggle');
-const LAYOUT_BG = { room: '/assets/tab1beijing.png', forest: '/assets/tab2-forest.png' };
+const LAYOUT_BG = { room: '/assets/tab1beijing.png', forest: '/assets/tab-bg/tab2-1787835559183.jpg' };
 let layoutBgKey = 'room';
 layoutBgToggle.addEventListener('click', () => {
   layoutBgKey = layoutBgKey === 'room' ? 'forest' : 'room';
