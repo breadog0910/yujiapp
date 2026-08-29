@@ -10,6 +10,27 @@ const State = (() => {
   const STORAGE_KEY = 'yuji_state_v5';
 
   // ============================================================
+  // 数据隐私逻辑（集中、写清楚，供 UI 与同步逻辑统一引用）
+  // ------------------------------------------------------------
+  // 三条核心原则：
+  //   1) 私密数据（情绪记录 / 心灵树洞日记 / 自我说明书 / 家具故事等）默认只存在
+  //      本机（localStorage），不自动上传云端。
+  //   2) 只有用户显式开启「允许 AI 读取」时，AI 才能基于这些记录生成内容；
+  //      否则相关 AI 功能从入口就被禁用，原文绝不出本机。
+  //   3) 即便开启统计，也只记录「行为」（如完成哪个任务），绝不采集任何
+  //      用户输入的文字内容（情绪文本 / 日记原文）。
+  // 开关项（默认值偏向隐私）：
+  //   localOnly      true  → 本地存储优先，登录也不自动同步到云端
+  //   allowAiRead    false → 默认不允许 AI 读取用户记录
+  //   allowAnalytics true  → 默认允许匿名行为统计（不采集文本）
+  // ============================================================
+  const PRIVACY_DEFAULTS = {
+    localOnly: true,        // 本地存储优先：true=只存本机，不上传云端
+    allowAiRead: false,     // 是否允许 AI 基于用户记录生成内容
+    allowAnalytics: true,   // 是否允许匿名行为统计（仅行为，不采集文本）
+  };
+
+  // ============================================================
   // 内置兜底常量（后端不可达时使用，保证单机可玩）
   // ============================================================
 
@@ -315,6 +336,8 @@ const State = (() => {
       selfManual: { chapter1: '还在认识中…', chapter2: '还在认识中…', chapter3: '还在认识中…', chapter4: '还在认识中…', chapter5: '还在认识中…', updatedAt: '' },
       createdAt: new Date().toISOString(),
       visitDates: [],
+      // 数据隐私开关（默认值见 PRIVACY_DEFAULTS，偏向隐私）
+      privacy: Object.assign({}, PRIVACY_DEFAULTS),
     };
   }
 
@@ -450,9 +473,16 @@ const State = (() => {
     // 数据纯本地，不调用 scheduleSync()
   }
   let syncTimer = null, syncing = false;
+  // 是否允许把数据同步到云端：登录 + 非预览 + 且用户未开启「本地存储优先」
+  function shouldSyncToCloud() {
+    if (typeof Api === 'undefined' || !Api.isAuthed()) return false;
+    if (Api.isPreview()) return false; // 预览账号：不写后端
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    if (p.localOnly) return false;     // 隐私：本地优先，不上传云端
+    return true;
+  }
   function scheduleSync(immediate) {
-    if (typeof Api === 'undefined' || !Api.isAuthed()) return;
-    if (Api.isPreview()) return; // 预览账号：不写后端（实时反映后台默认布局，不累积自有进度）
+    if (!shouldSyncToCloud()) return; // 隐私：本地优先 / 未登录 / 预览 → 不同步云端
     if (immediate) { doSync(); return; }
     clearTimeout(syncTimer);
     syncTimer = setTimeout(doSync, 800);
@@ -598,8 +628,50 @@ const State = (() => {
     return true;
   }
 
-  // AI 是否启用
-  function aiEnabled(key) { return aiConfig.some(a => a.key === key && a.enabled); }
+  // AI 是否启用（受隐私开关约束：未授权「允许 AI 读取」时一律禁用）
+  function aiEnabled(key) {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    if (!p.allowAiRead) return false; // 隐私：未授权 AI 读取 → 从源头禁用，原文不出本机
+    return aiConfig.some(a => a.key === key && a.enabled);
+  }
+  // 用户是否授权 AI 读取其记录（供自我说明书 / 信件 / 树洞等入口统一判断）
+  function aiReadAllowed() {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    return !!p.allowAiRead;
+  }
+  // 是否允许匿名行为统计（仅行为，不采集文本）
+  function analyticsAllowed() {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    return !!p.allowAnalytics;
+  }
+  // 读取隐私开关（返回对象副本，避免外部误改）
+  function getPrivacy() {
+    return Object.assign({}, PRIVACY_DEFAULTS, state.privacy || {});
+  }
+  // 修改隐私开关并保存；localOnly 变 false（放开云端）时立即触发一次同步
+  function setPrivacy(partial) {
+    const p = state.privacy || (state.privacy = Object.assign({}, PRIVACY_DEFAULTS));
+    Object.assign(p, partial);
+    const wasLocalOnly = p.localOnly;
+    save();
+    if (typeof partial.localOnly === 'boolean' && !partial.localOnly && wasLocalOnly) {
+      // 由「本地优先」切到「允许云端同步」：把本机数据上传一次
+      scheduleSync(true);
+    }
+    return getPrivacy();
+  }
+  // 匿名埋点（隐私安全：被 allowAnalytics 关闭时直接丢弃，绝不采集文本）
+  function track(name, payload) {
+    const p = state.privacy || PRIVACY_DEFAULTS;
+    if (!p.allowAnalytics) return; // 用户关闭统计 → 不记录任何事件
+    // 仅行为类事件；payload 中若出现 text/content/desc 等字段一律剔除，确保不采集用户输入
+    const safe = {};
+    for (const k in (payload || {})) {
+      if (/^(text|content|desc|note|title|message)$/i.test(k)) continue; // 坚决不采集文字内容
+      safe[k] = payload[k];
+    }
+    console.log('[analytics]', name, safe);
+  }
 
   // ===== starPoints type → 星座 key 映射 =====
   // 老类型 + 新 mined_* + ai_* 全部归到 6 星座
@@ -661,6 +733,12 @@ const State = (() => {
     isAuthed: () => (typeof Api !== 'undefined' && Api.isAuthed()),
     isPreview: () => (typeof Api !== 'undefined' && Api.isPreview()),
     aiEnabled,
+    aiReadAllowed,
+    analyticsAllowed,
+    getPrivacy,
+    setPrivacy,
+    shouldSyncToCloud,
+    track,
     pickCategoryByType,
 
     getCatalog, getSeed,

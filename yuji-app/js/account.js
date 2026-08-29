@@ -77,6 +77,8 @@ const Account = (() => {
     }
     .yuji-acct-menu button.go:hover{background:#e0b17e;}
     .yuji-acct-menu button.go:active{transform:translateY(2px);box-shadow:0 1px 0 #b9824e;}
+    .yuji-acct-menu button.go.ghost{background:#fbf3e6;border:1.5px solid #e3c79c;color:#7a5530;box-shadow:none;}
+    .yuji-acct-menu button.go.ghost:hover{background:#fff;color:#5a3a20;}
     .yuji-acct-menu .meta{font-size:11px;color:#a98a63;margin-top:8px;line-height:1.4;text-align:center;}
     `;
     const el = document.createElement('style');
@@ -199,6 +201,7 @@ const Account = (() => {
           ${isPreview ? '<span class="pv">🔄 预览</span>' : ''}
           <b>${escapeHtml(info.user.username || '我')}</b>
         </div>
+        <button type="button" class="go ghost" id="yujiGoPrivacy">🛡 数据隐私</button>
         <button type="button" class="go" id="yujiGoLogout">退出登录</button>
         <div class="meta">
           ${isPreview ? '预览账号：永远反映后台默认房间，<br>不保存个人进度。' : ''}
@@ -210,6 +213,14 @@ const Account = (() => {
         e.stopPropagation();
         menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
       });
+      const privacyBtn = menu.querySelector('#yujiGoPrivacy');
+      if (privacyBtn) {
+        privacyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.style.display = 'none';
+          if (typeof Popups !== 'undefined' && Popups.open) Popups.open('privacy');
+        });
+      }
       menu.querySelector('#yujiGoLogout').addEventListener('click', async (e) => {
         e.stopPropagation();
         try { await Api.logout(); } catch (err) { console.warn('[Account] 后端 logout 失败：', err); }
