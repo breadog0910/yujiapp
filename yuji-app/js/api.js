@@ -195,7 +195,12 @@ async function tryAutoLogin() {
     };
     (tabBgRows || []).forEach((r) => {
       if (tabBackgrounds[r.tab_key] !== undefined) {
-        tabBackgrounds[r.tab_key] = r.bg_path || tabBackgrounds[r.tab_key];
+        const p = r.bg_path;
+        // 仅"自定义上传"（完整 URL，不以 assets/ 开头）才覆盖代码默认；
+        // 历史遗留的 assets/ 默认路径应回退到代码内置默认（已指向新背景图）。
+        if (p && !p.startsWith('assets/')) {
+          tabBackgrounds[r.tab_key] = p;
+        }
       }
     });
 

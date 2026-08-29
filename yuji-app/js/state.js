@@ -224,7 +224,8 @@ const State = (() => {
       for (const k of Object.keys(tabBackgrounds)) {
         const t = cfg.tabBackgrounds[k];
         const p = typeof t === 'string' ? t : (t && t.path ? t.path : tabBackgrounds[k]);
-        if (tabBackgrounds[k] !== p) { tabBackgrounds[k] = p; changed = true; }
+        // 仅自定义上传（完整 URL）覆盖代码默认；assets/ 默认路径忽略，保留内置新图
+        if (p && !p.startsWith('assets/') && tabBackgrounds[k] !== p) { tabBackgrounds[k] = p; changed = true; }
       }
       // tab1 走 BG_CATALOG[0].src（tab1.js renderBg 读它）
       if (BG_CATALOG[0].src !== tabBackgrounds.tab1) { BG_CATALOG[0].src = tabBackgrounds.tab1; changed = true; }
