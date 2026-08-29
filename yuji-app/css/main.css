@@ -172,16 +172,20 @@ body {
 }
 
 /* ============================================================
-   手机端浏览器（非 PWA，display-mode: browser）：可滑动等比舞台
+   手机端（窄屏 <768px）默认：可滑动等比舞台
    把房间锁定为 390:844 比例（与后台画布一致），主内容区纵向滚动。
    不再把房间强行塞进任意比例的视口——那会让 object-fit:cover 裁切背景、
    家具百分比坐标相对「错误比例」的容器 → 错位。
    等比舞台下 cover 精确贴合，家具 x%/y% 与背景 1:1 对应，彻底消除错位。
-   PWA（standalone / window-controls-overlay）逻辑保持原样，不在此改动范围内。
+   此规则不依赖 display-mode，确保普通手机浏览器端必定生效。
    ============================================================ */
-@media (max-width: 767px) and (display-mode: browser) {
+@media (max-width: 767px) {
   /* 主内容区改为可纵向滚动的容器 */
   .app-main {
+    /* 关键：flex 子项默认 min-height:auto 不会收缩到比内容矮，
+       会导致本元素被房间(844px)撑高、溢出 .app-container(overflow:hidden) 被裁掉，
+       内部 overflow-y:auto 永不触发 → 无法滚动。置 0 解除该约束，让其按分配高度滚动。 */
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -217,6 +221,32 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
+  }
+}
+
+/* ============================================================
+   PWA 手机端（standalone 且窄屏）：保持原铺满全屏逻辑不变
+   仅此处把上面的可滑动规则撤销，恢复 .tab1-room 绝对铺满，
+   桌面 PWA（≥768px standalone / window-controls-overlay）仍由上方
+   min-width:768px 的手机壳规则处理，不在此范围内。
+   ============================================================ */
+@media (max-width: 767px) and (display-mode: standalone) {
+  .app-main {
+    overflow: hidden;
+  }
+  #tab1.tab-panel.active {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    min-height: auto;
+    overflow: hidden;
+  }
+  .tab1-room {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: 100%;
+    aspect-ratio: auto;
   }
 }
 
