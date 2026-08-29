@@ -668,7 +668,10 @@ const State = (() => {
 
     getCatalog, getSeed,
     plantSkill, logSession, toggleGoal, addGoal, harvestSkill, removeSkill,
-    getFarmCrop, getFarmMainPlot, getFarmPlotByPlotId, farmStageOf,
+    getFarmCrop, getFarmMainPlot,
+    // 兼容旧多格子代码：任何 plotId 都返回唯一地块或 null
+    getFarmPlotByPlotId: (_pid) => state.farmMainPlot || null,
+    farmStageOf,
     MAIN_PLOT_ID,
   };
 })();
