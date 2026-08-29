@@ -16,7 +16,7 @@
 - [yuji-app/js/api.js](file:///c:/Users/29948/Desktop/workbuddy/yuji-app/js/api.js) `getConfig` 并行查询+map
 - [yuji-app/js/tab3.js](file:///c:/Users/29948/Desktop/workbuddy/yuji-app/js/tab3.js) 旧实现（待整体替换）
 - [yuji-app/js/popups.js](file:///c:/Users/29948/Desktop/workbuddy/yuji-app/js/popups.js) builders/inits 模式 + 旧 seedSelect/harvest/cottage（L339-L455、L1087-L1145）
-- [supabase/migrations/001_init_schema.sql](file:///c:/Users/29948/Desktop/workbuddy/supabase/migrations/001_init_schema.sql) RLS 同款写法
+- [supabase/migrations/_legacy/001_init_schema.sql](file:///c:/Users/29948/Desktop/workbuddy/supabase/migrations/_legacy/001_init_schema.sql) RLS 同款写法
 
 ---
 
@@ -25,7 +25,7 @@
 | 文件 | 责任 | 动作 |
 |---|---|---|
 | `yuji-app/assets/farm/land.png` | 土地底图 | 新建（复制 46189e3d...png） |
-| `supabase/migrations/003_farm_schema.sql` | 建表/RLS/桶/种子数据/底图 | 新建 |
+| `supabase/migrations/_legacy/003_farm_schema.sql` | 建表/RLS/桶/种子数据/底图 | 新建 |
 | `yuji-app/js/api.js` | getConfig 加农场两表查询+map | 改 L153-L229 |
 | `yuji-app/js/state.js` | applyConfig 缓存农场配置；buildDefaultState 用 farmPlots；新 farm 方法；删旧 plantSeed/feedGarden/harvestPlot/getSeed；fingerprint 纳入农场 | 改 |
 | `yuji-app/js/tab1.js` | 移除 `State.feedGarden('selfcare')` 调用 | 改 L715 附近 |
@@ -43,7 +43,7 @@
 
 **Files:**
 - Create: `yuji-app/assets/farm/land.png`
-- Create: `supabase/migrations/003_farm_schema.sql`
+- Create: `supabase/migrations/_legacy/003_farm_schema.sql`
 
 - [ ] **Step 1: 复制土地底图**
 
@@ -56,7 +56,7 @@ Copy-Item "46189e3d4888f758f1f4fbb94ed8f3df.png" "yuji-app/assets/farm/land.png"
 
 - [ ] **Step 2: 写迁移 SQL**
 
-创建 `supabase/migrations/003_farm_schema.sql`，完整内容：
+创建 `supabase/migrations/_legacy/003_farm_schema.sql`，完整内容：
 
 ```sql
 -- ============================================================
@@ -156,7 +156,7 @@ SELECT (SELECT count(*) FROM farm_crop_catalog) AS crops,
 - [ ] **Step 4: 提交**
 
 ```bash
-git add yuji-app/assets/farm/land.png supabase/migrations/003_farm_schema.sql
+git add yuji-app/assets/farm/land.png supabase/migrations/_legacy/003_farm_schema.sql
 git commit -m "feat(farm): add land image + 003 schema (tables/RLS/bucket/seed)"
 ```
 

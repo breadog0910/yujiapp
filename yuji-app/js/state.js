@@ -149,6 +149,7 @@ const State = (() => {
     x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
   };
   let farmLandConfig = DEFAULT_FARM_LAND_CONFIG;
+  let farmLandList = [DEFAULT_FARM_LAND_CONFIG];
   let meta = { appName: '予己' };
 
   // 新用户初始「每日自我照顾」选项（applyConfig 用后端值填充；缺省回退内置默认 6 项）
@@ -235,8 +236,14 @@ const State = (() => {
       farmCropCatalog = cfg.farmCropCatalog;
     if (Array.isArray(cfg.farmPlotLayout) && cfg.farmPlotLayout.length)
       farmPlotLayout = cfg.farmPlotLayout;
-    // farmLandConfig：数据库返回非 null 才覆盖（单例对象，非数组）
-    if (cfg.farmLandConfig) farmLandConfig = cfg.farmLandConfig;
+    // farmLandList：多地块数组；数据库返回数组才覆盖（保持内置兜底）
+    if (Array.isArray(cfg.farmLandList) && cfg.farmLandList.length) {
+      farmLandList = cfg.farmLandList;
+      farmLandConfig = cfg.farmLandList[0];
+    } else if (cfg.farmLandConfig) {
+      farmLandConfig = cfg.farmLandConfig;
+      farmLandList = [cfg.farmLandConfig];
+    }
   }
 
   // ============================================================
@@ -411,7 +418,7 @@ const State = (() => {
       k: roomCatalog.map(f => f.type).join(','),
       b: tabBackgrounds,
       d: defaultCareOptions,
-      f: farmCropCatalog, p: farmPlotLayout, L: farmLandConfig,
+      f: farmCropCatalog, p: farmPlotLayout, L: farmLandList,
       th: treeholeEntry, t2: tab2Entry,
     });
   }
@@ -656,6 +663,7 @@ const State = (() => {
     get farmCropCatalog() { return farmCropCatalog; },
     get farmPlotLayout() { return farmPlotLayout; },
     get farmLandConfig() { return farmLandConfig; },
+    get farmLandList() { return farmLandList; },
     // 兼容旧多格子代码调用（单地块映射为长度 0 或 1 的数组）
     get farmPlots() { return state.farmMainPlot ? [state.farmMainPlot] : []; },
     get farmMainPlot() { return state.farmMainPlot || null; },

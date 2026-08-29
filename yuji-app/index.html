@@ -169,11 +169,8 @@
               <img class="tab3-bg" src="assets/farm/tab3-bg.png" alt="技能农场背景" />
             </div>
 
-            <!-- 中-远景层：土地覆盖图层（整块地=单按钮，管理员可拖拽位置/大小/抠图阈值） -->
-            <div class="scene-layer layer-mid" style="position:absolute;inset:0;pointer-events:none;z-index:5;">
-              <img id="farmLandLayer" src="assets/farm/land-v2.png" alt="土地"
-                   style="position:absolute;display:none;pointer-events:none;user-select:none;object-fit:contain;image-rendering:pixelated;filter:url(#alpha-hard-edge);" />
-            </div>
+            <!-- 中-远景层：多块土地覆盖图层（每块=1 个种植按钮，由后台复制/摆放/设作物） -->
+            <div class="scene-layer layer-mid" id="farmLandsLayer" style="position:absolute;inset:0;pointer-events:none;z-index:5;"></div>
 
             <!-- 农场日志按钮（右上角，已种技能 + 收获纪念） -->
             <button class="garden-journal-btn" id="gardenJournalBtn" title="农场日志 · 我的技能与收获纪念">
@@ -186,12 +183,8 @@
               <div class="garden-hint hidden" id="gardenHint">点击这块土地，种下一个想学的技能🌱</div>
             </div>
 
-            <!-- 前景层：像素农夫小我 + 萤火 + 麦田光点 -->
+            <!-- 前景层：萤火 + 麦田光点 -->
             <div class="scene-layer layer-front">
-              <div class="garden-character">
-                <div class="gc-sprite"></div>
-                <div class="gc-shadow"></div>
-              </div>
               <div class="garden-butterflies" id="gardenButterflies"></div>
               <div class="garden-pollen" id="gardenPollen"></div>
             </div>

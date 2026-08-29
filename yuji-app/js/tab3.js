@@ -1,14 +1,13 @@
 /* ============================================================
- * Tab3 生长·技能农场（单地块版）
+ * Tab3 生长·技能农场（多地块版）
  *
- * - Tab3 背景（底层）= assets/farm/tab3-bg.png（草地/天空）
- * - 土地图层（中景，整块地=1 个按钮）= assets/farm/land-v2.png，位置/大小来自
- *   State.farmLandConfig。前端运行时 canvas flood fill 去四边沿的白/浅灰 → 透明
- * - 已种状态：在土地上方叠当前阶段的作物大图（阶段越往后越大）
+ * - Tab3 背景（底层）= tab3 背景（草地/天空）
+ * - 多块土地图层（来自 State.farmLandList）：每块可独立设置位置/大小/缩放，
+ *   由后台「技能农场」面板复制、摆放、保存
+ * - 每块土地的作物：优先显示后台「该土地的作物」设置；若该作物与用户已种的技能
+ *   一致，则显示对应生长阶段；否则显示破土预览
  * - 点击整块土地 → 未种→farmPlant，已种→farmLog
- * - 日志按钮 → cottage 弹窗
- * - 生长算法：progress = Σ sessions.minutes + Σ completed_goal.points
- *             stage    = min(floor(progress / minutesPerStage), stages.length-1)
+ * - 像素小人（garden-character）已从 index.html 移除
  *   ============================================================ */
 
 const Tab3 = (() => {
@@ -86,127 +85,94 @@ const Tab3 = (() => {
     return u.includes('assets/farm/land-v2.png') || u.includes('assets/farm/land.png');
   }
 
-  // 拿 State.farmLandConfig.bgThreshold，缺省 30
-  function getThreshold() {
-    const cfg = State.farmLandConfig || {};
-    return cfg.bgThreshold != null ? +cfg.bgThreshold : 30;
-  }
-
-  // 渲染土地图层（位置/大小/缩放 + 白底抠图 + 点击按钮）
-  function renderLandLayer() {
-    const el = document.getElementById('farmLandLayer');
-    if (!el) return;
-    const cfg = State.farmLandConfig;
-    if (!cfg) return;
-    // 定位（百分比 + 中心锚点）
-    el.style.display = 'block';
-    el.style.width = (cfg.widthPct || 80) + '%';
-    el.style.height = (cfg.heightPct || 65) + '%';
-    el.style.left = (cfg.x || 50) + '%';
-    el.style.top = (cfg.y || 50) + '%';
-    el.style.zIndex = cfg.z || 2;
-    const s = cfg.scale || 1;
-    el.style.setProperty('--land-scale', s);  // CSS var：hover/active 中复用
-    el.style.transform = `translate(-50%, -50%) scale(${s})`;
-    el.style.pointerEvents = 'auto';   // 关键：土地作为按钮可点
-    el.classList.add('clickable');
-    el.style.cursor = 'pointer';
-    el.style.userSelect = 'none';
-    el.style.objectFit = 'contain';
-    el.style.imageRendering = 'pixelated';
-
-    // 图片加载 → 抠图策略：
-    //   * 内置 land-v2.png（资源级 PIL 已去白底）：直接显示，0 额外卡顿
-    //   * 自定义图：降采样后再 flood fill；onload 不阻塞 paint（renderLandLayer 先让 el.src=url 展示原图，
-    //     再异步替换成抠图版，避免 Tab3 白屏等待）
-    const url = cfg.image || 'assets/farm/land-v2.png';
-    const threshold = getThreshold();
-    const cacheKey = url + '|t=' + threshold;
-    if (el.dataset.cacheKey === cacheKey) return; // 已处理过，不重复跑
-
-    // 先立即显示原图（用户切 Tab3 时能立刻看到整块土地，不被 BFS 卡住）
-    el.src = url;
-    el.dataset.cacheKey = cacheKey + '|pending';
-
-    if (isBuiltinLand(url)) {
-      el.dataset.cacheKey = cacheKey; // 内置图直接标处理完成
-      return;
-    }
-    // 自定义图：在下一个 rAF + requestIdleCallback 后处理（避免卡死首屏）
+  // 土地图加载 + 自定义图抠图（写入 <img>.src）
+  function applyLandImage(imgEl, url, threshold) {
+    const u = url || 'assets/farm/land-v2.png';
+    const thr = threshold != null ? threshold : 30;
+    const cacheKey = u + '|t=' + thr;
+    if (imgEl.dataset.cacheKey === cacheKey) return;
+    imgEl.src = u;                       // 先立即显示原图（不阻塞首屏）
+    imgEl.dataset.cacheKey = cacheKey + '|pending';
+    if (isBuiltinLand(u)) { imgEl.dataset.cacheKey = cacheKey; return; }
     const runAt = (typeof requestIdleCallback === 'function') ? requestIdleCallback : (cb) => setTimeout(cb, 40);
     runAt(() => {
       const tmp = new Image();
       tmp.crossOrigin = 'anonymous';
       tmp.onload = () => {
         try {
-          const dataUrl = floodFillRemoveBg(tmp, threshold);
-          if (dataUrl && el.dataset.cacheKey === cacheKey + '|pending') {
-            el.src = dataUrl;
-          }
+          const d = floodFillRemoveBg(tmp, thr);
+          if (d && imgEl.dataset.cacheKey === cacheKey + '|pending') imgEl.src = d;
         } catch (e) {
           console.warn('[Tab3] 自定义土地抠图失败，保留原图：', e.message);
         }
-        el.dataset.cacheKey = cacheKey;
+        imgEl.dataset.cacheKey = cacheKey;
       };
-      tmp.onerror = () => { el.dataset.cacheKey = cacheKey; };
-      tmp.src = url;
+      tmp.onerror = () => { imgEl.dataset.cacheKey = cacheKey; };
+      tmp.src = u;
     }, { timeout: 300 });
   }
 
-  // 在土地上方叠当前阶段作物大图（已种状态）
-  function renderCropLayer() {
-    const landEl = document.getElementById('farmLandLayer');
-    if (!landEl) return;
-    let stageEl = document.getElementById('farmCropStage');
-    if (!stageEl) {
-      stageEl = document.createElement('img');
-      stageEl.id = 'farmCropStage';
-      stageEl.alt = '作物阶段图';
-      stageEl.style.cssText = `
-        position:absolute; pointer-events:none; user-select:none;
-        left:50%; transform: translate(-50%, -65%);
-        object-fit: contain; image-rendering: pixelated; z-index: 6;
-        display: none;
-      `;
-      landEl.parentElement.appendChild(stageEl);
-    }
-    const p = State.getFarmMainPlot();
-    if (!p) { stageEl.style.display = 'none'; return; }
-    const crop = State.getFarmCrop(p.cropKey);
-    if (!crop) { stageEl.style.display = 'none'; return; }
-    const stage = State.farmStageOf(p);
-    const stageObj = crop.stages[stage] || crop.stages[crop.stages.length - 1];
-    stageEl.src = stageObj?.image || ASSET_FALLBACK;
-    stageEl.title = `${p.skillName} · ${stageObj?.name || (stage+1)+'阶'}`;
-    const landCfg = State.farmLandConfig;
-    const landW = (landCfg?.widthPct || 80);
-    // 阶段越往后，作物越大：s1 25% → s4 62%（相对土地宽）
-    const stagesCount = crop.stages.length || 4;
-    const ratio = stagesCount === 1 ? 1 : stage / (stagesCount - 1);
-    const sizePct = 22 + ratio * 50;  // 22% … 72% landWidth
-    // stageEl 以页面宽为基准，但土地是 widthPct 页面宽；所以 stageEl width = sizePct * landW / 100
-    stageEl.style.width = ((sizePct * landW) / 100) + '%';
-    stageEl.style.height = 'auto';
-    // stageEl 相对 tab3 容器（position:relative）定位：
-    // 垂直方向：和土地一样基于 left%/top% 中心，但作物要在土地偏上方（65% 土地上方高度的地方）
-    // 所以 top = land.y - (landCfg.heightPct * 0.35) （向上偏移 35% landHeight）
-    stageEl.style.left = (landCfg?.x || 50) + '%';
-    const landTopPct = landCfg?.y || 50;
-    const landHeightPct = landCfg?.heightPct || 65;
-    stageEl.style.top = Math.max(5, landTopPct - landHeightPct * 0.38) + '%';
-    stageEl.style.transform = 'translate(-50%, -50%) scale(' + (1 + ratio * 0.2) + ')';
-    stageEl.style.display = 'block';
+  // 渲染全部土地图层（每位独立位置/大小/缩放）+ 作物叠图
+  function renderLands() {
+    const wrap = document.getElementById('farmLandsLayer');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const lands = (State.farmLandList && State.farmLandList.length) ? State.farmLandList : [State.farmLandConfig];
+    const userPlot = State.getFarmMainPlot();
+    lands.forEach(land => {
+      if (!land) return;
+      const el = document.createElement('div');
+      el.className = 'farm-land clickable';
+      el.style.position = 'absolute';
+      el.style.left = (land.x != null ? land.x : 50) + '%';
+      el.style.top = (land.y != null ? land.y : 50) + '%';
+      el.style.width = (land.widthPct || 80) + '%';
+      el.style.height = (land.heightPct || 65) + '%';
+      el.style.zIndex = (land.z != null ? land.z : 2);
+      el.style.transform = 'translate(-50%, -50%) scale(' + (land.scale || 1) + ')';
+      el.style.pointerEvents = 'auto';
+      el.style.cursor = 'pointer';
+      el.style.userSelect = 'none';
+      el.style.setProperty('--land-scale', land.scale || 1);
+      el.alt = '土地';
+      el.title = '点击这块土地，种下一个想学的技能🌱';
+
+      // 土地图（带白底抠图 filter）
+      const landImg = document.createElement('img');
+      landImg.className = 'fl-land';
+      landImg.alt = '土地';
+      landImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;';
+      el.appendChild(landImg);
+      applyLandImage(landImg, land.image, land.bgThreshold);
+
+      // 作物叠图：后台「该土地的作物」设置；与用户已种技能一致则显示生长阶段
+      const cropKey = land.cropKey || null;
+      const crop = cropKey ? State.getFarmCrop(cropKey) : null;
+      if (crop && crop.stages && crop.stages.length) {
+        let stageIdx = 0;
+        if (userPlot && userPlot.cropKey === cropKey) stageIdx = State.farmStageOf(userPlot);
+        const stageObj = crop.stages[stageIdx] || crop.stages[crop.stages.length - 1];
+        if (stageObj && stageObj.image) {
+          const cropEl = document.createElement('img');
+          cropEl.className = 'farm-crop-overlay';
+          cropEl.src = stageObj.image;
+          cropEl.alt = '';
+          cropEl.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-62%);width:62%;height:auto;object-fit:contain;image-rendering:pixelated;pointer-events:none;user-select:none;z-index:3;';
+          el.appendChild(cropEl);
+        }
+      }
+      wrap.appendChild(el);
+    });
   }
 
   function bindEvents() {
-    const land = document.getElementById('farmLandLayer');
-    if (land) {
-      land.addEventListener('click', () => {
-        const p = State.getFarmMainPlot();
-        if (p) Popups.open('farmLog');
-        else Popups.open('farmPlant');
-      });
-    }
+    const wrap = document.getElementById('farmLandsLayer');
+    if (wrap) wrap.addEventListener('click', (e) => {
+      const land = e.target.closest('.farm-land');
+      if (!land) return;
+      const p = State.getFarmMainPlot();
+      if (p) Popups.open('farmLog'); else Popups.open('farmPlant');
+    });
     const journal = document.getElementById('gardenJournalBtn');
     if (journal) journal.addEventListener('click', () => Popups.open('cottage'));
   }
@@ -216,7 +182,7 @@ const Tab3 = (() => {
     if (!hint) return;
     const p = State.getFarmMainPlot();
     if (!p) {
-      hint.textContent = '点击这块土地，种下一个想学的技能🌱';
+      hint.textContent = '点击任意一块土地，种下一个想学的技能🌱';
       hint.classList.remove('hidden');
     } else {
       hint.classList.add('hidden');
@@ -224,8 +190,7 @@ const Tab3 = (() => {
   }
 
   function init() {
-    renderLandLayer();
-    renderCropLayer();
+    renderLands();
     renderHint();
     bindEvents();
     Utils.spawnParticles(document.getElementById('gardenButterflies'), {
@@ -236,8 +201,8 @@ const Tab3 = (() => {
     });
   }
 
-  // 供 popups 调用 / 后台预览同步：土地图层 + 作物图 + hint 全重绘
-  function refresh() { renderLandLayer(); renderCropLayer(); renderHint(); }
+  // 供 popups 调用 / 后台预览同步：全部土地 + 作物图 + hint 全重绘
+  function refresh() { renderLands(); renderHint(); }
 
-  return { init, refresh, renderLandLayer, renderCropLayer };
+  return { init, refresh, renderLands };
 })();

@@ -173,7 +173,7 @@ admin 前端直接 supabase-js 写库（RLS admin 可写），**不改动** `adm
 
 全局 grep `feedGarden`/旧 `plantSeed`/`harvestPlot`：tab1/tab2/tab4 中 self-care/emotion/action 完成回调曾调 `State.feedGarden(...)` 推进旧种子，全部移除（新系统与事件解耦，仅由用户记录时间/完成目标驱动）。
 
-## 6. 迁移 SQL `003_farm_schema.sql`
+## 6. 迁移 SQL `supabase/migrations/_legacy/003_farm_schema.sql`
 
 1. 建 `farm_crop_catalog`、`farm_plot_layout`（含 RLS 策略，复用 `is_admin()`）。
 2. Storage 加 `farm-images` 桶；扩展 `storage_*` 策略 bucket\_id 白名单。
@@ -199,7 +199,7 @@ admin 前端直接 supabase-js 写库（RLS admin 可写），**不改动** `adm
 
 * `yuji-app/admin/index.html` + `admin.js` + `admin.css`：新增「技能农场」section + 两子面板 + 两 resource 映射
 
-* `supabase/migrations/003_farm_schema.sql`：新建
+* `supabase/migrations/supabase/migrations/_legacy/003_farm_schema.sql`：新建
 
 ## 8. 部署影响
 
@@ -207,5 +207,5 @@ admin 前端直接 supabase-js 写库（RLS admin 可写），**不改动** `adm
 
 * 后端仅新增两张公开表 + 一个 Storage 桶，RLS 与现有同款；admin 后台直接写库，无新 Edge Function。
 
-* 执行 `003_farm_schema.sql` 后即生效；前端 version +1 强刷缓存；预览账号自动同步后台格子/品种变更。
+* 执行 `supabase/migrations/_legacy/003_farm_schema.sql` 后即生效；前端 version +1 强刷缓存；预览账号自动同步后台格子/品种变更。
 

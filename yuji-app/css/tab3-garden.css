@@ -64,24 +64,24 @@
   display: none !important;
 }
 
-/* ---------- 土地图层（整块地=1 个种植按钮） ---------- */
-#farmLandLayer {
+/* ---------- 土地图层（多块地，每块=1 个种植按钮） ---------- */
+.farm-land {
   isolation: isolate;
   mix-blend-mode: normal;
-  filter: url(#alpha-hard-edge) drop-shadow(0 6px 10px rgba(40, 25, 10, 0.35));
   transition: transform 0.18s ease, filter 0.2s ease;
   will-change: transform;
 }
-#farmLandLayer[style*="pointer-events: auto"],
-#farmLandLayer:hover {
-  /* JS 开了 pointer-events:auto 后才允许 hover */
+.farm-land .fl-land {
+  filter: url(#alpha-hard-edge) drop-shadow(0 6px 10px rgba(40, 25, 10, 0.35));
 }
-#farmLandLayer.clickable:hover {
+.farm-land.clickable { cursor: pointer; }
+.farm-land.clickable:hover .fl-land {
   filter: url(#alpha-hard-edge) drop-shadow(0 8px 16px rgba(40, 25, 10, 0.5)) drop-shadow(0 0 8px rgba(255, 220, 120, 0.45));
-  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(1.03) !important;
-  cursor: pointer;
 }
-#farmLandLayer.clickable:active {
+.farm-land.clickable:hover {
+  transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(1.03) !important;
+}
+.farm-land.clickable:active {
   transform: translate(-50%, -50%) scale(var(--land-scale, 1)) scale(0.97) !important;
 }
 
@@ -115,41 +115,6 @@
 .garden-hint.hidden {
   opacity: 0;
   transform: translateX(-50%) translateY(10px);
-}
-
-/* ---------- 像素小农夫（站在田地右下方） ---------- */
-.garden-character {
-  position: absolute;
-  right: 10%;                         /* 田地右下方 */
-  bottom: 14%;                        /* 靠近底部 */
-  width: 56px;
-  height: 74px;
-  z-index: 25;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.gc-sprite {
-  position: absolute;
-  inset: 0;
-  background-image: url('../assets/field/field-character.png');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 3px 3px rgba(40, 25, 10, 0.35));
-  transition: transform 0.2s ease;
-}
-.garden-character:hover .gc-sprite { transform: scale(1.08); }
-.gc-shadow {
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36px;
-  height: 6px;
-  background: radial-gradient(ellipse, rgba(40, 25, 10, 0.4) 0%, transparent 70%);
-  border-radius: 50%;
-  pointer-events: none;
 }
 
 /* ---------- 田野氛围粒子 ---------- */

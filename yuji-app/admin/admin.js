@@ -132,6 +132,15 @@ function mapFarmCrop(r) {
 function mapFarmPlot(r) {
   return { id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sortOrder: r.sort_order };
 }
+function mapFarmLand(r) {
+  return {
+    id: r.id, image: r.image, x: r.x, y: r.y, z: r.z, scale: r.scale,
+    widthPct: r.width_pct != null ? r.width_pct : 80,
+    heightPct: r.height_pct != null ? r.height_pct : 65,
+    bgThreshold: r.bg_threshold != null ? r.bg_threshold : 30,
+    cropKey: r.crop_key || null, sortOrder: r.sort_order || 0,
+  };
+}
 function mapTabBg(r) {
   return {
     tabKey: r.tab_key, bgPath: r.bg_path, updatedAt: r.updated_at,
@@ -272,6 +281,16 @@ async function api(method, path, body) {
       table: 'farm_plot_layout', idField: 'id', sortField: 'sort_order', mapper: mapFarmPlot,
       mapBack: r => ({ id: r.id, x: r.x, y: r.y, z: r.z, scale: r.scale, sort_order: r.sortOrder || 0 })
     },
+    'farm-land': {
+      table: 'farm_land_config', idField: 'id', sortField: 'sort_order', mapper: mapFarmLand,
+      mapBack: r => ({
+        id: r.id, image: r.image, x: r.x, y: r.y, z: r.z, scale: r.scale,
+        width_pct: r.widthPct != null ? r.widthPct : 80,
+        height_pct: r.heightPct != null ? r.heightPct : 65,
+        bg_threshold: r.bgThreshold != null ? +r.bgThreshold : 30,
+        crop_key: r.cropKey || null, sort_order: r.sortOrder || 0,
+      })
+    },
     'tab-backgrounds': {
       table: 'tab_backgrounds', idField: 'tab_key', sortField: 'tab_key', mapper: mapTabBg,
       mapBack: r => ({
@@ -355,6 +374,16 @@ async function api(method, path, body) {
       }
       return { ok: true };
     }
+    if (resource === 'farm-land') {
+      const items = body.items || [];
+      await client.from(cfg.table).delete().neq('id', '');
+      if (items.length) {
+        const rows = items.map(cfg.mapBack);
+        const { error } = await client.from(cfg.table).insert(rows);
+        if (error) throw new Error(error.message);
+      }
+      return { ok: true };
+    }
     if (resource === 'default-care-options' && !id) {
       const items = body || [];
       await client.from(cfg.table).delete().neq('id', '');
@@ -383,7 +412,7 @@ async function api(method, path, body) {
     // 家具删除前，必须先清掉 default_room_layout.type 引用了此家具的布局行，
     // 否则会报 violates foreign key constraint "default_room_layout_type_fkey"
     if (resource === 'furniture') {
-      const layoutCfg = RESOURCE_CONFIG['room-layout'];
+      const layoutCfg = resources['room-layout'];
       const { error: layErr, data: layData } = await client
         .from(layoutCfg.table)
         .delete()
@@ -1393,63 +1422,98 @@ async function loadLogs() {
 })();
 
 /* ===================== 技能农场（单地块版）===================== */
-let farmLand = null;              // 土地图层单例
-const FARM_LAND_ID = '__land__';  // 虚拟选择 id（不进入数据库）
-let farmSelectedId = null;        // '__land__'
+let farmLands = [];           // 多块土地数组（每块 = 一个种植位）
+let farmCropList = [];        // 作物品种库（供每块土地的作物下拉）
+let farmSelectedId = null;    // 当前选中土地 id
 
 const FARM_LAND_DEFAULTS = {
-  id: 'main', image: '/assets/farm/land-v2.png',
-  x: 50, y: 50, z: 2, scale: 1, widthPct: 80, heightPct: 65, bgThreshold: 30,
+  image: '/assets/farm/land-v2.png',
+  x: 50, y: 55, z: 2, scale: 1, widthPct: 55, heightPct: 45, bgThreshold: 30, cropKey: null,
 };
 
+function newFarmLandId() {
+  return 'land-' + Date.now().toString(36) + '-' + Math.floor(Math.random() * 1000).toString(36);
+}
+function shortLandId(id) { return (id && id.length > 10) ? id.slice(0, 4) + '…' : (id || ''); }
+
+function normalizeFarmLand(r) {
+  return {
+    id: r.id,
+    image: r.image || FARM_LAND_DEFAULTS.image,
+    x: r.x != null ? r.x : FARM_LAND_DEFAULTS.x,
+    y: r.y != null ? r.y : FARM_LAND_DEFAULTS.y,
+    z: r.z != null ? r.z : FARM_LAND_DEFAULTS.z,
+    scale: r.scale != null ? r.scale : 1,
+    widthPct: r.widthPct != null ? r.widthPct : FARM_LAND_DEFAULTS.widthPct,
+    heightPct: r.heightPct != null ? r.heightPct : FARM_LAND_DEFAULTS.heightPct,
+    bgThreshold: r.bgThreshold != null ? r.bgThreshold : 30,
+    cropKey: r.cropKey || null,
+    sortOrder: r.sortOrder || 0,
+  };
+}
+
 async function loadFarm() {
-  const [crops, tabbg, landRows] = await Promise.all([
+  const [crops, tabbg, lands] = await Promise.all([
     api('GET', '/api/admin/farm-crops'),
     api('GET', '/api/admin/tab-backgrounds'),
     api('GET', '/api/admin/farm-land'),
-  ]).catch(async (err) => {
-    // 未执行迁移时 farm-land 端点不存在 → 静默兜底
-    return Promise.resolve([[], [], []]);
-  });
-  const t3 = tabbg.find(t => t.tabKey === 'tab3');
+  ]).catch(async () => Promise.resolve([[], [], []]));
+  farmCropList = (crops || []).map(c => ({ key: c.key, name: c.name, emoji: c.emoji }));
+  const t3 = (tabbg || []).find(t => t.tabKey === 'tab3');
   $('#farm-tab3-bg').src = t3 && t3.bgPath ? iconUrl(t3.bgPath) : '/assets/farm/tab3-bg.png';
-  // 土地图层：数组第一条，或兜底
-  farmLand = (landRows && landRows[0]) ? landRows[0] : { ...FARM_LAND_DEFAULTS };
-  // 字段映射（兼容下划线字段）
-  farmLand.widthPct = farmLand.widthPct || farmLand.width_pct || FARM_LAND_DEFAULTS.widthPct;
-  farmLand.heightPct = farmLand.heightPct || farmLand.height_pct || FARM_LAND_DEFAULTS.heightPct;
-  farmLand.bgThreshold = farmLand.bgThreshold != null ? farmLand.bgThreshold
-                       : (farmLand.bg_threshold != null ? farmLand.bg_threshold : FARM_LAND_DEFAULTS.bgThreshold);
-  farmSelectedId = FARM_LAND_ID;  // 默认选中土地（唯一元素）
+  // 多地块：数组；空则兜底至少一块
+  farmLands = (lands && lands.length) ? lands.map(normalizeFarmLand) : [];
+  if (!farmLands.length) {
+    farmLands = [{ id: 'main', ...FARM_LAND_DEFAULTS }];
+  }
+  farmSelectedId = farmLands.length ? farmLands[0].id : null;
   renderFarmCrops(crops);
+  renderFarmLandList();
   renderFarmStage();
   setSelectedFarmUI();
 }
 
-// ---- 舞台：土地图层（单地块）----
+// ---- 舞台：多块土地图层 ----
 function renderFarmStage() {
   const stage = $('#farm-stage');
-  // 清空
   while (stage.firstChild) stage.removeChild(stage.firstChild);
-  if (farmLand) {
+  const sorted = [...farmLands].sort((a, b) => a.z - b.z);
+  sorted.forEach(l => {
     const el = document.createElement('div');
-    el.className = 'room-item farm-land-item' + (farmSelectedId === FARM_LAND_ID ? ' selected' : '');
-    el.dataset.id = FARM_LAND_ID;
-    el.style.left = farmLand.x + '%';
-    el.style.top = (100 - farmLand.y) + '%';  // bottom→top 坐标映射
-    el.style.zIndex = 10 + (farmLand.z || 2);
-    el.style.width = (farmLand.widthPct || 80) + '%';
-    el.style.height = (farmLand.heightPct || 65) + '%';
-    const s = farmLand.scale || 1;
-    el.style.setProperty('--ri-w', '100%');
-    el.style.setProperty('--ri-h', '100%');
-    el.style.setProperty('--ri-scale', s);
+    el.className = 'room-item farm-land-item' + (l.id === farmSelectedId ? ' selected' : '');
+    el.dataset.id = l.id;
+    el.style.left = l.x + '%';
+    el.style.top = (100 - l.y) + '%';   // bottom→top 坐标映射
+    el.style.zIndex = 10 + (l.z || 2);
+    el.style.width = (l.widthPct || 55) + '%';
+    el.style.height = (l.heightPct || 45) + '%';
+    el.style.setProperty('--ri-scale', l.scale || 1);
+    const crop = farmCropList.find(c => c.key === l.cropKey);
     el.innerHTML = `<span class="ri-visual" style="position:absolute;inset:0;">
-      <img src="${esc(farmLand.image||'/assets/farm/land-v2.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;filter:url(#alpha-hard-edge);" alt="土地" />
-    </span>`;
+      <img class="fl-img" src="${esc(l.image || '/assets/farm/land-v2.png')}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;display:block;filter:url(#alpha-hard-edge);" alt="土地" />
+    </span>
+    ${crop ? `<span class="fl-crop-badge">${esc(crop.emoji || '🌱')} ${esc(crop.name)}</span>` : ''}`;
     stage.appendChild(el);
-    bindFarmLandEvents(el);
-  }
+    bindFarmLandEvents(el, l);
+  });
+}
+
+// 侧栏：土地列表（点击选中）
+function renderFarmLandList() {
+  const list = $('#farm-land-list');
+  if (!list) return;
+  if (!farmLands.length) { list.innerHTML = '<div class="hint" style="padding:6px;">暂无土地</div>'; return; }
+  list.innerHTML = farmLands.map(l => {
+    const crop = farmCropList.find(c => c.key === l.cropKey);
+    const label = crop ? (crop.emoji ? crop.emoji + ' ' : '') + crop.name : '空地';
+    return `<div class="palette-item land-chip ${l.id === farmSelectedId ? 'active' : ''}" data-id="${esc(l.id)}">
+      <span class="lc-name">🟨 土地 ${esc(shortLandId(l.id))}</span>
+      <span class="lc-crop">${esc(label)}</span>
+    </div>`;
+  }).join('');
+  $$('#farm-land-list .land-chip').forEach(el => el.onclick = () => {
+    farmSelectedId = el.dataset.id; renderFarmLandList(); setSelectedFarmUI();
+  });
 }
 
 function renderFarmCrops(crops) {
@@ -1473,28 +1537,28 @@ function renderFarmCrops(crops) {
   $$('#farm-crop-table [data-act="edit"]').forEach(b => b.addEventListener('click', () => openFarmCropModal(b.dataset.key)));
 }
 
-// ---- 土地图层拖拽 ----
-function bindFarmLandEvents(el) {
+// ---- 土地图层拖拽（每块独立）----
+function bindFarmLandEvents(el, l) {
   // 用 translate(-50%,-50%) 中心锚点（模拟前端实现）
   el.style.transform = 'translate(-50%, -50%)';
   el.addEventListener('pointerdown', e => {
     if (e.target.dataset.badge) return;
     e.preventDefault(); e.stopPropagation();
-    farmSelectedId = FARM_LAND_ID; setSelectedFarmUI();
+    farmSelectedId = l.id; renderFarmLandList(); setSelectedFarmUI();
     const stage = $('#farm-stage');
     const rect = stage.getBoundingClientRect();
-    const anchorX = rect.left + (farmLand.x/100)*rect.width;
-    const anchorY = rect.top + (100-farmLand.y)/100*rect.height;  // top mapping
+    const anchorX = rect.left + (l.x/100)*rect.width;
+    const anchorY = rect.top + (100-l.y)/100*rect.height;  // top mapping
     const offX = e.clientX - anchorX, offY = e.clientY - anchorY;
     el.classList.add('dragging');
     const move = ev => {
       const nx = (ev.clientX-rect.left-offX)/rect.width*100;
       const nyTop = (ev.clientY-rect.top-offY)/rect.height*100;
       const ny = 100 - nyTop;
-      farmLand.x = Math.max(3, Math.min(97, nx));
-      farmLand.y = Math.max(3, Math.min(97, ny));
-      el.style.left = farmLand.x+'%';
-      el.style.top = (100-farmLand.y)+'%';
+      l.x = Math.max(3, Math.min(97, nx));
+      l.y = Math.max(3, Math.min(97, ny));
+      el.style.left = l.x+'%';
+      el.style.top = (100-l.y)+'%';
     };
     const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove',move); window.removeEventListener('pointerup',up); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
@@ -1502,66 +1566,85 @@ function bindFarmLandEvents(el) {
 }
 
 function setSelectedFarmUI() {
-  $('#farm-empty-tip')?.classList.toggle('hidden', !!farmSelectedId);
+  $('#farm-empty-tip')?.classList.toggle('hidden', farmLands.length > 0);
   // 更新选中类
   $$('#farm-stage .room-item').forEach(n => n.classList.toggle('selected', n.dataset.id === farmSelectedId));
-  const landBox = $('#farm-land-props');
-  landBox.classList.toggle('hidden', farmSelectedId !== FARM_LAND_ID);
-  if (farmSelectedId === FARM_LAND_ID && farmLand) {
-    $('#flp-image').value = farmLand.image || '';
-    $('#flp-z').value = farmLand.z; $('#flp-z-v').textContent = farmLand.z;
-    $('#flp-scale').value = farmLand.scale; $('#flp-scale-v').textContent = (+farmLand.scale).toFixed(2)+'×';
-    $('#flp-w').value = farmLand.widthPct; $('#flp-w-v').textContent = farmLand.widthPct+'%';
-    $('#flp-h').value = farmLand.heightPct; $('#flp-h-v').textContent = farmLand.heightPct+'%';
-    const bgTh = farmLand.bgThreshold != null ? +farmLand.bgThreshold : 30;
-    $('#flp-bg-threshold').value = bgTh; $('#flp-bg-threshold-v').textContent = bgTh;
-    $('#flp-image').onchange = () => {
-      farmLand.image = $('#flp-image').value.trim() || FARM_LAND_DEFAULTS.image;
-      renderFarmStage();
-    };
-    const updateLive = () => {
-      farmLand.z = +$('#flp-z').value; $('#flp-z-v').textContent = farmLand.z;
-      farmLand.scale = +$('#flp-scale').value; $('#flp-scale-v').textContent = (+farmLand.scale).toFixed(2)+'×';
-      farmLand.widthPct = +$('#flp-w').value; $('#flp-w-v').textContent = farmLand.widthPct+'%';
-      farmLand.heightPct = +$('#flp-h').value; $('#flp-h-v').textContent = farmLand.heightPct+'%';
-      farmLand.bgThreshold = +$('#flp-bg-threshold').value;
-      $('#flp-bg-threshold-v').textContent = farmLand.bgThreshold;
-      renderFarmStage();
-    };
-    $('#flp-z').oninput = updateLive;
-    $('#flp-scale').oninput = updateLive;
-    $('#flp-w').oninput = updateLive;
-    $('#flp-h').oninput = updateLive;
-    $('#flp-bg-threshold').oninput = updateLive;
-    $('#flp-reset').onclick = () => {
-      farmLand.scale = 1; farmLand.widthPct = 80; farmLand.heightPct = 65; farmLand.bgThreshold = 30;
-      setSelectedFarmUI(); renderFarmStage();
-    };
-  }
+  const box = $('#farm-land-props');
+  const l = farmLands.find(p => p.id === farmSelectedId);
+  box.classList.toggle('hidden', !l);
+  if (!l) return;
+  // 作物下拉（每块土地一种）
+  const sel = $('#flp-crop');
+  sel.innerHTML = '<option value="">（空地 / 不种）</option>' +
+    farmCropList.map(c => `<option value="${esc(c.key)}">${(c.emoji ? c.emoji + ' ' : '') + esc(c.name)}</option>`).join('');
+  sel.value = l.cropKey || '';
+  $('#flp-image').value = l.image || '';
+  $('#flp-z').value = l.z; $('#flp-z-v').textContent = l.z;
+  $('#flp-scale').value = l.scale; $('#flp-scale-v').textContent = (+l.scale).toFixed(2)+'×';
+  $('#flp-w').value = l.widthPct; $('#flp-w-v').textContent = l.widthPct+'%';
+  $('#flp-h').value = l.heightPct; $('#flp-h-v').textContent = l.heightPct+'%';
+  const bgTh = l.bgThreshold != null ? +l.bgThreshold : 30;
+  $('#flp-bg-threshold').value = bgTh; $('#flp-bg-threshold-v').textContent = bgTh;
+  $('#flp-crop').onchange = () => { l.cropKey = $('#flp-crop').value || null; renderFarmLandList(); renderFarmStage(); };
+  $('#flp-image').onchange = () => {
+    l.image = $('#flp-image').value.trim() || FARM_LAND_DEFAULTS.image;
+    renderFarmStage();
+  };
+  const updateLive = () => {
+    l.z = +$('#flp-z').value; $('#flp-z-v').textContent = l.z;
+    l.scale = +$('#flp-scale').value; $('#flp-scale-v').textContent = (+l.scale).toFixed(2)+'×';
+    l.widthPct = +$('#flp-w').value; $('#flp-w-v').textContent = l.widthPct+'%';
+    l.heightPct = +$('#flp-h').value; $('#flp-h-v').textContent = l.heightPct+'%';
+    l.bgThreshold = +$('#flp-bg-threshold').value;
+    $('#flp-bg-threshold-v').textContent = l.bgThreshold;
+    renderFarmStage();
+  };
+  $('#flp-z').oninput = updateLive;
+  $('#flp-scale').oninput = updateLive;
+  $('#flp-w').oninput = updateLive;
+  $('#flp-h').oninput = updateLive;
+  $('#flp-bg-threshold').oninput = updateLive;
+  $('#flp-reset').onclick = () => {
+    l.scale = 1; l.widthPct = 55; l.heightPct = 45; l.bgThreshold = 30;
+    setSelectedFarmUI(); renderFarmStage();
+  };
 }
+
+// 新增 / 复制 / 删除 土地
+$('#farm-land-add').addEventListener('click', () => {
+  const l = { id: newFarmLandId(), ...FARM_LAND_DEFAULTS, x: 50, y: 40 };
+  farmLands.push(l); farmSelectedId = l.id; renderFarmLandList(); renderFarmStage(); setSelectedFarmUI();
+  toast('已新增一块土地');
+});
+$('#farm-land-dup').addEventListener('click', () => {
+  const src = farmLands.find(p => p.id === farmSelectedId);
+  if (!src) return toast('请先选中一块土地');
+  const copy = { ...src, id: newFarmLandId(), x: Math.min(95, (src.x || 50) + 8), y: Math.min(95, (src.y || 55) + 6) };
+  farmLands.push(copy); farmSelectedId = copy.id; renderFarmLandList(); renderFarmStage(); setSelectedFarmUI();
+  toast('已复制一块土地');
+});
+$('#farm-land-del').addEventListener('click', () => {
+  if (!farmSelectedId) return;
+  if (farmLands.length <= 1) return toast('至少保留一块土地');
+  if (!confirm('确认删除选中的土地？')) return;
+  farmLands = farmLands.filter(p => p.id !== farmSelectedId);
+  farmSelectedId = farmLands.length ? farmLands[0].id : null;
+  renderFarmLandList(); renderFarmStage(); setSelectedFarmUI();
+  toast('已删除土地');
+});
 
 $('#farm-save').addEventListener('click', async () => {
   try {
-    // 存土地图层（单例 upsert）
-    if (farmLand) {
-      const row = {
-        id: farmLand.id || 'main',
-        image: farmLand.image,
-        x: farmLand.x, y: farmLand.y, z: farmLand.z,
-        scale: farmLand.scale,
-        width_pct: farmLand.widthPct,
-        height_pct: farmLand.heightPct,
-        bg_threshold: farmLand.bgThreshold != null ? +farmLand.bgThreshold : 30,
-      };
-      await api('PUT','/api/admin/farm-land', row).catch(e => {
-        console.warn('[admin] farm-land 端点不可用，跳过（已执行 004+006 迁移后才会生效）', e.message);
-      });
-    }
-    toast('✅ 土地图层已保存（预览账号 2.5s 同步）');
-  } catch(err){ toast(err.message); }
+    // 保存全部土地（数组整体替换，sort_order = 列表顺序）
+    const items = farmLands.map((l, i) => ({ ...l, sortOrder: i }));
+    await api('PUT', '/api/admin/farm-land', { items });
+    toast('✅ 全部土地已保存（预览账号 2.5s 同步）');
+  } catch (err) { toast(err.message); }
 });
 $('#farm-canvas').addEventListener('pointerdown', e => {
-  // 单地块模式下唯一元素 = 土地，无需取消选中；保持该空事件避免报错
+  if (e.target.closest('.room-item')) return;
+  // 点击空白处取消选中（土地列表仍可重新选中）
+  farmSelectedId = null; setSelectedFarmUI();
 });
 
 // ---- 品种模态框（含阶段图上传） ----

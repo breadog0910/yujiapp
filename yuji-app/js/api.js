@@ -175,7 +175,7 @@ async function tryAutoLogin() {
       client.from('ai_config').select('key, name, provider, model, enabled').order('key'),
       client.from('farm_crop_catalog').select('*').order('sort_order'),
       client.from('farm_plot_layout').select('*').order('sort_order'),
-      client.from('farm_land_config').select('*').limit(1),
+      client.from('farm_land_config').select('*').order('sort_order'),
     ]);
 
     if (e1) console.warn('[Api] furniture_catalog 查询失败', e1.message);
@@ -242,6 +242,7 @@ async function tryAutoLogin() {
       seedCatalog: (seeds || []).map(mapSeed),
       farmCropCatalog: (farmCrops || []).map(mapFarmCrop),
       farmPlotLayout: (farmPlots || []).map(mapFarmPlot),
+      farmLandList: (farmLandRows || []).map(mapFarmLand),
       farmLandConfig: (farmLandRows || []).map(mapFarmLand)[0] || null,
       aiConfig: (aiRows || []).map((a) => ({ key: a.key, name: a.name, provider: a.provider, model: a.model, enabled: !!a.enabled })),
       tabBackgrounds,

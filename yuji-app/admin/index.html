@@ -132,7 +132,7 @@
     <!-- 技能农场 -->
     <section data-panel="farm" class="panel hidden">
       <div class="panel-head"><h2>🌾 技能农场</h2></div>
-      <p class="hint">分层布置：<b>① Tab3 背景</b>（草地/天空）→ <b>② 土地图层</b>（可拖拽位置/大小，可换图）→ <b>③ 作物空格子</b>（拖到土地上即可）。+「作物品种库」（含各生长阶段图）。保存后预览账号 2.5s 自动同步前端。</p>
+      <p class="hint">分层布置：<b>① Tab3 背景</b>（草地/天空）→ <b>② 多块土地</b>（可复制 / 拖拽 / 分别设作物）→ <b>③ 作物品种库</b>（各生长阶段图）。每块土地 = 1 个种植位，可设不同作物；点「+ 新增土地」添加，选中后「⧉ 复制」生成另一块，拖动调整位置，保存后预览账号 2.5s 自动同步前端。</p>
 
       <h3 style="margin-top:18px;">① 作物品种库</h3>
       <div class="panel-head" style="margin-top:6px;">
@@ -141,11 +141,14 @@
       </div>
       <div id="farm-crop-table" class="table-wrap"></div>
 
-      <h3 style="margin-top:22px;">② 画布：单地块土地图层（整块地=1 个种植按钮，拖拽布置）</h3>
+      <h3 style="margin-top:22px;">② 画布：多块土地（可复制 / 拖拽 / 设作物）</h3>
       <div class="panel-head" style="margin-top:6px;">
-        <span class="hint" style="margin:0;">画布底 = tab3 背景（1412…png）。<b>黄框土地层</b>为唯一交互地块，已资源级白底抠图；整块土地即种植按钮。</span>
+        <span class="hint" style="margin:0;">画布底 = tab3 背景。<b>黄框土地层</b>可拖拽；选中后在右侧设图片 / 层级 / 缩放 / 宽高 / 抠图阈值，并下拉选择「该土地的作物」。</span>
         <div class="panel-actions">
-          <button id="farm-save" class="primary">💾 保存土地图层</button>
+          <button id="farm-land-add" class="primary">+ 新增土地</button>
+          <button id="farm-land-dup" class="ghost">⧉ 复制选中</button>
+          <button id="farm-land-del" class="ghost danger">🗑 删除选中</button>
+          <button id="farm-save" class="primary">💾 保存全部土地</button>
         </div>
       </div>
       <div class="layout-wrap">
@@ -157,11 +160,15 @@
           </div>
         </div>
         <div class="palette">
-          <div class="palette-title">属性面板（点击画布元素）</div>
+          <div class="palette-title">土地列表（点击选中）</div>
+          <div id="farm-land-list" class="palette-list"></div>
 
           <div id="farm-land-props" class="piece-props hidden">
-            <div class="prop-title">🟨 土地图层（整块地=1 个种植按钮）</div>
+            <div class="prop-title">🟨 土地属性</div>
             <label>图片 URL <input id="flp-image" type="text" placeholder="assets/farm/land-v2.png" /></label>
+            <label>该土地的作物
+              <select id="flp-crop"><option value="">（空地 / 不种）</option></select>
+            </label>
             <label>层级 z <input id="flp-z" type="range" min="1" max="6" step="1" /><span id="flp-z-v"></span></label>
             <label>缩放 scale <input id="flp-scale" type="range" min="0.3" max="2" step="0.05" /><span id="flp-scale-v"></span></label>
             <label>宽度 % <input id="flp-w" type="range" min="20" max="100" step="1" /><span id="flp-w-v"></span></label>
@@ -170,7 +177,7 @@
             <button id="flp-reset" class="ghost">恢复默认尺寸</button>
           </div>
 
-          <div id="farm-empty-tip" class="hint" style="margin-top:8px;">未选中元素。点击画布上的土地层编辑属性。</div>
+          <div id="farm-empty-tip" class="hint" style="margin-top:8px;">尚无土地，点「+ 新增土地」开始。</div>
         </div>
       </div>
     </section>
