@@ -984,6 +984,11 @@ const Popups = (() => {
           <div id="aiDisabledHint" class="hint hidden" style="flex:1 1 100%;margin-bottom:8px;">
             当前未配置 AI 智能体，请在后台开启「洞察」+「自我说明书」智能体后使用重新总结功能。
           </div>
+          <div id="aiAuthHint" class="hint hidden" style="flex:1 1 100%;margin-bottom:8px;">
+            🔒 需要你先授权「允许 AI 读取我的记录」，小我才能据此生成说明书。<br>
+            <button class="popup-btn primary" data-act="grantAi" style="margin-top:8px;">🔓 授权 AI 读取我的记录</button>
+            <span style="font-size:12px;color:#a98a63;">（也可在右上角 ⚙ 设置 → 🛡 数据隐私 中管理）</span>
+          </div>
           <button class="popup-btn" data-act="closeManual">完成</button>
           <button id="aiRegenBtn" class="popup-btn primary" data-act="regen">✨ 让 AI 重新总结我</button>
         </div>
@@ -1938,13 +1943,22 @@ ${ctx.join('\n\n')}`;
         }
       }
 
-      // 3. AI 可用判断（两个 agent 都启用才算 ready；退而求其次：只要 insight 或任意 AI 已启用也可以）
+      // 3. AI 可用判断：后台需开启 insight/self_manual 智能体，且用户需授权「允许 AI 读取」
       const aiReady = !!(State.aiEnabled && (State.aiEnabled('insight') || State.aiEnabled('self_manual')));
+      const authed = !(State.aiReadAllowed && !State.aiReadAllowed()); // aiReadAllowed 存在且返回 false → 未授权
       const regenBtn = r.querySelector('#aiRegenBtn');
       const hintEl = r.querySelector('#aiDisabledHint');
+      const authEl = r.querySelector('#aiAuthHint');
+      // 先全部隐藏，再按需显示其中一种状态
+      if (regenBtn) regenBtn.classList.add('hidden');
+      if (hintEl) hintEl.classList.add('hidden');
+      if (authEl) authEl.classList.add('hidden');
       if (!aiReady) {
-        if (regenBtn) regenBtn.classList.add('hidden');
         if (hintEl) hintEl.classList.remove('hidden');
+      } else if (!authed) {
+        if (authEl) authEl.classList.remove('hidden');
+      } else {
+        if (regenBtn) regenBtn.classList.remove('hidden');
       }
 
       // 4. 数据来源展开切换
@@ -1962,8 +1976,19 @@ ${ctx.join('\n\n')}`;
       // 5. 完成按钮
       bindAct('closeManual', close);
 
+      // 5.5 在镜子里直接完成「允许 AI 读取」授权，无需离开弹窗
+      const grantBtn = r.querySelector('[data-act="grantAi"]');
+      if (grantBtn) {
+        grantBtn.addEventListener('click', () => {
+          if (typeof State.setPrivacy === 'function') State.setPrivacy({ allowAiRead: true });
+          Utils.toast('已授权：小我可以读取你的记录来生成说明书 🔓');
+          close();
+          setTimeout(() => Popups.open('selfManual'), 120);
+        });
+      }
+
       // 6. AI 重新总结（含 10 分钟前端节流）
-      if (regenBtn && aiReady) {
+      if (regenBtn && aiReady && authed) {
         const THROTTLE_KEY = 'yuji_last_manual_regen_ts';
         const THROTTLE_MS = 10 * 60 * 1000;
         regenBtn.addEventListener('click', async () => {
