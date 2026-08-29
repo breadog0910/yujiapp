@@ -218,7 +218,9 @@ const State = (() => {
     }
     if (Array.isArray(cfg.seedCatalog) && cfg.seedCatalog.length) seedCatalog = cfg.seedCatalog;
     // 空数组也要更新：后台清空布局后，预览账号轮询才能检测到指纹变化并刷新房间
-    if (Array.isArray(cfg.defaultRoomLayout)) {
+    // 空数组不覆盖兜底：后台未配置/清空默认布局时，新号仍使用内置设计默认房间，避免拿到空房间。
+    // （早前逻辑在后台返回空数组时会把 FALLBACK_DEFAULT_ROOM_ITEMS 清空，导致新号首屏是空房间、与后台设计对不上）
+    if (Array.isArray(cfg.defaultRoomLayout) && cfg.defaultRoomLayout.length > 0) {
       defaultRoomItems = cfg.defaultRoomLayout.filter(r => r.type !== TAB2_ENTRY_TYPE && r.type !== TAB2_TREEHOLE_TYPE);
     }
     // Tab2「本心对语」入口：从家具目录/默认布局中取 tab2_entry，组装成 tab2Entry
@@ -298,8 +300,12 @@ const State = (() => {
   // ============================================================
   // 默认状态构造（使用当前配置，便于新用户拿到管理员设定的初始房间）
   // ============================================================
+  // 后台默认布局为空（表未配置/被清空）时，回退到内置设计默认房间，保证新号首屏永远有房间
+  function effectiveDefaultRoomItems() {
+    return (defaultRoomItems && defaultRoomItems.length) ? defaultRoomItems : FALLBACK_DEFAULT_ROOM_ITEMS;
+  }
   function buildDefaultState() {
-    const items = defaultRoomItems.map(it => ({
+    const items = effectiveDefaultRoomItems().map(it => ({
       id: it.id, type: it.type, x: it.x, y: it.y, z: it.z,
       scale: it.scale != null ? it.scale : 1, flip: it.flip || 0,
       rot: it.rot || 0, tilt: it.tilt || 0,
@@ -399,7 +405,13 @@ const State = (() => {
       const raw = localStorage.getItem(storageKey());
       if (!raw) return attachFarmCompat(buildDefaultState());
       const saved = JSON.parse(raw);
-      return attachFarmCompat(deepMerge(buildDefaultState(), saved));
+      const st = attachFarmCompat(deepMerge(buildDefaultState(), saved));
+      // 房间为空（老数据/被清空/异常）时回退到后台默认布局，保证首屏一定有房间，
+      // 且新号不会因本地存档里的空 roomItems 而显示空房间（与后台设计保持一致）
+      if (!st.roomItems || st.roomItems.length === 0) {
+        st.roomItems = buildDefaultRoomItems();
+      }
+      return st;
     } catch (e) {
       console.warn('[State] load failed', e);
       return attachFarmCompat(buildDefaultState());
@@ -409,6 +421,8 @@ const State = (() => {
   // 旧版本所有账号共用 yuji_state_v5（会串号）。升级后改为按账号隔离。
   // 这里做一次迁移：登录账号首次加载时，若账号专属 key 为空而旧共享 key 有数据，
   // 把旧数据搬到该账号专属 key，并删除旧 key（只迁移一次，避免之后再被重复复制）。
+  // 注意：房间布局始终以「后台默认布局」为准，迁移时丢弃旧共享状态的旧房间，
+  // 避免新号继承旧房间而与后台当前设计不一致（只保留情绪/日记/数值等个人数据）。
   function migrateLegacyIfNeeded() {
     try {
       if (typeof Api === 'undefined' || !Api.isAuthed() || typeof Api.getUser !== 'function') return;
@@ -418,9 +432,20 @@ const State = (() => {
       if (localStorage.getItem(accKey)) return;          // 已有账号数据，不覆盖
       const legacy = localStorage.getItem(STORAGE_KEY);
       if (!legacy) return;                                // 无旧数据可迁移
-      localStorage.setItem(accKey, legacy);
+      let migrated = legacy;
+      try {
+        const parsed = JSON.parse(legacy);
+        // 丢弃房间相关字段，让新号重新套用后台默认布局
+        delete parsed.roomItems;
+        delete parsed.placements;
+        delete parsed.selectedForPlace;
+        delete parsed.furnitureInventory;
+        delete parsed.gardenWarehouse;
+        migrated = JSON.stringify(parsed);
+      } catch (_) { /* 解析失败则原样迁移 */ }
+      localStorage.setItem(accKey, migrated);
       localStorage.removeItem(STORAGE_KEY);
-      console.log('[State] 一次性迁移旧本地数据到账号', u.id);
+      console.log('[State] 一次性迁移旧本地数据到账号', u.id, '（房间改用后台默认布局）');
     } catch (_) { /* 迁移失败不影响启动 */ }
   }
 
@@ -460,7 +485,7 @@ const State = (() => {
   // ---------- 预览账号：实时同步后台 ----------
   // 用当前 defaultRoomItems 生成默认房间物品列表（与 buildDefaultState 内的映射保持一致）
   function buildDefaultRoomItems() {
-    return defaultRoomItems.map(it => ({
+    return effectiveDefaultRoomItems().map(it => ({
       id: it.id, type: it.type, x: it.x, y: it.y, z: it.z,
       scale: it.scale != null ? it.scale : 1, flip: it.flip || 0,
       rot: it.rot || 0, tilt: it.tilt || 0,
