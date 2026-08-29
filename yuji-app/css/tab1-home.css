@@ -181,6 +181,10 @@
 .room-item.has-action .ri-sprite {
   animation: ri-breathe 3.2s ease-in-out infinite;
 }
+/* 镜子不要浮动 */
+.room-item.has-action[data-type="mirror"] .ri-sprite {
+  animation: none;
+}
 @keyframes ri-breathe {
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-3px) scale(1.04); }
@@ -379,12 +383,12 @@ body.room-editing .room-edit-btn {
 .xiaowo.is-celebrating .xiaowo-drinking { opacity: 0; }   /* 切庆祝时喝水层淡出（非 crossfade） */
 
 /* ============== 庆祝层（默认隐藏）：1:1 完全复制喝水层结构 ==============
-   v16: 将 v13 角色放大 1.33 倍后居中裁剪回 155×254，再复制最后一帧凑成 6 帧，
-   最终 sprite 尺寸 930×254（与喝水完全一致），角色大小与喝水匹配。 */
+   v17: 在 v16 基础上，每帧按角色底部对齐向下平移（50-57px），
+   所有帧角色脚底统一对齐 sprite 底边，与喝水动画人物脚底完全齐平。 */
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v16.png?v=4');
+  background-image: url('../assets/pixel/xiaowo-celebrate-v17.png?v=5');
   background-size: 540px 100%;       /* 90×6 = 540（与喝水完全同尺寸） */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
