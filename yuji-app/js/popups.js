@@ -670,6 +670,65 @@ const Popups = (() => {
       `;
     },
 
+    // ============ 数据隐私（独立设置入口）============
+    privacy() {
+      const p = (typeof State !== 'undefined' && State.getPrivacy) ? State.getPrivacy() : { localOnly: true, allowAiRead: false, allowAnalytics: true };
+      const sw = (on) => `      <div class="privacy-switch ${on ? 'on' : ''}" role="switch" aria-checked="${on}">
+        <span class="ps-knob"></span>
+      </div>`;
+      return `
+        <div class="popup-head">
+          <div class="popup-title">🛡 数据隐私</div>
+          <button class="popup-close" aria-label="关闭">✕</button>
+        </div>
+        <div class="popup-body privacy-body">
+          <div class="privacy-note">
+            予己尊重你的隐私。你在这里记下的每一份情绪、日记、自我觉察，都属于「私密的你」。<br>
+            下面把数据怎么存、谁能看、AI 怎么用，一条条写清楚 —— 你也可以随时自己决定。
+          </div>
+
+          <div class="privacy-sec-title">📖 数据隐私逻辑</div>
+          <ul class="privacy-logic">
+            <li><b>存在哪里：</b>默认只存在你这台设备（本机），<b>不自动上传</b>。</li>
+            <li><b>谁能看：</b>只有你本人。开发方无法读取你的原文。</li>
+            <li><b>AI 怎么用：</b>只有你授权后，AI 才基于你的记录生成小我内容；关闭时原文绝不出本机。</li>
+            <li><b>统计：</b>即便开启统计，也只记录行为（如完成了哪个任务），<b>绝不采集</b>你的文字内容。</li>
+          </ul>
+
+          <div class="privacy-sec-title">🎚 我的选择</div>
+
+          <div class="privacy-row">
+            <div class="pr-label">
+              <div class="pr-title">📦 本地存储优先（不上传云端）</div>
+              <div class="pr-desc">开启后，你的记录只留在本机。即便已登录，也不会自动同步到云端；关闭后才会加密备份到云端以便多设备继续。</div>
+            </div>
+            ${sw(p.localOnly)}
+          </div>
+
+          <div class="privacy-row">
+            <div class="pr-label">
+              <div class="pr-title">🤖 允许 AI 读取我的记录</div>
+              <div class="pr-desc">开启后，AI 才能生成小我信件 / 自我说明书 / 家具故事。关闭时这些功能不可用，原文只在本机。</div>
+            </div>
+            ${sw(p.allowAiRead)}
+          </div>
+
+          <div class="privacy-row">
+            <div class="pr-label">
+              <div class="pr-title">📊 允许匿名使用统计</div>
+              <div class="pr-desc">只统计行为（如完成任务），不采集任何文字内容。</div>
+            </div>
+            ${sw(p.allowAnalytics)}
+          </div>
+
+          <div class="privacy-actions">
+            <button class="popup-btn ghost" data-act="exportData">⬇️ 导出我的数据</button>
+            <button class="popup-btn danger" data-act="clearData">🗑 清除本机数据</button>
+          </div>
+        </div>
+      `;
+    },
+
     // ============ 家具"获取记录"面板 ============
     furniInfo(data = {}) {
       const it = State.state.roomItems.find(r => r.id === data.id);
@@ -1973,6 +2032,67 @@ ${ctx.join('\n\n')}`;
         });
       }
     },
+
+    // ============ 数据隐私弹窗 ============
+    privacy() {
+      // 三个独立开关：点击切换 → 写回 State.setPrivacy
+      root().querySelectorAll('.privacy-row .privacy-switch').forEach(sw => {
+        sw.addEventListener('click', () => {
+          const on = !sw.classList.contains('on');
+          sw.classList.toggle('on', on);
+          sw.setAttribute('aria-checked', String(on));
+          const titleTxt = sw.closest('.privacy-row').querySelector('.pr-title').textContent || '';
+          const map = { '本地存储优先': 'localOnly', '允许 AI 读取': 'allowAiRead', '允许匿名使用统计': 'allowAnalytics' };
+          let field = null;
+          for (const k in map) { if (titleTxt.indexOf(k) !== -1) { field = map[k]; break; } }
+          if (!field) return;
+          const partial = {};
+          partial[field] = on;
+          State.setPrivacy(partial);
+          Utils.toast('已保存 · 数据隐私');
+        });
+      });
+
+      // 导出我的数据（下载本机 JSON）
+      const exportBtn = root().querySelector('[data-act="exportData"]');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          try {
+            const data = JSON.stringify(State.state, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'yuji-my-data.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            Utils.toast('已导出本机数据 ✅');
+          } catch (e) {
+            Utils.toast('导出失败：' + (e.message || e));
+          }
+        });
+      }
+
+      // 清除本机数据（带二次确认；注意：本次仅清本机，云端副本需另行处理）
+      const clearBtn = root().querySelector('[data-act="clearData"]');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          const ok = window.confirm('确定清除本机全部数据吗？\n（情绪、日记、小屋布置等都会清空，且无法恢复）\n\n提示：若你已开启「本地存储优先」，数据只在本机，清除即彻底删除；若已同步云端，云端副本需到账号设置另行处理。');
+          if (!ok) return;
+          try {
+            localStorage.removeItem('yuji_state_v5');
+            if (typeof State.reset === 'function') State.reset();
+            Utils.toast('本机数据已清除');
+            close();
+            setTimeout(() => location.reload(), 400);
+          } catch (e) {
+            Utils.toast('清除失败：' + (e.message || e));
+          }
+        });
+      }
+    },
   };
 
   // ============ 本心对语辅助函数 ============
@@ -2114,6 +2234,13 @@ ${ctx.join('\n\n')}`;
     waitingBubble.innerHTML = '<div class="dialogue-msg-avatar">🌿</div><div class="dialogue-msg-bubble"><div class="dialogue-msg-text" style="color:#999;">小我正伏在桌边给回信…</div></div>';
     thread?.appendChild(waitingBubble);
     thread?.scrollTo(0, thread.scrollHeight);
+    // 隐私：未授权「允许 AI 读取」→ 不把对话发给 AI，仅保留本地记录
+    if (typeof State !== 'undefined' && State.aiReadAllowed && !State.aiReadAllowed()) {
+      waitingBubble.remove();
+      if (btn) { btn.disabled = false; btn.textContent = '寄出'; }
+      Utils.toast('小我 AI 回复已关闭：在「数据隐私」开启「允许 AI 读取我的记录」后用');
+      return;
+    }
     try {
       const r = await Api.callAI('whisper', [
         { role: 'system', content: '你是森林里那个温柔的小我，是用户内在的自己。用森林密信、说悄悄话的口吻回应。' },
