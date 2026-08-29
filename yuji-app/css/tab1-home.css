@@ -383,14 +383,13 @@ body.room-editing .room-edit-btn {
      xiaowo-celebrate-match-water.png（= xiaowo-celebrate.png 930×254 的硬拷贝）
      —— 浏览器对 background-image 经常无视 ?v=xx 查询串，直接按文件名命中强缓存，
      所以必须改物理文件名才能强制重新下载，避免用户永远看到 678×254 旧版本。
-   单帧 canvas 强制 155×254（与喝水帧完全同尺寸），最终 sheet 930×254（喝水也是 930×254）
-   → 显示帧 90×148，background-size=540px，keyframes 偏移和喝水 xd-play 一字不差。
-   抠图 Skill §1.1「连边全清」：透明占比 71.6%，浅灰/深灰/网格背景全清。 */
+   v14: 最近邻缩放到 450×148（5 帧 × 90×148），与喝水显示尺寸完全一致，
+   浏览器无需再缩放，像素 1:1 渲染，彻底杜绝缩放带来的灰色杂色伪影。 */
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v13.png?v=2');
-  background-size: 450px 100%;       /* 90×5 = 450（庆祝 5 帧，每帧 90px） */
+  background-image: url('../assets/pixel/xiaowo-celebrate-v14.png?v=3');
+  background-size: 450px 100%;       /* 450×148 原图，5 帧每帧 90×148 */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
   image-rendering: pixelated;
@@ -418,9 +417,8 @@ body.room-editing .room-edit-btn {
 }
 
 /* ---------- 庆祝动作：.xiaowo.is-celebrating 时触发 ----------
-   1:1 完全复制喝水动作（喝水当时跑通的那一套，一字不差）。
-   因为庆祝 sprite 也变成了 930×254（单帧 155×254 → 90×148 显示），
-   所以和喝水共用同一节奏、同一帧步 -90px、同一 6 段切法。 */
+   与喝水动作显示尺寸完全一致：单帧 90×148，帧步 -90px。
+   庆祝为 5 帧，故 keyframes 分 5 段（0/20/40/60/80/100）。 */
 .xiaowo.is-celebrating .xiaowo-celebrate {
   animation: xc-play calc(var(--xc-frame-dur) * var(--xc-frame-count)) var(--xc-loops);
   animation-timing-function: step-end; /* 强制硬切，禁止帧间插值 */
