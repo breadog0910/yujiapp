@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>予己 Demo 视频 · 点击流程图</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f5e8d4; --cream2:#efe0c6; --card:#fffaf0; --brown:#7a5a3a; --brown2:#b9824e;
+    --green:#5f9d78; --green2:#8fbf9e; --gold:#e8b45c; --red:#c96a5a; --line:#d9c3a2;
+    --ink:#4a3626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--cream);
+    background-image:radial-gradient(circle at 20% 10%, rgba(255,255,255,.5), transparent 45%),
+                     radial-gradient(circle at 85% 90%, rgba(233,196,141,.35), transparent 50%);
+    color:var(--ink);
+    font-family:"ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",sans-serif;
+    padding:34px 18px 80px;
+  }
+  .wrap{max-width:1060px;margin:0 auto}
+  /* ---------- 头部 ---------- */
+  header{
+    text-align:center; margin-bottom:26px;
+    border:4px solid var(--brown); background:var(--card);
+    box-shadow:6px 6px 0 rgba(122,90,58,.28);
+    padding:26px 20px 22px; position:relative;
+  }
+  header .en{
+    font-family:"Press Start 2P",monospace; font-size:12px; color:var(--green);
+    letter-spacing:2px; margin-bottom:12px; display:block;
+  }
+  header h1{font-size:34px; color:var(--brown); letter-spacing:3px; font-weight:400}
+  header .slogan{margin-top:10px; font-size:19px; color:var(--brown2)}
+  header .meta{margin-top:12px; font-size:14px; color:var(--brown2)}
+  header .meta b{color:var(--green); font-weight:400}
+  /* ---------- 主线 banner ---------- */
+  .line{
+    display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px;
+    background:var(--green); color:#fff; border:3px solid var(--brown);
+    box-shadow:4px 4px 0 rgba(122,90,58,.25);
+    padding:14px 18px; margin-bottom:30px; font-size:17px; letter-spacing:1px;
+  }
+  .line .dot{color:#ffe9b8; font-size:20px}
+  .line span.tag{
+    background:rgba(255,255,255,.2); border:2px solid #fff; padding:2px 10px;
+  }
+  /* ---------- 准备清单 ---------- */
+  .prep{
+    background:var(--card); border:3px dashed var(--brown2);
+    padding:18px 22px; margin-bottom:34px; font-size:15px; line-height:1.9;
+  }
+  .prep h2{font-size:19px; color:var(--brown); margin-bottom:8px; font-weight:400; letter-spacing:2px}
+  .prep ul{padding-left:22px; color:var(--ink)}
+  .prep li b{color:var(--red); font-weight:400}
+  .prep li i{color:var(--green); font-style:normal}
+  /* ---------- 场景节 ---------- */
+  .scene{margin-bottom:44px}
+  .scene-head{
+    display:flex; align-items:center; gap:14px; margin-bottom:6px;
+  }
+  .scene-no{
+    font-family:"Press Start 2P",monospace; font-size:11px; color:#fff;
+    background:var(--brown); padding:10px 12px; border:3px solid var(--brown);
+    box-shadow:3px 3px 0 rgba(0,0,0,.15); white-space:nowrap;
+  }
+  .scene-title{font-size:26px; color:var(--brown); letter-spacing:2px; font-weight:400}
+  .scene-title small{font-size:15px; color:var(--brown2); letter-spacing:1px}
+  .scene-sub{
+    font-size:14px; color:var(--brown2); margin:2px 0 12px 0;
+  }
+  .scene-grid{
+    display:grid; grid-template-columns:230px 1fr; gap:18px; align-items:start;
+  }
+  .scene-img{
+    border:4px solid var(--brown); box-shadow:5px 5px 0 rgba(122,90,58,.22);
+    background:#fff; padding:6px; image-rendering:pixelated;
+  }
+  .scene-img img{width:100%; display:block}
+  .scene-img figcaption{font-size:13px; color:var(--brown2); text-align:center; padding-top:6px}
+  .steps{display:flex; flex-direction:column; gap:14px}
+  /* ---------- 步骤卡 ---------- */
+  .step{
+    background:var(--card); border:3px solid var(--line); border-left-width:8px;
+    border-left-color:var(--green2); padding:14px 16px 12px;
+    box-shadow:3px 3px 0 rgba(122,90,58,.15); position:relative;
+  }
+  .step.hot{border-left-color:var(--red)}
+  .step-top{display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap}
+  .step-idx{
+    font-family:"Press Start 2P",monospace; font-size:10px; color:#fff;
+    background:var(--green); padding:5px 8px;
+  }
+  .step-time{
+    font-family:"Press Start 2P",monospace; font-size:10px; color:var(--red);
+    border:2px solid var(--red); padding:4px 7px; white-space:nowrap;
+  }
+  .step-name{font-size:18px; color:var(--ink); letter-spacing:1px}
+  .step-rows{display:grid; grid-template-columns:86px 1fr; gap:5px 12px; font-size:14.5px; line-height:1.75}
+  .step-rows .k{color:var(--green); letter-spacing:1px}
+  .step-rows .v{color:var(--ink)}
+  .step-rows .v b{color:var(--brown); font-weight:400}
+  .step-rows .nar{color:var(--brown2); font-style:italic}
+  .arrow{
+    text-align:center; font-family:"Press Start 2P",monospace; font-size:14px;
+    color:var(--brown2); margin:-2px 0; letter-spacing:6px;
+  }
+  /* ---------- 结尾提示 ---------- */
+  .tips{
+    margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  }
+  .tips .tip{
+    background:var(--card); border:3px solid var(--line); padding:14px 18px; font-size:14.5px; line-height:1.9;
+  }
+  .tips h3{font-size:17px; color:var(--brown); font-weight:400; letter-spacing:1px; margin-bottom:6px}
+  footer{text-align:center; margin-top:40px; color:var(--brown2); font-size:14px; letter-spacing:1px}
+  @media (max-width:820px){
+    .scene-grid{grid-template-columns:1fr}
+    .tips{grid-template-columns:1fr}
+  }
+  @media print{
+    body{background:#fff; padding:0}
+    .step,.scene-img,.line,.prep{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="en">YUJI · INNER GROWTH</span>
+    <h1>予己 Demo 视频 · 点击流程图</h1>
+    <div class="slogan">好好爱自己，慢慢成为自己。</div>
+    <div class="meta">总时长建议 <b>约 4 分钟</b> ｜ 主线：<b>看见自己 → 认识自己 → 成长自己 → 沉淀自己</b> ｜ 共 4 大场景 + 收尾</div>
+  </header>
+
+  <div class="line">
+    <span class="tag">🏠 此刻·家</span><span class="dot">→</span>
+    <span class="tag">🌲 遇见·森林</span><span class="dot">→</span>
+    <span class="tag">🌻 生长·花园</span><span class="dot">→</span>
+    <span class="tag">🌌 星迹·宇宙</span>
+  </div>
+
+  <div class="prep">
+    <h2>▍开拍前准备（照着勾一遍）</h2>
+    <ul>
+      <li><b>录屏环境：</b>建议用浏览器无痕窗口打开线上地址（或手机真机），横屏竖屏均可，分辨率 1080p、60fps；提前关掉通知弹窗。</li>
+      <li><b>演示账号：</b>提前注册一个「演示账号」，数据要提前“养”几天：<i>房间摆好家具、种好 1 株技能作物（长到中期）、点过 2-3 次情绪记录、心灵树洞写过 1 篇</i>，这样星迹里有星、花园有植物、说明书有内容，演示才饱满。</li>
+      <li><b>AI 开关：</b>开拍前在管理后台确认 <i>insight + self_manual + letter + star_miner</i> 等 agent 均已 enabled 并配好 Key，避免演示时按钮灰掉（镜子弹窗不出现“未配置”字样）。</li>
+      <li><b>镜头语言：</b>每个场景先给 1 秒全景，再点入核心交互；点击动作慢一点，给旁白留时间。</li>
+      <li><b>备用镜头：</b>结尾可选快闪管理后台（家具库 / 商店 / AI 配置 / 农场布局），证明产品有完整后台支撑。</li>
+    </ul>
+  </div>
+
+  <!-- ==================== 片头 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S0</span>
+      <span class="scene-title">片头 <small>HOOK</small></span>
+    </div>
+    <div class="scene-sub">目标：10 秒内让评委记住「予己 = 治愈向向内成长 App」</div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab1-room.jpg" alt="此刻·平行小屋"><figcaption>片头背景：平行小屋</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">01</span><span class="step-time">00:00</span><span class="step-name">黑场淡入 Slogan</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">黑场 → 大字淡入「好好爱自己，慢慢成为自己」</span>
+            <span class="k">画面</span><span class="v">品牌字卡 + 像素音效</span>
+            <span class="k">旁白</span><span class="v nar">“予己——好好爱自己，慢慢成为自己。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">02</span><span class="step-time">00:08</span><span class="step-name">四大场景快剪</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">房间 → 森林 → 花园 → 星空，每个约 2 秒切换</span>
+            <span class="k">画面</span><span class="v">四场景叠化 + 一句关键词压屏</span>
+            <span class="k">旁白</span><span class="v nar">“一间小屋、一片森林、一座花园、一片星空。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">03</span><span class="step-time">00:15</span><span class="step-name">定位字卡</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">静态字卡，停留 3 秒</span>
+            <span class="k">画面</span><span class="v">「像素轻游戏风格的治愈向内成长 App」</span>
+            <span class="k">旁白</span><span class="v nar">“这是一款像素轻游戏风格的治愈系向内成长 App。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== S1 此刻 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S1</span>
+      <span class="scene-title">此刻 · 平行小屋 <small>看见自己</small></span>
+    </div>
+    <div class="scene-sub">2D 像素小屋 ｜ 今日自我照顾 ｜ 情绪记录 ｜ 布置 ｜ 商店 ｜ AI 说明书</div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab1-room.jpg" alt="此刻·平行小屋"><figcaption>此刻 · 平行小屋</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">04</span><span class="step-time">00:18</span><span class="step-name">打开 App 进入小屋</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">打开线上地址 → 启动屏“正在准备你的小屋…” → 用演示账号登录（或“记住我”自动进入）</span>
+            <span class="k">画面</span><span class="v">启动遮罩 → 像素小屋全景 + 像素小人“小我”</span>
+            <span class="k">旁白</span><span class="v nar">“打开予己，回到只属于自己的平行小屋。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">05</span><span class="step-time">00:28</span><span class="step-name">首页全景介绍</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">镜头扫过：小屋家具、小我（“点我记录心情”）、下方自我照顾气泡、“今天可以怎样照顾自己一点”</span>
+            <span class="k">画面</span><span class="v">右上角幸福值（❤）+ 金币（0/20）；气泡如喝水 / 深呼吸</span>
+            <span class="k">旁白</span><span class="v nar">“没有打卡、没有任务清单，只有几个今天可以对自己好一点的小气泡。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">06</span><span class="step-time">00:40</span><span class="step-name">完成一次自我照顾</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">长按「喝水」气泡（约 1 秒）→ 打勾 ✓ → 小我播放喝水动画</span>
+            <span class="k">画面</span><span class="v">幸福值 +、今日金币 +（0/20 上涨）</span>
+            <span class="k">旁白</span><span class="v nar">“长按一下，就是一次自我照顾。小我会陪你一起完成。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">07</span><span class="step-time">00:55</span><span class="step-name">记录此刻情绪</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点击像素小人“小我” → 情绪记录弹窗 → 选心情 / 写一句 → 保存</span>
+            <span class="k">画面</span><span class="v">房间氛围光随情绪变化（记录—反馈—觉察）</span>
+            <span class="k">旁白</span><span class="v nar">“点一下小我，记录此刻的心情。你的情绪，会被房间温柔地回应。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">08</span><span class="step-time">01:05</span><span class="step-name">布置房间</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点「布置」→ 拖动家具、缩放 / 转向 / 倾斜 → 点「＋ 家具库」加新家具 → 「完成」</span>
+            <span class="k">画面</span><span class="v">编辑工具栏滑入，家具被拖动、旋转</span>
+            <span class="k">旁白</span><span class="v nar">“房间可以自由布置——你按自己喜欢的方式，安放这个小家。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">09</span><span class="step-time">01:15</span><span class="step-name">金币商店犒劳自己</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点「存钱罐」家具 → 商店 → 用金币买一件像素家具</span>
+            <span class="k">画面</span><span class="v">商店弹出，金币扣减，家具回到房间</span>
+            <span class="k">旁白</span><span class="v nar">“金币只能通过自我关照获得——善待自己之后，也记得犒劳自己。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">10</span><span class="step-time">01:22</span><span class="step-name">AI 自我说明书（埋伏笔）</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点「镜子」家具 → 《自我说明书》弹窗，展示 AI 生成内容</span>
+            <span class="k">画面</span><span class="v">说明书内容 + “重新总结”入口</span>
+            <span class="k">旁白</span><span class="v nar">“这里会生长出一份属于你的《自我说明书》——一会儿在星迹，我们再回来看它。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== S2 遇见 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S2</span>
+      <span class="scene-title">遇见 · 内心森林 <small>认识自己</small></span>
+    </div>
+    <div class="scene-sub">2D 像素迷雾森林 ｜ 本心对语 ｜ 心灵树洞（AI 引导）</div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab2-forest.jpg" alt="遇见·内心森林"><figcaption>遇见 · 内心森林</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">11</span><span class="step-time">01:25</span><span class="step-name">切入森林</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">底部 Tab 切到「遇见」</span>
+            <span class="k">画面</span><span class="v">迷雾森林全景 + 光柱 + 萤火飘动</span>
+            <span class="k">旁白</span><span class="v nar">“离开小屋，走进内心森林。这里没有表单和长列表，只有两个木牌。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">12</span><span class="step-time">01:33</span><span class="step-name">本心对语</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点「本心对语」木牌 → 与“小我”对话，倾诉一件心事 → 小我回应</span>
+            <span class="k">画面</span><span class="v">对语弹窗，书信体交流</span>
+            <span class="k">旁白</span><span class="v nar">“这是和屏幕里另一个自己的对话。不定时，它会主动给你传信。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">13</span><span class="step-time">01:48</span><span class="step-name">心灵树洞 · AI 引导记录</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点「心灵树洞」木牌 → 新建日记 → 勾选 AI 引导 → AI 提问、你回答 → AI 附上回应</span>
+            <span class="k">画面</span><span class="v">树洞日记面板，AI 引导写作过程</span>
+            <span class="k">旁白</span><span class="v nar">“说不出口的话，可以写进心灵树洞。AI 不会评判，只会用问题引导你一点点梳理自己。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== S3 生长 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S3</span>
+      <span class="scene-title">生长 · 生命花园 <small>成长自己</small></span>
+    </div>
+    <div class="scene-sub">2.5D 斜等轴测花园 ｜ 技能种子 ｜ 行动养料 ｜ 无惩罚机制</div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab3-garden.jpg" alt="生长·生命花园"><figcaption>生长 · 生命花园</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">14</span><span class="step-time">02:05</span><span class="step-name">切入花园</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">底部 Tab 切到「生长」</span>
+            <span class="k">画面</span><span class="v">2.5D 斜等轴测花园全景 + 蝴蝶 / 蜜蜂粒子</span>
+            <span class="k">旁白</span><span class="v nar">“这里是一座生命花园——你种下的，是每个想成为的自己。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">15</span><span class="step-time">02:12</span><span class="step-name">种下一个技能</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点击空地（提示“点击任意一块土地，种下一个想学的技能🌱”）→ 选一颗种子（如“每天阅读 10 分钟”）→ 种下</span>
+            <span class="k">画面</span><span class="v">种子破土画面</span>
+            <span class="k">旁白</span><span class="v nar">“成长目标对应种子。种下它，剩下的交给时间。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">16</span><span class="step-time">02:25</span><span class="step-name">行动即养料</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点已种土地 → 技能记录：展示生长阶段与“养料”来源</span>
+            <span class="k">画面</span><span class="v">作物从破土 → 发芽 → 成熟；关联首页自我照顾 / 情绪记录</span>
+            <span class="k">旁白</span><span class="v nar">“每一次自我照顾、每一次情绪记录，都会变成养料，让植物生长。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">17</span><span class="step-time">02:38</span><span class="step-name">无惩罚机制</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">口播 + 字卡：植物永不枯萎 / 数值只增不减 / 无打卡、无排行</span>
+            <span class="k">画面</span><span class="v">可切回首页展示金币“只增不减”</span>
+            <span class="k">旁白</span><span class="v nar">“植物永远不会枯萎——停下只是暂停生长，不会受到任何惩罚。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== S4 星迹 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S4</span>
+      <span class="scene-title">星迹 · 个人宇宙 <small>沉淀自己</small></span>
+    </div>
+    <div class="scene-sub">晨昏星空 ｜ 星座沉淀 ｜ 星点详情 ｜ AI 深度发现 ｜ 说明书迭代</div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab4-stars.jpg" alt="星迹·个人宇宙"><figcaption>星迹 · 个人宇宙</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">18</span><span class="step-time">02:50</span><span class="step-name">切入星迹</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">底部 Tab 切到「星迹」</span>
+            <span class="k">画面</span><span class="v">低饱和晨昏流动天空 + 星座图 + 星点</span>
+            <span class="k">旁白</span><span class="v nar">“最后，来到属于你的个人宇宙。房间、森林、花园里的一切，都会在这里沉淀成星。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">19</span><span class="step-time">02:58</span><span class="step-name">星座沉淀</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点击星座（如“情绪觉察座”）→ 查看该主题沉淀的全部事件</span>
+            <span class="k">画面</span><span class="v">星座汇总面板</span>
+            <span class="k">旁白</span><span class="v nar">“你的每一次记录，都被归类成星座——情绪觉察、本心对话、成就挖掘……”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">20</span><span class="step-time">03:10</span><span class="step-name">星点详情</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">点击一颗星点 → 事件详情卡（星越亮 = 越重要）</span>
+            <span class="k">画面</span><span class="v">星点卡片展示那次记录的完整内容</span>
+            <span class="k">旁白</span><span class="v nar">“每一颗星都是一段真实的经历。重要的时刻，会亮得更亮。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">21</span><span class="step-time">03:22</span><span class="step-name">AI 深度发现 & 说明书迭代（闭环）</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">展示 AI 挖掘的“大星星”（优势挖掘 / 行为模式 / 成长对比）→ 回到镜子查看更新后的《自我说明书》</span>
+            <span class="k">画面</span><span class="v">大星星卡 → 切回 Tab1 镜子弹窗</span>
+            <span class="k">旁白</span><span class="v nar">“AI 会从你的星迹里挖掘‘深度发现’，持续更新你的自我说明书——这就是予己的记忆闭环。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 收尾 ==================== -->
+  <section class="scene">
+    <div class="scene-head">
+      <span class="scene-no">S5</span>
+      <span class="scene-title">收尾 <small>CLOSING</small></span>
+    </div>
+    <div class="scene-grid">
+      <figure class="scene-img"><img src="imgs/tab1-room.jpg" alt="回到小屋"><figcaption>回到小屋</figcaption></figure>
+      <div class="steps">
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">22</span><span class="step-time">03:40</span><span class="step-name">回到初心 · 零压力</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">切回 Tab1，口播设计铁则</span>
+            <span class="k">画面</span><span class="v">字卡：无排行榜 / 无社交 / 无惩罚 / 无付费墙</span>
+            <span class="k">旁白</span><span class="v nar">“予己不排名、不评判、不惩罚——它只想陪你，慢慢成为自己。”</span>
+          </div>
+        </div>
+        <div class="step hot">
+          <div class="step-top"><span class="step-idx">23</span><span class="step-time">03:52</span><span class="step-name">结尾字卡</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">黑场淡出 Slogan + 项目名 / 二维码</span>
+            <span class="k">画面</span><span class="v">「好好爱自己，慢慢成为自己」</span>
+            <span class="k">旁白</span><span class="v nar">“好好爱自己，慢慢成为自己。予己，欢迎你回来。”</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-top"><span class="step-idx">24</span><span class="step-time">+30s</span><span class="step-name">彩蛋（可选）：管理后台快闪</span></div>
+          <div class="step-rows">
+            <span class="k">操作</span><span class="v">打开 admin 后台，依次快闪：家具库 / 商店商品 / 农场布局 / AI 配置 / 背景资源</span>
+            <span class="k">画面</span><span class="v">后台看板 + 可视化配置界面</span>
+            <span class="k">旁白</span><span class="v nar">“整个产品的美术、商品、AI 参数，都由可视化管理后台在线维护。”</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tips">
+    <div class="tip">
+      <h3>🎬 剪辑提示</h3>
+      每段切 Tab 前加 0.3s 转场；旁白和操作尽量同屏；「小我喝水」「植物生长」等动效可以 0.5x 慢放强调；结尾统一加品牌页脚 + 口号音效。
+    </div>
+    <div class="tip">
+      <h3>⚠️ 常见翻车点</h3>
+      ① 忘开 AI agent → 镜子 / 树洞 AI 引导按钮不亮；② 演示账号太“新” → 星迹没星、花园没植物；③ 长按气泡时长不够 → 提前练习 1 秒长按；④ 网络波动 → 提前缓存好页面（PWA 可离线）。
+    </div>
+  </div>
+
+  <footer>予己 YUJI · 好好爱自己，慢慢成为自己 —— Demo 视频分镜（可随版本更新）</footer>
+</div>
+</body>
+</html>
