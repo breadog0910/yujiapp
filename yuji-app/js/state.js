@@ -378,24 +378,11 @@ const State = (() => {
       initialized = true;
       return;
     }
-    // 3) 普通账号
+    // 3) 普通账号：数据纯本地存储，不上传云端
     if (Api.isAuthed()) {
-      try {
-        const r = await Api.getState();
-        if (r && r.data) {
-          state = attachFarmCompat(deepMerge(buildDefaultState(), r.data));
-        } else {
-          state = attachFarmCompat(buildDefaultState());
-          // 新账号：先落一份初始状态到后端
-          scheduleSync(true);
-        }
-      } catch (e) {
-        console.warn('[State] 状态拉取失败，使用本地缓存：', e.message);
-        state = load();
-      }
+      // 只从本地读取，不从云端拉取
+      state = load();
     } else {
-      // 未登录：离线单机模式，重新 load 一次以应用刚拉取到的后端默认布局
-      // （模块加载时 state = load() 用的还是本地 FALLBACK；applyConfig 后 defaultRoomItems 已更新为后端值）
       state = load();
     }
     ensureDaily();
@@ -456,10 +443,10 @@ const State = (() => {
     }
   }
 
-  // 保存：本地缓存 + 防抖同步后端（仅登录态；预览账号不同步后端）
+  // 保存：只存本地 localStorage，不上传云端（保护隐私）
   function save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
-    scheduleSync();
+    // 数据纯本地，不调用 scheduleSync()
   }
   let syncTimer = null, syncing = false;
   function scheduleSync(immediate) {

@@ -41,18 +41,9 @@
     console.error('[boot] Api.init 失败:', e);
   }
 
-  // 多用户初始化：拉配置 + 拉账号状态（未登录则离线兜底）
-  try {
-    await State.init();
-  } catch (e) {
-    console.warn('[boot] State.init 失败', e);
-  }
-  removeBootMask();
-
-  // 未登录 → 显示登录/注册遮罩；成功登录后原地重新初始化（不刷新页面，避免 session 丢失）
+  // 未登录 → 显示登录/注册遮罩；成功登录后原地重新初始化
   if (!State.isAuthed()) {
     Account.showLogin(async () => {
-      // 登录后 session 已在 Supabase 客户端内存中，无需刷新页面
       try {
         await State.init();
       } catch (e) {
@@ -71,9 +62,19 @@
     });
     // 仍初始化 Tab（登录遮罩下不可见，但保证登录后能直接渲染）
     bootApp();
+    removeBootMask();
     return;
   }
 
+  // 多用户初始化：拉配置 + 状态加载
+  try {
+    await State.init();
+  } catch (e) {
+    console.warn('[boot] State.init 失败', e);
+  }
+  removeBootMask();
+
+  bootApp();
   Account.renderChip();
 
   // 预览模式：显示持久标识 + 提示

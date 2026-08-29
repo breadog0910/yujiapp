@@ -26,10 +26,7 @@ router.get('/config', async (req, res) => {
   const tabBackgrounds = {};
   for (const k of Object.keys(DEF_TAB_BG)) {
     const r = tabBgBy[k];
-    tabBackgrounds[k] = {
-      path: (r && r.bg_path) || DEF_TAB_BG[k],
-      updatedAt: r ? r.updated_at : null,
-    };
+    tabBackgrounds[k] = (r && r.bg_path) || DEF_TAB_BG[k];
   }
 
   const FALLBACK_DEF_CARE = [
@@ -60,6 +57,10 @@ router.get('/config', async (req, res) => {
     defaultCareOptions,
     unlockedTypes: furniture.filter(f => f.unlockedByDefault).map(f => f.type),
     serverTime: new Date().toISOString(),
+    farmCropCatalog: [],
+    farmPlotLayout: [],
+    farmLandList: [],
+    farmLandConfig: null,
   });
 });
 

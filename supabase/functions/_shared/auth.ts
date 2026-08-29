@@ -37,6 +37,12 @@ export async function requireAuth(req: Request) {
   return user;
 }
 
+export async function optionalAuth(req: Request) {
+  const jwt = getJwtFromHeader(req);
+  if (!jwt) return null;
+  return await getUser(jwt);
+}
+
 export async function requireAdmin(req: Request) {
   const user = await requireAuth(req);
   if (user.role !== 'admin') throw new Error('需要管理员权限');

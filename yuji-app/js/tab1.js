@@ -619,6 +619,9 @@ const Tab1 = (() => {
     let raf = null;
     let isLongPress = false;
     let startX = 0, startY = 0;
+    let clickCount = 0;
+    let clickTimer = null;
+    let touchHandled = false;
 
     const startLongPress = () => {
       if (bubble.classList.contains('done') || bubble.classList.contains('skipped')) return;
@@ -652,8 +655,23 @@ const Tab1 = (() => {
       bubble.style.setProperty('--progress', 0);
     };
 
+    const handleDblClick = () => {
+      clickCount++;
+      if (clickCount === 1) {
+        clickTimer = setTimeout(() => { clickCount = 0; }, 300);
+      } else {
+        clearTimeout(clickTimer);
+        clickCount = 0;
+        Popups.open('careConfig', { id: bubble.dataset.id, onSave: () => {
+          renderCareOptions();
+          renderStats();
+        }});
+      }
+    };
+
     // Touch events
     bubble.addEventListener('touchstart', e => {
+      touchHandled = true;
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       startLongPress();
@@ -662,10 +680,7 @@ const Tab1 = (() => {
     bubble.addEventListener('touchend', () => {
       if (isLongPress) return;
       cancelLongPress();
-      Popups.open('careConfig', { id: bubble.dataset.id, onSave: () => {
-        renderCareOptions();
-        renderStats();
-      }});
+      handleDblClick();
     });
 
     bubble.addEventListener('touchmove', e => {
@@ -689,10 +704,11 @@ const Tab1 = (() => {
     bubble.addEventListener('mouseup', () => {
       if (isLongPress) return;
       cancelLongPress();
-      Popups.open('careConfig', { id: bubble.dataset.id, onSave: () => {
-        renderCareOptions();
-        renderStats();
-      }});
+      if (touchHandled) {
+        touchHandled = false;
+        return;
+      }
+      handleDblClick();
     });
 
     bubble.addEventListener('mouseleave', () => {

@@ -71,7 +71,19 @@ async function init() {
       {
         key: 'furni_story', name: '家具经历', provider: 'openai', base_url: 'https://api.openai.com/v1',
         api_key: '', model: 'gpt-4o-mini', temperature: 0.9,
-        system_prompt: '你是用户的“小我”——住在用户房间里、默默陪伴ta的像素小人。语气温暖克制，像朋友写信，不要说教、不要诊断、不要用“你应该/必须”。你只输出一段 80–160 字的中文小故事，不使用列表、不加标题。',
+        system_prompt: '你是用户的"小我"——住在用户房间里、默默陪伴ta的像素小人。语气温暖克制，像朋友写信，不要说教、不要诊断、不要用"你应该/必须"。你只输出一段 80–160 字的中文小故事，不使用列表、不加标题。',
+        enabled: 0,
+      },
+      {
+        key: 'diaryguide', name: '日记引导', provider: 'openai', base_url: 'https://api.openai.com/v1',
+        api_key: '', model: 'gpt-4o-mini', temperature: 0.7,
+        system_prompt: '你是温柔陪伴用户写日记的引导者。帮助用户生成日记引导问题，或根据用户的回答给出温暖的想法和反馈。语气轻柔，不评判，像一位懂你的朋友。',
+        enabled: 0,
+      },
+      {
+        key: 'whisper', name: '森林密信', provider: 'openai', base_url: 'https://api.openai.com/v1',
+        api_key: '', model: 'gpt-4o-mini', temperature: 0.85,
+        system_prompt: '你是森林里那个温柔的小我，是用户内在的自己。用森林密信、说悄悄话的口吻回应用户。语气温暖、神秘而亲切，像在一片安静的森林里对朋友低语。',
         enabled: 0,
       },
     ];

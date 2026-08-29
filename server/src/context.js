@@ -87,6 +87,7 @@ function sanitize(data) {
 }
 
 async function getContext(userId, agentKey) {
+  if (!userId) return { context: '', data: null };
   const row = await db.prepare('SELECT data FROM user_state WHERE user_id = ?').get(userId);
   if (!row) return { context: '', data: null };
   const data = sanitize(JSON.parse(row.data));

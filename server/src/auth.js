@@ -76,6 +76,12 @@ async function logAdmin(adminId, action, target, detail) {
   }
 }
 
+async function optionalAuth(req, res, next) {
+  const user = await getUserByToken(tokenFromReq(req));
+  req.user = user || null;
+  next();
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -84,6 +90,7 @@ module.exports = {
   getUserByToken,
   tokenFromReq,
   requireAuth,
+  optionalAuth,
   requireAdmin,
   logAdmin,
 };

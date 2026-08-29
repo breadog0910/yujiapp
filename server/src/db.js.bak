@@ -1,22 +1,18 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
 const { AsyncLocalStorage } = require('async_hooks');
 
-const DB_PATH = process.env.SQLITE_PATH || path.join(__dirname, '..', 'data', 'app.db');
-
-// 确保目录存在
-const fs = require('fs');
-const dir = path.dirname(DB_PATH);
-if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+// Supabase / PostgreSQL 连接（优先环境变量 DATABASE_URL）
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL?.includes('supabase')
+    ? { rejectUnauthorized: false }
+    : undefined,
+});
 
 const txStorage = new AsyncLocalStorage();
 
 function getClient() {
-  return txStorage.getStore() || db;
+  return txStorage.getStore() || pool;
 }
 
 function convertSql(sql) {
@@ -24,20 +20,16 @@ function convertSql(sql) {
   // 先处理命名参数 @name
   let converted = sql.replace(/@(\w+)/g, (match, name) => {
     paramNames.push(name);
-    return `?`;
+    return `$${paramNames.length}`;
   });
-  // 再处理匿名参数 ?（SQLite 原生支持）
+  // 再处理匿名参数 ?
+  let n = paramNames.length;
+  converted = converted.replace(/\?/g, () => `$${++n}`);
   return { sql: converted, paramNames };
 }
 
 function prepare(sqlRaw) {
   const { sql, paramNames } = convertSql(sqlRaw);
-  let stmt = null;
-
-  function getStmt() {
-    if (!stmt) stmt = db.prepare(sql);
-    return stmt;
-  }
 
   function buildValues(args) {
     if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null && !Array.isArray(args[0])) {
@@ -52,33 +44,39 @@ function prepare(sqlRaw) {
   return {
     run: async function (...args) {
       const values = buildValues(args);
-      const result = getStmt().run(values);
-      return { lastInsertRowid: result.lastInsertRowid, changes: result.changes };
+      const client = getClient();
+      const result = await client.query(sql, values);
+      return { lastInsertRowid: result.rows[0]?.id, changes: result.rowCount };
     },
     get: async function (...args) {
       const values = buildValues(args);
-      return getStmt().get(values) || null;
+      const client = getClient();
+      const result = await client.query(sql, values);
+      return result.rows[0] || null;
     },
     all: async function (...args) {
       const values = buildValues(args);
-      return getStmt().all(values);
+      const client = getClient();
+      const result = await client.query(sql, values);
+      return result.rows;
     },
   };
 }
 
 function transaction(fn) {
   return async function (...args) {
-    db.prepare('BEGIN').run();
+    const client = await pool.connect();
     try {
-      txStorage.enterWith(db);
-      const result = await fn(...args);
-      db.prepare('COMMIT').run();
-      return result;
+      await client.query('BEGIN');
+      await txStorage.run(client, async () => {
+        await fn(...args);
+      });
+      await client.query('COMMIT');
     } catch (e) {
-      db.prepare('ROLLBACK').run();
+      await client.query('ROLLBACK');
       throw e;
     } finally {
-      txStorage.disable();
+      client.release();
     }
   };
 }
@@ -86,29 +84,24 @@ function transaction(fn) {
 // 兼容：直接查询
 async function query(text, params) {
   const client = getClient();
-  return { rows: client.all(text, params || []) };
+  return client.query(text, params);
 }
-
-// 兼容：保留 pool 引用
-const pool = {
-  query: async (text, params) => query(text, params),
-};
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  id            SERIAL PRIMARY KEY,
   username      TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'user',
   must_change_pw INTEGER NOT NULL DEFAULT 0,
-  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at    TIMESTAMP NOT NULL DEFAULT NOW(),
   is_preview    INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS sessions (
   token      TEXT PRIMARY KEY,
   user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMP NOT NULL
 );
 
@@ -199,39 +192,36 @@ CREATE TABLE IF NOT EXISTS default_care_options (
 );
 
 CREATE TABLE IF NOT EXISTS admin_log (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  id         SERIAL PRIMARY KEY,
   admin_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   action     TEXT NOT NULL,
   target     TEXT,
   detail     TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS user_state (
   user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   data       TEXT NOT NULL,
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 `;
 
 async function initSchema() {
-  db.exec(SCHEMA);
+  await pool.query(SCHEMA);
 
-  // SQLite 迁移：检查并补列
+  // 迁移：补列（PostgreSQL 中不存在才添加）
   const migrations = [
-    { table: 'furniture_catalog', col: 'price', sql: 'ALTER TABLE furniture_catalog ADD COLUMN price INTEGER NOT NULL DEFAULT 0' },
-    { table: 'default_room_layout', col: 'rot', sql: 'ALTER TABLE default_room_layout ADD COLUMN rot REAL DEFAULT 0' },
-    { table: 'default_room_layout', col: 'tilt', sql: 'ALTER TABLE default_room_layout ADD COLUMN tilt REAL DEFAULT 0' },
-    { table: 'users', col: 'is_preview', sql: 'ALTER TABLE users ADD COLUMN is_preview INTEGER NOT NULL DEFAULT 0' },
-    { table: 'shop_items', col: 'icon', sql: 'ALTER TABLE shop_items ADD COLUMN icon TEXT DEFAULT \'\'' },
+    { table: 'furniture_catalog', col: 'price', sql: 'ALTER TABLE furniture_catalog ADD COLUMN IF NOT EXISTS price INTEGER NOT NULL DEFAULT 0' },
+    { table: 'default_room_layout', col: 'rot', sql: 'ALTER TABLE default_room_layout ADD COLUMN IF NOT EXISTS rot REAL DEFAULT 0' },
+    { table: 'default_room_layout', col: 'tilt', sql: 'ALTER TABLE default_room_layout ADD COLUMN IF NOT EXISTS tilt REAL DEFAULT 0' },
+    { table: 'users', col: 'is_preview', sql: 'ALTER TABLE users ADD COLUMN IF NOT EXISTS is_preview INTEGER NOT NULL DEFAULT 0' },
+    { table: 'shop_items', col: 'icon', sql: 'ALTER TABLE shop_items ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT \'\'' },
   ];
 
   for (const m of migrations) {
     try {
-      const cols = db.prepare(`PRAGMA table_info(${m.table})`).all();
-      if (!cols.some(c => c.name === m.col)) {
-        db.exec(m.sql);
-      }
+      await pool.query(m.sql);
     } catch (e) {
       console.warn(`[db] 迁移 ${m.table}.${m.col} 失败：`, e.message);
     }

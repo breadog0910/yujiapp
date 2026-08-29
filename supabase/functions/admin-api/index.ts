@@ -122,6 +122,32 @@ async function listLogs(_req: Request, user: any) {
   })));
 }
 
+// ===== AI 配置管理 =====
+async function listAI(_req: Request, _admin: any) {
+  const { data, error } = await supabase
+    .from('ai_config')
+    .select('*')
+    .order('key');
+  if (error) return json({ error: error.message }, 500);
+  return json(data);
+}
+
+async function updateAI(req: Request, admin: any, key: string) {
+  const updates = await body(req);
+  const allowed = ['name','provider','base_url','api_key','model','temperature','system_prompt','enabled'];
+  const set: any = {};
+  for (const k of allowed) {
+    if (updates[k] !== undefined) set[k] = updates[k];
+  }
+  if (Object.keys(set).length === 0) return json({ error: '无有效字段' }, 400);
+  set.updated_at = new Date().toISOString();
+
+  const { error } = await supabase.from('ai_config').update(set).eq('key', key);
+  if (error) return json({ error: error.message }, 500);
+  await logAdmin(supabase, admin.id, 'ai.update', key, JSON.stringify(set));
+  return json({ ok: true });
+}
+
 // ===== 路由分发 =====
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -150,6 +176,10 @@ Deno.serve(async (req) => {
         return json({ error: '未知操作' }, 400);
       case 'logs':
         return await listLogs(req, admin);
+      case 'ai':
+        if (req.method === 'GET') return await listAI(req, admin);
+        if (id && req.method === 'PUT') return await updateAI(req, admin, id);
+        return json({ error: '未知操作' }, 400);
       default:
         return json({ error: '未知资源' }, 404);
     }

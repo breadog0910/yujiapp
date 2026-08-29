@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { requireAuth } = require('../auth');
+const { requireAuth, optionalAuth } = require('../auth');
 const { getContext, getSelfManual } = require('../context');
 
 const router = express.Router();
@@ -57,36 +57,6 @@ async function getAgentConfig(key) {
   return cfg;
 }
 
-router.post('/:agent', requireAuth, async (req, res) => {
-  const key = AGENT_KEYS[req.params.agent] || req.params.agent;
-  try {
-    const cfg = await getAgentConfig(key);
-    const { messages = [] } = req.body || {};
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: 'messages 必填' });
-    }
-
-    const { context, data } = await getContext(req.user.id, key);
-    if (context) {
-      const hasContext = messages.some(m => m.role === 'user' && typeof m.content === 'string' && m.content.includes('用户当前数值'));
-      if (!hasContext) {
-        messages[0] = {
-          role: 'user',
-          content: context + '\n\n' + messages[0].content,
-        };
-      }
-    }
-
-    const text = await callAgent(cfg, messages, req.body.temperature);
-    res.json({ text, agent: key });
-  } catch (e) {
-    const status = e.message.includes('未找到') ? 404
-      : e.message.includes('未启用') || e.message.includes('不完整') ? 400
-      : 502;
-    res.status(status).json({ error: e.message });
-  }
-});
-
 const CHAINS = {
   insight_letter: {
     name: '洞察写信',
@@ -106,7 +76,7 @@ const CHAINS = {
   },
 };
 
-router.post('/chain', requireAuth, async (req, res) => {
+router.post('/chain', optionalAuth, async (req, res) => {
   const { chain: chainName, messages: userMessages } = req.body || {};
 
   if (!chainName || !CHAINS[chainName]) {
@@ -117,7 +87,7 @@ router.post('/chain', requireAuth, async (req, res) => {
   }
 
   const chain = CHAINS[chainName];
-  const { context, data } = await getContext(req.user.id, chain.steps[0].agent);
+  const { context, data } = await getContext(req.user?.id, chain.steps[0].agent);
 
   let prevResult = '';
   const stepResults = [];
@@ -158,7 +128,7 @@ router.post('/chain', requireAuth, async (req, res) => {
       stepResults.push({ agent: step.agent, label: step.label, text });
       prevResult = text;
 
-      if (step.saveToManual && data) {
+      if (step.saveToManual && data && req.user) {
         await saveToSelfManual(req.user.id, data, text);
       }
     }
@@ -227,12 +197,43 @@ async function saveToSelfManual(userId, data, aiText) {
   }
 }
 
-router.get('/chains', requireAuth, (req, res) => {
+router.get('/chains', optionalAuth, (req, res) => {
   const list = Object.entries(CHAINS).map(([k, v]) => ({
     key: k, name: v.name, description: v.description,
     steps: v.steps.map(s => ({ agent: s.agent, label: s.label })),
   }));
   res.json(list);
+});
+
+// 注意：参数路由放在最后，避免拦截 /chain、/chains 等固定路径
+router.post('/:agent', optionalAuth, async (req, res) => {
+  const key = AGENT_KEYS[req.params.agent] || req.params.agent;
+  try {
+    const cfg = await getAgentConfig(key);
+    const { messages = [] } = req.body || {};
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'messages 必填' });
+    }
+
+    const { context, data } = await getContext(req.user?.id, key);
+    if (context) {
+      const hasContext = messages.some(m => m.role === 'user' && typeof m.content === 'string' && m.content.includes('用户当前数值'));
+      if (!hasContext) {
+        messages[0] = {
+          role: 'user',
+          content: context + '\n\n' + messages[0].content,
+        };
+      }
+    }
+
+    const text = await callAgent(cfg, messages, req.body.temperature);
+    res.json({ text, agent: key });
+  } catch (e) {
+    const status = e.message.includes('未找到') ? 404
+      : e.message.includes('未启用') || e.message.includes('不完整') ? 400
+      : 502;
+    res.status(status).json({ error: e.message });
+  }
 });
 
 module.exports = router;

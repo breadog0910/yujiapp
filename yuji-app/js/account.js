@@ -153,18 +153,13 @@ const Account = (() => {
     userEl.focus();
   }
 
-  // ======== 浮层账号按钮（右上角齿轮，状态栏之下） ========
+  // ======== 浮层账号按钮（右上角，状态栏之下） ========
   async function renderChip() {
-    if (!Api.isAuthed()) return;
     injectStyle();
 
     // 已有则先清掉
     document.getElementById('yujiAcctFab')?.remove();
     document.getElementById('yujiAcctMenu')?.remove();
-
-    let info = { user: { username: '我' } };
-    try { info = await Api.me(); } catch (e) { /* 取不到就走默认 */ }
-    const isPreview = !!(info.user && info.user.isPreview);
 
     // 容器加 position:relative（FAB 绝对定位需要）
     const root = document.querySelector('.app-container');
@@ -176,53 +171,92 @@ const Account = (() => {
     const fab = document.createElement('button');
     fab.type = 'button';
     fab.id = 'yujiAcctFab';
-    fab.className = 'yuji-acct-fab' + (isPreview ? ' preview' : '');
+    fab.className = 'yuji-acct-fab';
     fab.setAttribute('aria-label', '账号菜单');
-    fab.title = isPreview ? '预览账号 · 点开看账号 / 退出' : '账号菜单';
-    fab.textContent = '⚙';
-    if (isPreview) {
-      const badge = document.createElement('span');
-      badge.className = 'badge';
-      badge.title = '预览账号';
-      fab.appendChild(badge);
+
+    if (Api.isAuthed()) {
+      // ---------- 已登录：齿轮 + 下拉菜单 ----------
+      let info = { user: { username: '我' } };
+      try { info = await Api.me(); } catch (e) { /* 取不到就走默认 */ }
+      const isPreview = !!(info.user && info.user.isPreview);
+
+      fab.className = 'yuji-acct-fab' + (isPreview ? ' preview' : '');
+      fab.title = isPreview ? '预览账号 · 点开看账号 / 退出' : '账号菜单';
+      fab.textContent = '⚙';
+      if (isPreview) {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.title = '预览账号';
+        fab.appendChild(badge);
+      }
+      root.appendChild(fab);
+
+      // 账号菜单按钮只在 tab1 显示
+      const activeTabOnRender = document.querySelector('.tab-panel.active')?.id;
+      if (activeTabOnRender && activeTabOnRender !== 'tab1') {
+        fab.style.display = 'none';
+      }
+
+      const menu = document.createElement('div');
+      menu.id = 'yujiAcctMenu';
+      menu.className = 'yuji-acct-menu';
+      menu.style.display = 'none';
+      menu.innerHTML = `
+        <div class="who">
+          ${isPreview ? '<span class="pv">🔄 预览</span>' : ''}
+          <b>${escapeHtml(info.user.username || '我')}</b>
+        </div>
+        <button type="button" class="go" id="yujiGoLogout">退出登录</button>
+        <div class="meta">
+          ${isPreview ? '预览账号：永远反映后台默认房间，<br>不保存个人进度。'
+                      : '当前账号的操作进度会同步到云端。'}
+        </div>
+      `;
+      root.appendChild(menu);
+
+      fab.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
+      });
+      menu.querySelector('#yujiGoLogout').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try { await Api.logout(); } catch (err) { console.warn('[Account] 后端 logout 失败：', err); }
+        location.reload();
+      });
+      document.addEventListener('click', () => { menu.style.display = 'none'; });
+    } else {
+      // ---------- 未登录：显示「登录」按钮 ----------
+      fab.title = '登录 / 注册';
+      fab.textContent = '登录';
+      fab.style.fontSize = '13px';
+      fab.style.borderRadius = '18px';
+      fab.style.width = 'auto';
+      fab.style.padding = '0 12px';
+      fab.style.fontFamily = "'ZCOOL KuaiLe',system-ui,sans-serif";
+      root.appendChild(fab);
+
+      // 登录按钮只在 tab1 显示
+      const activeTabOnRender = document.querySelector('.tab-panel.active')?.id;
+      if (activeTabOnRender && activeTabOnRender !== 'tab1') {
+        fab.style.display = 'none';
+      }
+
+      fab.addEventListener('click', () => {
+        showLogin(async () => {
+          // 登录成功回调
+          try { await State.init(); } catch (e) { console.warn('[Account] 登录后 State.init 失败', e); }
+          renderChip();
+          const activeTab = document.querySelector('.tab-panel.active');
+          if (activeTab) {
+            const tabId = activeTab.id;
+            if (tabId === 'tab1' && typeof Tab1 !== 'undefined') Tab1.refresh();
+            if (tabId === 'tab3' && typeof Tab3 !== 'undefined') Tab3.refresh();
+            if (tabId === 'tab4' && typeof Tab4 !== 'undefined') Tab4.refresh();
+          }
+          Utils.toast('登录成功！');
+        });
+      });
     }
-    root.appendChild(fab);
-
-    // 账号菜单按钮只在 tab1 显示：创建后按当前 active tab 初始化
-    const activeTabOnRender = document.querySelector('.tab-panel.active')?.id;
-    if (activeTabOnRender && activeTabOnRender !== 'tab1') {
-      fab.style.display = 'none';
-    }
-
-    const menu = document.createElement('div');
-    menu.id = 'yujiAcctMenu';
-    menu.className = 'yuji-acct-menu';
-    menu.style.display = 'none';
-    menu.innerHTML = `
-      <div class="who">
-        ${isPreview ? '<span class="pv">🔄 预览</span>' : ''}
-        <b>${escapeHtml(info.user.username || '我')}</b>
-      </div>
-      <button type="button" class="go" id="yujiGoLogout">退出登录</button>
-      <div class="meta">
-        ${isPreview ? '预览账号：永远反映后台默认房间，<br>不保存个人进度。'
-                    : '当前账号的操作进度会同步到云端。'}
-      </div>
-    `;
-    root.appendChild(menu);
-
-    fab.addEventListener('click', (e) => {
-      e.stopPropagation();
-      menu.style.display = (menu.style.display === 'none') ? 'block' : 'none';
-    });
-    menu.querySelector('#yujiGoLogout').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      // 直接退出；失败也没关系——本地会清掉
-      try { await Api.logout(); } catch (err) { console.warn('[Account] 后端 logout 失败：', err); }
-      location.reload();
-    });
-    // 点其它地方收起菜单
-    document.addEventListener('click', () => { menu.style.display = 'none'; });
   }
 
   function escapeHtml(s) {

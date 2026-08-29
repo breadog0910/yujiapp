@@ -11,6 +11,8 @@ const AGENT_KEYS: Record<string, string> = {
   insight: 'insight',
   furni_story: 'furni_story',
   furniStory: 'furni_story',
+  diaryguide: 'diaryguide',
+  whisper: 'whisper',
 };
 
 Deno.serve(async (req) => {
