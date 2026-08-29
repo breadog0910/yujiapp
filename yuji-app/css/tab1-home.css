@@ -357,6 +357,7 @@ body.room-editing .room-edit-btn {
   --xd-loops: 2;
   --xc-loops: 2;
   --frame-count: 6;
+  --xc-frame-count: 5;    /* 庆祝为 5 帧动画（源头 546px = 5 个角色块） */
 }
 
 /* ============== 喝水层（默认显示）：单帧显示 90×148，帧步 90px ============== */
@@ -386,8 +387,8 @@ body.room-editing .room-edit-btn {
 .xiaowo-celebrate {
   position: absolute;
   inset: 0;
-  background-image: url('../assets/pixel/xiaowo-celebrate-v6.png?v=1');
-  background-size: 540px 100%;       /* 90×6 = 540（和喝水完全一致） */
+  background-image: url('../assets/pixel/xiaowo-celebrate-v11.png?v=1');
+  background-size: 450px 100%;       /* 90×5 = 450（庆祝 5 帧，每帧 90px） */
   background-repeat: no-repeat;
   background-position: 0 0;          /* 默认第 0 帧：和喝水完全一致 */
   image-rendering: pixelated;
@@ -419,17 +420,16 @@ body.room-editing .room-edit-btn {
    因为庆祝 sprite 也变成了 930×254（单帧 155×254 → 90×148 显示），
    所以和喝水共用同一节奏、同一帧步 -90px、同一 6 段切法。 */
 .xiaowo.is-celebrating .xiaowo-celebrate {
-  animation: xc-play calc(var(--xc-frame-dur) * var(--frame-count)) var(--xc-loops);
+  animation: xc-play calc(var(--xc-frame-dur) * var(--xc-frame-count)) var(--xc-loops);
   animation-timing-function: step-end; /* 强制硬切，禁止帧间插值 */
 }
 
 @keyframes xc-play {
-  0%,          16.666%  { background-position:    0     0; }   /* 帧 0 */
-  16.667%,     33.333%  { background-position:  -90px   0; }   /* 帧 1 */
-  33.334%,     50%      { background-position: -180px   0; }   /* 帧 2 */
-  50.001%,     66.666%  { background-position: -270px   0; }   /* 帧 3 */
-  66.667%,     83.333%  { background-position: -360px   0; }   /* 帧 4 */
-  83.334%,     100%     { background-position: -450px   0; }   /* 帧 5 */
+  0%,           20%      { background-position:    0     0; }   /* 帧 0 */
+  20.001%,      40%      { background-position:  -90px   0; }   /* 帧 1 */
+  40.001%,      60%      { background-position: -180px   0; }   /* 帧 2 */
+  60.001%,      80%      { background-position: -270px   0; }   /* 帧 3 */
+  80.001%,      100%     { background-position: -360px   0; }   /* 帧 4 */
 }
 
 /* 暂停动画（编辑/弹窗压栈时定住） */

@@ -739,7 +739,7 @@ const Tab1 = (() => {
   // 触发小我动作（严格按 pixel-sprite-sheet-animation Skill §3 模板）
   // 默认状态：小我站定显示第 0 帧（举杯静止），不播动画。
   //   water      → 加 .is-drinking，播 N 轮 6 帧喝水连帧后自动移除类。
-  //   encourage/celebrate → 加 .is-celebrating，隐藏喝水层显示庆祝层，播 N 轮 6 帧庆祝连帧后切回。
+  //   encourage/celebrate → 加 .is-celebrating，隐藏喝水层显示庆祝层，播 N 轮 5 帧庆祝连帧后切回。
   //   其他      → .mood-happy 轻微跳动反馈。
   // 关键重置三步法（Skill §3 固定写法）：先 remove 类 → 强制 reflow → 再加类；
   // 保证每次从第 0 帧开始，不会"停在哪帧就从哪帧接着播"。
@@ -756,6 +756,7 @@ const Tab1 = (() => {
     if (careId === 'encourage' || careId === 'celebrate') {
       const d = parseFloat(cs.getPropertyValue('--xc-frame-dur')) || 160;
       const k = parseInt(cs.getPropertyValue('--xc-loops'), 10) || 2;
+      const n5 = parseInt(cs.getPropertyValue('--xc-frame-count'), 10) || 5; // 庆祝 5 帧动画
       if (__xcTimer) { clearTimeout(__xcTimer); __xcTimer = null; }
       // 避免与喝水叠加：喝水也清掉
       if (__xdTimer) { clearTimeout(__xdTimer); __xdTimer = null; xw.classList.remove('is-drinking'); }
@@ -766,7 +767,7 @@ const Tab1 = (() => {
       __xcTimer = setTimeout(() => {
         xw.classList.remove('is-celebrating');
         __xcTimer = null;
-      }, d * N * k + 200);
+      }, d * n5 * k + 200);
       return;
     }
 
