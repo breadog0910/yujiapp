@@ -21,6 +21,9 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  /* 家具层高度基准：与后台画布同比例(14.69% = 124/844)，
+     任何屏幕/环境都保持一致，避免百分比坐标基准随屏幕变化而漂移 */
+  --care-h: 14.69%;
   background: linear-gradient(180deg, #f0dcc0 0%, #d8b890 100%);
   transition: filter 0.6s ease;
 }
@@ -63,7 +66,7 @@
 /* 底部收到「气泡条高度」之上，家具只分布在气泡之上区域，不会钻到气泡下面 */
 .room-furniture {
   position: absolute;
-  inset: 0 0 var(--care-h, 124px) 0;
+  inset: 0 0 var(--care-h) 0;
   /* ===== 中层强制独立堆叠上下文：不被背景层 filter / 混合模式穿透 ===== */
   isolation: isolate !important;
   mix-blend-mode: normal !important;
@@ -74,7 +77,7 @@
 
 /* 前景层（小我小人）同样只占据气泡条之上区域 */
 .tab1-room .layer-front {
-  inset: 0 0 var(--care-h, 124px) 0;
+  inset: 0 0 var(--care-h) 0;
 }
 
 .room-item {
@@ -291,7 +294,7 @@ body.room-editing .room-edit-btn {
 .room-edit-bar {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--care-h, 124px) + 12px);  /* 抬到气泡条之上 */
+  bottom: calc(var(--care-h) + 12px);  /* 抬到气泡条之上 */
   transform: translateX(-50%);
   z-index: 21;
   display: flex;
